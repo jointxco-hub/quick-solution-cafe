@@ -1,9 +1,11 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon.jsx'
+import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
 import FieldControl from './FieldControl.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
 import { fulfilmentOptions } from '../data/products.js'
 import { beginQuickSolutionPayment, createQuickSolutionOrder, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
+import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
 
 function optionLabel(product, fieldId, value) {
   const field = product.fields.find((item) => item.id === fieldId)
@@ -214,6 +216,14 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
       })
 
       setOrderResponse(response)
+      if (response?.orderId && response?.paymentToken) {
+        saveQuickSolutionPaymentSession({
+          orderId: response.orderId,
+          paymentToken: response.paymentToken,
+          orderNumber: response.orderNumber,
+          amount: response.totalAmount
+        })
+      }
 
       if (file) {
         setSubmitState('uploading')
@@ -254,8 +264,14 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
         return
       }
       if (!result?.payment_url) throw new Error('PayFast did not return a payment link.')
-      window.open(result.payment_url, '_blank', 'noopener,noreferrer')
+      saveQuickSolutionPaymentSession({
+        orderId: orderResponse.orderId,
+        paymentToken: orderResponse.paymentToken,
+        orderNumber: orderResponse.orderNumber,
+        amount: orderResponse.totalAmount
+      })
       setPaymentState('waiting')
+      window.location.assign(result.payment_url)
     } catch (error) {
       setPaymentState('error')
       setPaymentError(error?.message || 'Could not open PayFast.')
@@ -283,6 +299,10 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
     const confirmationListingUrl = confirmationPoint?.easyLocateLink?.canonicalUrl || ''
     const confirmationPointKind = fulfilment === 'quick-point' ? 'Quick Point collection' : 'Collect from Quick Solution'
     const whatsappText = encodeURIComponent(`Hi Quick Solution, my order is ${orderNumber}. I need help with the file or next step.`)
+
+    if (paymentState === 'starting') {
+      return <PaymentRedirectLoader orderNumber={orderNumber} amount={total}/>
+    }
 
     return (
       <div className="guided-complete">
@@ -331,11 +351,11 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
             {paymentState !== 'paid' && (
               <div className="qs-payment-actions">
                 <button className="button primary-green" type="button" disabled={paymentState === 'starting'} onClick={startPayment}>
-                  {paymentState === 'starting' ? 'Opening PayFastâ€¦' : 'Pay securely with PayFast'}
+                  {paymentState === 'starting' ? 'Opening PayFast…' : 'Pay securely with PayFast'}
                 </button>
                 {(paymentState === 'waiting' || paymentState === 'checking' || paymentState === 'error') && (
                   <button className="button ghost" type="button" disabled={paymentState === 'checking'} onClick={checkPayment}>
-                    {paymentState === 'checking' ? 'Checkingâ€¦' : 'Check payment'}
+                    {paymentState === 'checking' ? 'Checking…' : 'Check payment'}
                   </button>
                 )}
               </div>
@@ -541,7 +561,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
             <button className="button primary-green" type="button" onClick={() => setStepIndex((value) => value + 1)}>Continue <Icon name="arrowRight" size={17}/></button>
           ) : (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-              {submitState === 'submitting' ? 'Creating orderâ€¦' : submitState === 'uploading' ? 'Uploading file securelyâ€¦' : `Create order · ${formatMoney(estimatedOrderTotal)}`}
+              {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : `Create order · ${formatMoney(estimatedOrderTotal)}`}
               {submitState !== 'submitting' && submitState !== 'uploading' && <Icon name="arrowRight" size={17}/>}
             </button>
           )}

@@ -1,0 +1,121 @@
+/* QS-08.4 — payment return / recovery page */
+
+.qs-payment-return-page {
+  min-height: 100vh;
+  background: #f3f3ef;
+}
+
+.qs-payment-return-shell {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 72px 20px 96px;
+}
+
+.qs-payment-return-card {
+  background: #fff;
+  border: 1px solid #deded8;
+  border-radius: 28px;
+  padding: clamp(28px, 6vw, 56px);
+  text-align: center;
+  box-shadow: 0 18px 50px rgba(17,17,17,.05);
+}
+
+.qs-payment-return-card.paid {
+  border-color: rgba(0,139,114,.2);
+}
+
+.qs-payment-return-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 20px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  color: #008B72;
+  background: rgba(0,139,114,.09);
+}
+
+.qs-payment-return-card h1 {
+  font-size: clamp(2rem, 6vw, 4rem);
+  letter-spacing: -.055em;
+  line-height: .98;
+  margin: 10px 0 16px;
+}
+
+.qs-payment-return-card > p {
+  max-width: 570px;
+  margin: 0 auto;
+  color: #66665f;
+  line-height: 1.6;
+}
+
+.qs-payment-return-order {
+  margin: 30px 0 20px;
+  border: 1px solid #e1e1dc;
+  border-radius: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: left;
+  overflow: hidden;
+}
+
+.qs-payment-return-order > div {
+  padding: 16px 18px;
+  display: grid;
+  gap: 5px;
+}
+
+.qs-payment-return-order > div + div {
+  border-left: 1px solid #e1e1dc;
+}
+
+.qs-payment-return-order small {
+  color: #74746d;
+  text-transform: uppercase;
+  font-size: .66rem;
+  letter-spacing: .09em;
+  font-weight: 800;
+}
+
+.qs-payment-return-note {
+  font-weight: 700;
+  color: #855300 !important;
+  background: #fff7e6;
+  border: 1px solid #f0dfb8;
+  border-radius: 14px;
+  padding: 11px 13px;
+}
+
+.qs-payment-return-actions {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+.qs-payment-return-trust {
+  display: block;
+  margin-top: 28px;
+  color: #777770;
+  line-height: 1.5;
+}
+
+@media (max-width: 620px) {
+  .qs-payment-return-shell {
+    padding-top: 32px;
+  }
+
+  .qs-payment-return-order {
+    grid-template-columns: 1fr;
+  }
+
+  .qs-payment-return-order > div + div {
+    border-left: 0;
+    border-top: 1px solid #e1e1dc;
+  }
+
+  .qs-payment-return-actions {
+    display: grid;
+  }
+}
