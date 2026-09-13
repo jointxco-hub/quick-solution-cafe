@@ -140,9 +140,19 @@ export default function AdminOppsHandoffPanel() {
   const preview = selected ? previewCache[selected.serviceOrderId] : null
   const proposedOppsOrder = preview?.proposedOppsOrder || null
   const proposedLines = Array.isArray(proposedOppsOrder?.products) ? proposedOppsOrder.products : []
-  const proposedFiles = Array.isArray(proposedOppsOrder?.source_metadata?.quick_solution?.files)
-    ? proposedOppsOrder.source_metadata.quick_solution.files
+  const quickSolutionMeta = proposedOppsOrder?.source_metadata?.quick_solution || null
+  const proposedFiles = Array.isArray(quickSolutionMeta?.files)
+    ? quickSolutionMeta.files
     : []
+  const handoffPoint = quickSolutionMeta?.fulfilment_point || null
+  const handoffPointArea = [
+    handoffPoint?.address?.area || handoffPoint?.address?.city,
+    handoffPoint?.address?.line1
+  ].filter(Boolean).join(' · ')
+  const handoffPointKind = quickSolutionMeta?.fulfilment_type === 'quick_point' ? 'Quick Point' : quickSolutionMeta?.fulfilment_type === 'cafe' ? 'Quick Solution café' : null
+  const fulfilmentDisplay = handoffPoint?.name
+    ? `${handoffPointKind || 'Collection'} · ${handoffPoint.name}`
+    : fulfilmentLabel(proposedOppsOrder?.fulfillment_type)
   const blockerItems = preview?.blockers || selected?.blockers || []
   const warningItems = preview?.warnings || selected?.warnings || []
 
@@ -301,7 +311,7 @@ export default function AdminOppsHandoffPanel() {
                 <StatusPill label={HANDOFF_LABELS[selected.handoffStatus] || selected.handoffStatus} tone={toneForStatus(selected.handoffStatus)} />
                 <StatusPill label={paymentLabel(selected.paymentStatus)} tone={toneForStatus(selected.paymentStatus)} />
                 {preview ? <StatusPill label={fileCount ? `${fileCount} file${fileCount === 1 ? '' : 's'} received` : 'No file attached'} tone={fileCount ? 'good' : 'neutral'} /> : null}
-                {proposedOppsOrder ? <StatusPill label={fulfilmentLabel(proposedOppsOrder.fulfillment_type)} tone="neutral" /> : null}
+                {proposedOppsOrder ? <StatusPill label={handoffPoint?.name ? `${handoffPointKind || 'Collection'} · ${handoffPoint.name}` : fulfilmentLabel(proposedOppsOrder.fulfillment_type)} tone="neutral" /> : null}
               </div>
 
               <div className="handoff-detail-grid">
@@ -323,7 +333,8 @@ export default function AdminOppsHandoffPanel() {
                     <>
                       <div className="handoff-detail-grid compact">
                         <DetailRow label="Starting stage" value="Received" />
-                        <DetailRow label="Fulfilment" value={fulfilmentLabel(proposedOppsOrder.fulfillment_type)} />
+                        <DetailRow label="Fulfilment" value={fulfilmentDisplay} />
+                        {handoffPointArea ? <DetailRow label="Collection area" value={handoffPointArea} /> : null}
                         <DetailRow label="Payment" value={paymentLabel(proposedOppsOrder.payment_status)} />
                         <DetailRow label="Total" value={money(proposedOppsOrder.total_amount)} />
                       </div>

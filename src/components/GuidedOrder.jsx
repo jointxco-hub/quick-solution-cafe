@@ -236,6 +236,10 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
   if (complete) {
     const total = Number(orderResponse?.totalAmount ?? estimatedOrderTotal)
     const orderNumber = orderResponse?.orderNumber || 'Order created'
+    const confirmationPoint = fulfilment === 'delivery' ? null : selectedPoint
+    const confirmationArea = confirmationPoint ? pointArea(confirmationPoint) : ''
+    const confirmationListingUrl = confirmationPoint?.easyLocateLink?.canonicalUrl || ''
+    const confirmationPointKind = fulfilment === 'quick-point' ? 'Quick Point collection' : 'Collect from Quick Solution'
     const whatsappText = encodeURIComponent(`Hi Quick Solution, my order is ${orderNumber}. I need help with the file or next step.`)
 
     return (
@@ -245,6 +249,31 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
         <h2>{orderNumber}</h2>
         <p>We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.</p>
         <div className="complete-summary"><strong>{product.name}</strong><span>{formatMoney(total)}</span></div>
+
+        {fulfilment !== 'delivery' && confirmationPoint && (
+          <div className="complete-fulfilment-card">
+            <span className="complete-fulfilment-icon"><Icon name={confirmationPoint.kind === 'cafe' ? 'store' : 'pin'} size={21}/></span>
+            <div>
+              <span className="eyebrow">{confirmationPointKind}</span>
+              <strong>{confirmationPoint.name}</strong>
+              {confirmationArea ? <small>{confirmationArea}</small> : null}
+              <span>{selectedFulfilmentFee > 0 ? `${formatMoney(selectedFulfilmentFee)} collection fee` : 'Free collection'}</span>
+            </div>
+            {confirmationListingUrl ? <a href={confirmationListingUrl} target="_blank" rel="noreferrer">View on Easy Locate <Icon name="external" size={14}/></a> : null}
+          </div>
+        )}
+
+        {fulfilment === 'delivery' && (
+          <div className="complete-fulfilment-card">
+            <span className="complete-fulfilment-icon"><Icon name="truck" size={21}/></span>
+            <div>
+              <span className="eyebrow">Local delivery</span>
+              <strong>{deliveryAddress}</strong>
+              <small>Delivery fee will be confirmed before payment.</small>
+            </div>
+          </div>
+        )}
+
         {file && uploadedFile && (
           <div className="secure-file-note success">
             <strong>{file.name} uploaded securely.</strong>
