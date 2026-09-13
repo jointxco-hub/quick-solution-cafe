@@ -261,16 +261,25 @@ export default function App() {
             </div>
             {(fulfilmentPoints.length ? fulfilmentPoints : [
               { id: 'demo-cafe', name: 'Quick Solution Café', kind: 'cafe', services: ['Full service location'] },
-              { id: 'demo-point', name: 'Partner Quick Point', kind: 'quick_point', services: ['Print + apparel collection'], demo: true }
-            ]).slice(0, 3).map((point) => (
-              <div className="location-row" key={point.id}>
-                <div>
-                  <strong>{point.name}</strong>
-                  <span>{[point.address?.area || point.address?.city, Array.isArray(point.services) ? point.services.slice(0, 2).join(' · ') : 'Collection point'].filter(Boolean).join(' · ')}</span>
+              { id: 'demo-point', name: 'Partner Quick Point', kind: 'quick_point', services: ['Collection point'], demo: true }
+            ]).slice(0, 4).map((point) => {
+              const business = point.easyLocateLink?.business || {}
+              const area = [business.locationArea || point.address?.area || point.address?.city, business.locationExtension || point.address?.line1].filter(Boolean).join(' · ')
+              const categories = Array.isArray(business.categories) ? business.categories.slice(0, 2).join(' · ') : ''
+              const listingUrl = point.easyLocateLink?.canonicalUrl
+              return (
+                <div className="location-row qs07-location-row" key={point.id}>
+                  <div>
+                    <strong>{point.name}</strong>
+                    <span>{[area, categories || (point.kind === 'cafe' ? 'Full service location' : 'Collection point')].filter(Boolean).join(' · ')}</span>
+                  </div>
+                  <div className="location-row-actions">
+                    <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Quick Solution café' : point.easyLocateLink ? 'Easy Locate verified' : 'Quick Point'}</span>
+                    {listingUrl ? <a href={listingUrl} target="_blank" rel="noreferrer">View listing <Icon name="external" size={13}/></a> : null}
+                  </div>
                 </div>
-                <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Location 001' : point.easyLocateLink ? 'Quick Point · Easy Locate' : 'Quick Point'}</span>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
 

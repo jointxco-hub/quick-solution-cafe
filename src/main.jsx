@@ -6,6 +6,7 @@ import './styles/qs03.css'
 import './styles/qs031.css'
 import './styles/qs04c.css'
 import './styles/qs05.css'
+import './styles/qs07.css'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {

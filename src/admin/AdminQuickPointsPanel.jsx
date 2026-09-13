@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import {
   getEasyLocateConnectorStatus,
@@ -81,6 +81,7 @@ function EasyLocatePanel({ point, onReload, onNotice, onError }) {
   const [results, setResults] = useState([])
   const [searchState, setSearchState] = useState('idle')
   const [actionState, setActionState] = useState('idle')
+  const searchRequestRef = useRef(0)
 
   const link = point?.easyLocateLink || null
   const business = link?.business || null
@@ -99,20 +100,51 @@ function EasyLocatePanel({ point, onReload, onNotice, onError }) {
     return () => { mounted = false }
   }, [])
 
-  const search = async (event) => {
-    event?.preventDefault?.()
-    const cleanQuery = query.trim()
-    if (cleanQuery.length < 2 || searchState === 'searching') return
+  const runSearch = async (value, { manual = false } = {}) => {
+    const cleanQuery = String(value || '').trim()
+    if (cleanQuery.length < 2) {
+      searchRequestRef.current += 1
+      setResults([])
+      setSearchState('idle')
+      return
+    }
+
+    const requestId = ++searchRequestRef.current
     setSearchState('searching')
-    onError('')
+    if (manual) onError('')
+
     try {
       const data = await searchEasyLocateBusinesses(cleanQuery)
+      if (requestId !== searchRequestRef.current) return
       setResults(Array.isArray(data?.businesses) ? data.businesses : [])
       setSearchState('ready')
     } catch (error) {
+      if (requestId !== searchRequestRef.current) return
       setSearchState('error')
       onError(error.message || 'Easy Locate search failed.')
     }
+  }
+
+  useEffect(() => {
+    if (!searchOpen) return undefined
+    const cleanQuery = query.trim()
+    if (cleanQuery.length < 2) {
+      searchRequestRef.current += 1
+      setResults([])
+      setSearchState('idle')
+      return undefined
+    }
+
+    const timer = window.setTimeout(() => {
+      runSearch(cleanQuery).catch(() => {})
+    }, 280)
+
+    return () => window.clearTimeout(timer)
+  }, [query, searchOpen])
+
+  const search = (event) => {
+    event?.preventDefault?.()
+    runSearch(query, { manual: true }).catch(() => {})
   }
 
   const connect = async (candidate) => {
@@ -213,13 +245,29 @@ function EasyLocatePanel({ point, onReload, onNotice, onError }) {
             <button type="button" aria-label="Close Easy Locate search" onClick={() => setSearchOpen(false)}>×</button>
           </div>
           <form className="easy-locate-search-form" onSubmit={search}>
-            <div className="easy-locate-search-input"><Icon name="search" size={16}/><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search business name, service or area…"/></div>
+            <div className="easy-locate-search-input">
+              <Icon name="search" size={16}/>
+              <input
+                autoFocus
+                autoComplete="off"
+                name="easy-locate-business-search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Start typing a business name, service or area…"
+                aria-autocomplete="list"
+                aria-controls="easy-locate-business-results"
+              />
+              {query ? <button className="easy-locate-search-clear" type="button" aria-label="Clear Easy Locate search" onClick={() => setQuery('')}>×</button> : null}
+            </div>
             <button type="submit" className="button dark" disabled={query.trim().length < 2 || searchState === 'searching'}>{searchState === 'searching' ? 'Searching…' : 'Search'}</button>
           </form>
-          <div className="easy-locate-results">
+          <div className="easy-locate-autocomplete-note">
+            {query.trim().length < 2 ? 'Type at least 2 characters. Results update automatically.' : searchState === 'searching' ? 'Filtering Easy Locate businesses…' : `${results.length} match${results.length === 1 ? '' : 'es'} shown`}
+          </div>
+          <div className="easy-locate-results" id="easy-locate-business-results" role="listbox">
             {searchState === 'ready' && results.length === 0 ? <div className="easy-locate-empty">No public Easy Locate businesses matched that search.</div> : null}
             {results.map((candidate) => (
-              <article key={`${candidate.id}-${candidate.slug}`} className="easy-locate-result-card">
+              <article key={`${candidate.id}-${candidate.slug}`} className="easy-locate-result-card" role="option" aria-label={candidate.name}>
                 <div>
                   <span className="eyebrow">{businessCategories(candidate)}</span>
                   <strong>{candidate.name}</strong>

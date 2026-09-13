@@ -12,21 +12,62 @@ function optionLabel(product, fieldId, value) {
   return field.options?.find((item) => item.id === value)?.label || value
 }
 
-function ReviewRows({ product, config, fulfilment, file, selectedPoint }) {
+function pointArea(point) {
+  const business = point?.easyLocateLink?.business || {}
+  const address = point?.address || {}
+  return [business.locationArea || address.area || address.city, business.locationExtension || address.line1].filter(Boolean).join(' · ')
+}
+
+function pointCategory(point) {
+  const categories = point?.easyLocateLink?.business?.categories
+  return Array.isArray(categories) && categories.length ? categories.slice(0, 2).join(' · ') : null
+}
+
+function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0 }) {
   const rows = product.fields
     .filter((field) => field.type !== 'file')
     .map((field) => ({ label: field.shortLabel || field.label, value: optionLabel(product, field.id, config[field.id]) }))
 
-  const fulfilmentLabel = fulfilment === 'quick-point'
-    ? selectedPoint?.name || 'Quick Point'
-    : fulfilmentOptions.find((item) => item.id === fulfilment)?.label
+  const fulfilmentLabel = fulfilment === 'delivery'
+    ? 'Delivery'
+    : selectedPoint?.name || fulfilmentOptions.find((item) => item.id === fulfilment)?.label
 
   return (
     <div className="review-list">
       {rows.map((row) => <div key={row.label}><span>{row.label}</span><strong>{row.value}</strong></div>)}
       <div><span>File</span><strong>{file?.name || 'No file selected yet'}</strong></div>
-      <div><span>Collection</span><strong>{fulfilmentLabel}</strong></div>
+      <div><span>{fulfilment === 'delivery' ? 'Fulfilment' : 'Collection point'}</span><strong>{fulfilmentLabel}</strong></div>
+      {selectedPoint && pointArea(selectedPoint) ? <div><span>Area</span><strong>{pointArea(selectedPoint)}</strong></div> : null}
+      {selectedPoint ? <div><span>Collection fee</span><strong>{fulfilmentFee > 0 ? formatMoney(fulfilmentFee) : 'Free'}</strong></div> : null}
     </div>
+  )
+}
+
+function CollectionPointCard({ point, selected, onSelect, typeLabel }) {
+  const business = point?.easyLocateLink?.business || null
+  const verified = point?.easyLocateLink?.status === 'verified'
+  const area = pointArea(point)
+  const category = pointCategory(point)
+  const fee = Number(point?.feeAmount || 0)
+  const listingUrl = point?.easyLocateLink?.canonicalUrl || ''
+
+  return (
+    <article className={`collection-point-card ${selected ? 'selected' : ''}`}>
+      <button type="button" className="collection-point-choice" onClick={onSelect}>
+        <span className="collection-point-marker"><Icon name={point.kind === 'cafe' ? 'store' : 'pin'} size={20}/></span>
+        <span className="collection-point-copy">
+          <span className="collection-point-kicker">{verified ? 'Easy Locate verified' : typeLabel}</span>
+          <strong>{point.name}</strong>
+          <small>{[area, category].filter(Boolean).join(' · ') || typeLabel}</small>
+          <span className="collection-point-meta">
+            <span>{fee > 0 ? `+ ${formatMoney(fee)} collection` : 'Free collection'}</span>
+            {verified ? <span>Verified local business</span> : null}
+          </span>
+        </span>
+        <span className="radio-dot"/>
+      </button>
+      {listingUrl ? <a className="collection-point-link" href={listingUrl} target="_blank" rel="noreferrer">View on Easy Locate <Icon name="external" size={14}/></a> : null}
+    </article>
   )
 }
 
@@ -82,6 +123,17 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
   const cafePoints = fulfilmentPoints.filter((point) => point.kind === 'cafe' && point.collectionEnabled !== false)
   const quickPoints = fulfilmentPoints.filter((point) => point.kind === 'quick_point' && point.collectionEnabled !== false)
   const selectedPoint = fulfilmentPoints.find((point) => point.id === selectedPointId)
+  const selectedFulfilmentFee = fulfilment === 'delivery' ? 0 : Number(selectedPoint?.feeAmount || 0)
+  const estimatedOrderTotal = Number(result.total || 0) + selectedFulfilmentFee
+
+  useEffect(() => {
+    if (fulfilment === 'cafe' && cafePoints.length && !cafePoints.some((point) => point.id === selectedPointId)) {
+      setSelectedPointId(cafePoints[0].id)
+    }
+    if (fulfilment === 'quick-point' && quickPoints.length && !quickPoints.some((point) => point.id === selectedPointId)) {
+      setSelectedPointId(quickPoints[0].id)
+    }
+  }, [fulfilment, fulfilmentPoints, selectedPointId])
 
   const chooseFulfilment = (id) => {
     if (id === 'quick-point' && quickPoints.length === 0) return
@@ -141,7 +193,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
         configuration: {
           ...config,
           fileName: file?.name || null,
-          clientEstimate: result.total
+          clientEstimate: estimatedOrderTotal
         },
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
@@ -182,7 +234,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
   }
 
   if (complete) {
-    const total = Number(orderResponse?.totalAmount ?? result.total)
+    const total = Number(orderResponse?.totalAmount ?? estimatedOrderTotal)
     const orderNumber = orderResponse?.orderNumber || 'Order created'
     const whatsappText = encodeURIComponent(`Hi Quick Solution, my order is ${orderNumber}. I need help with the file or next step.`)
 
@@ -287,18 +339,44 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
               })}
             </div>
 
+            {fulfilment === 'cafe' && cafePoints.length > 0 && (
+              <div className="collection-point-picker">
+                <div className="collection-point-picker-head">
+                  <div><span className="eyebrow">Collect from Quick Solution</span><strong>Choose the café or branch.</strong></div>
+                  <small>{cafePoints.length} location{cafePoints.length === 1 ? '' : 's'} available</small>
+                </div>
+                <div className="collection-point-grid">
+                  {cafePoints.map((point) => (
+                    <CollectionPointCard
+                      key={point.id}
+                      point={point}
+                      selected={selectedPointId === point.id}
+                      onSelect={() => setSelectedPointId(point.id)}
+                      typeLabel="Quick Solution café"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {fulfilment === 'quick-point' && quickPoints.length > 0 && (
-              <label className="checkout-field">
-                <span>Choose your Quick Point</span>
-                <select value={selectedPointId} onChange={(event) => setSelectedPointId(event.target.value)}>
-                  {quickPoints.map((point) => {
-                    const area = point.address?.area || point.address?.city || ''
-                    const fee = Number(point.feeAmount || 0)
-                    const detail = [area, fee > 0 ? `+ ${formatMoney(fee)}` : null].filter(Boolean).join(' · ')
-                    return <option key={point.id} value={point.id}>{point.name}{detail ? ` · ${detail}` : ''}</option>
-                  })}
-                </select>
-              </label>
+              <div className="collection-point-picker">
+                <div className="collection-point-picker-head">
+                  <div><span className="eyebrow">Nearby Quick Points</span><strong>Choose the local business that suits you.</strong></div>
+                  <small>Business identity powered by Easy Locate</small>
+                </div>
+                <div className="collection-point-grid">
+                  {quickPoints.map((point) => (
+                    <CollectionPointCard
+                      key={point.id}
+                      point={point}
+                      selected={selectedPointId === point.id}
+                      onSelect={() => setSelectedPointId(point.id)}
+                      typeLabel="Quick Point"
+                    />
+                  ))}
+                </div>
+              </div>
             )}
 
             {fulfilment === 'delivery' && (
@@ -313,7 +391,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
 
         {step.type === 'review' && (
           <>
-            <ReviewRows product={product} config={config} fulfilment={fulfilment} file={file} selectedPoint={selectedPoint}/>
+            <ReviewRows product={product} config={config} fulfilment={fulfilment} file={file} selectedPoint={selectedPoint} fulfilmentFee={selectedFulfilmentFee}/>
             <div className="guest-note"><Icon name="user" size={19}/><span><strong>No account required for a quick order.</strong> We only need a name and one reliable way to contact you.</span></div>
 
             <div className="checkout-contact">
@@ -352,7 +430,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
             <button className="button primary-green" type="button" onClick={() => setStepIndex((value) => value + 1)}>Continue <Icon name="arrowRight" size={17}/></button>
           ) : (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-              {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : `Create order · ${formatMoney(result.total)}`}
+              {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : `Create order · ${formatMoney(estimatedOrderTotal)}`}
               {submitState !== 'submitting' && submitState !== 'uploading' && <Icon name="arrowRight" size={17}/>}
             </button>
           )}
@@ -361,12 +439,14 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
 
       <aside className="guided-summary" aria-live="polite">
         <span className="eyebrow inverse">Estimated total</span>
-        <div className="guided-price">{formatMoney(result.total)}</div>
+        <div className="guided-price">{formatMoney(estimatedOrderTotal)}</div>
         <p>{result.summary}</p>
         <div className="price-lines compact-lines">
           {result.lines.map((line, index) => (
             <div key={`${line.label}-${index}`}><span>{line.label}</span><strong>{line.text ?? formatMoney(line.value)}</strong></div>
           ))}
+          {fulfilment !== 'delivery' && selectedPoint ? <div><span>{selectedPoint.name} collection</span><strong>{selectedFulfilmentFee > 0 ? formatMoney(selectedFulfilmentFee) : 'Free'}</strong></div> : null}
+          {fulfilment === 'delivery' ? <div><span>Delivery</span><strong>Confirmed before payment</strong></div> : null}
         </div>
         <div className="summary-confidence"><span className="brand-dot green"/><span>The backend recalculates the price before saving the order, so the browser cannot invent its own total.</span></div>
         <a className="help-link" href="https://wa.me/27754534646" target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
