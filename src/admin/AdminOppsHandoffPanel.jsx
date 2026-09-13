@@ -312,7 +312,7 @@ export default function AdminOppsHandoffPanel() {
               </div>
 
               <div className="handoff-message-grid">
-                <MessageList title="Needs attention" icon="xCircle" tone={blockerItems.length ? 'bad' : 'good'} items={blockerItems} emptyLabel="No blocking issues found." />
+                <MessageList title={blockerItems.length ? "Needs attention" : "Job checks"} icon={blockerItems.length ? "xCircle" : "checkCircle"} tone={blockerItems.length ? 'bad' : 'good'} items={blockerItems} emptyLabel="No blocking issues found." />
                 <MessageList title="Staff notes" icon="alertCircle" tone={warningItems.length ? 'warn' : 'neutral'} items={warningItems} emptyLabel="No extra warnings right now." />
               </div>
 

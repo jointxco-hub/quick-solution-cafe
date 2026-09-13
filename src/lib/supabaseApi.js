@@ -256,3 +256,34 @@ export async function sendQuickSolutionOrderToOpps(serviceOrderId) {
 export function buildOppsAppUrl(orderId = '') {
   return orderId ? `${OPPS_APP_URL}?orderId=${encodeURIComponent(orderId)}` : OPPS_APP_URL
 }
+
+
+export async function loadQuickSolutionAdminFulfilmentPoints() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('admin_get_quick_solution_fulfilment_points', { p_tenant_slug: TENANT_SLUG }, { accessToken })
+}
+
+export async function saveQuickSolutionFulfilmentPoint(point) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('admin_upsert_quick_solution_fulfilment_point', {
+    p_tenant_slug: TENANT_SLUG,
+    p_point_id: point?.id || null,
+    p_payload: {
+      name: point?.name || '',
+      kind: point?.kind || 'quick_point',
+      status: point?.status || 'active',
+      address: point?.address || {},
+      contactPhone: point?.contactPhone || null,
+      contactEmail: point?.contactEmail || null,
+      easyLocateBusinessRef: point?.easyLocateBusinessRef || null,
+      latitude: point?.latitude === '' || point?.latitude == null ? null : Number(point.latitude),
+      longitude: point?.longitude === '' || point?.longitude == null ? null : Number(point.longitude),
+      collectionEnabled: point?.collectionEnabled !== false,
+      dropoffEnabled: Boolean(point?.dropoffEnabled),
+      services: Array.isArray(point?.services) ? point.services : [],
+      feeAmount: Math.max(0, Number(point?.feeAmount || 0)),
+      openingHours: point?.openingHours || {},
+      sortOrder: Number(point?.sortOrder || 100)
+    }
+  }, { accessToken })
+}

@@ -291,7 +291,12 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
               <label className="checkout-field">
                 <span>Choose your Quick Point</span>
                 <select value={selectedPointId} onChange={(event) => setSelectedPointId(event.target.value)}>
-                  {quickPoints.map((point) => <option key={point.id} value={point.id}>{point.name}</option>)}
+                  {quickPoints.map((point) => {
+                    const area = point.address?.area || point.address?.city || ''
+                    const fee = Number(point.feeAmount || 0)
+                    const detail = [area, fee > 0 ? `+ ${formatMoney(fee)}` : null].filter(Boolean).join(' · ')
+                    return <option key={point.id} value={point.id}>{point.name}{detail ? ` · ${detail}` : ''}</option>
+                  })}
                 </select>
               </label>
             )}

@@ -109,7 +109,7 @@ export default function App() {
   }
 
   if (view === 'admin') {
-    return <AdminProductManager initialProducts={catalog} defaultProducts={defaultProducts} onCatalogChange={setCatalog}/>
+    return <AdminProductManager initialProducts={catalog} defaultProducts={defaultProducts} onCatalogChange={setCatalog} onFulfilmentPointsChange={setFulfilmentPoints}/>
   }
 
   return (
@@ -264,8 +264,11 @@ export default function App() {
               { id: 'demo-point', name: 'Partner Quick Point', kind: 'quick_point', services: ['Print + apparel collection'], demo: true }
             ]).slice(0, 3).map((point) => (
               <div className="location-row" key={point.id}>
-                <div><strong>{point.name}</strong><span>{Array.isArray(point.services) ? point.services.slice(0, 2).join(' · ') : 'Collection point'}</span></div>
-                <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Location 001' : 'Quick Point'}</span>
+                <div>
+                  <strong>{point.name}</strong>
+                  <span>{[point.address?.area || point.address?.city, Array.isArray(point.services) ? point.services.slice(0, 2).join(' · ') : 'Collection point'].filter(Boolean).join(' · ')}</span>
+                </div>
+                <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Location 001' : point.easyLocateBusinessRef ? 'Quick Point · Easy Locate' : 'Quick Point'}</span>
               </div>
             ))}
           </div>

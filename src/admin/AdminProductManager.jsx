@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import AdminOppsHandoffPanel from './AdminOppsHandoffPanel.jsx'
+import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'
 import { cloneCatalog, exportCatalog } from '../lib/catalogStore.js'
 import {
   getAdminSession,
@@ -114,7 +115,7 @@ function AdminSectionTabs({ activeSection, onChange }) {
   const tabs = [
     { id: 'orders', label: 'Orders' },
     { id: 'products', label: 'Products' },
-    { id: 'quick-points', label: 'Quick Points', disabled: true, badge: 'Soon' },
+    { id: 'quick-points', label: 'Quick Points' },
     { id: 'settings', label: 'Settings', disabled: true, badge: 'Soon' }
   ]
 
@@ -137,7 +138,7 @@ function AdminSectionTabs({ activeSection, onChange }) {
   )
 }
 
-export default function AdminProductManager({ initialProducts, onCatalogChange }) {
+export default function AdminProductManager({ initialProducts, onCatalogChange, onFulfilmentPointsChange }) {
   const [session, setSession] = useState(() => getAdminSession())
   const [draft, setDraft] = useState(() => cloneCatalog(initialProducts))
   const [selectedId, setSelectedId] = useState(initialProducts[0]?.id)
@@ -252,7 +253,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange }
       <header className="admin-header">
         <a className="brand" href="#top"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
         <div className="admin-header-actions">
-          {activeSection === 'products' ? <span>{activeCount} live products</span> : <span>Location 001</span>}
+          {activeSection === 'products' ? <span>{activeCount} live products</span> : activeSection === 'quick-points' ? <span>Fulfilment network</span> : <span>Location 001</span>}
           <span className="admin-live-badge"><i/> XOS Staging</span>
           <a className="button ghost" href="#top">View storefront</a>
           {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
@@ -264,10 +265,12 @@ export default function AdminProductManager({ initialProducts, onCatalogChange }
         <section className="admin-intro compact-admin-intro">
           <div>
             <span className="eyebrow">Quick Solution Admin · Location 001</span>
-            <h1>{activeSection === 'orders' ? 'Orders first.' : 'Product & pricing control.'}</h1>
+            <h1>{activeSection === 'orders' ? 'Orders first.' : activeSection === 'quick-points' ? 'Local fulfilment, one source.' : 'Product & pricing control.'}</h1>
             <p>{activeSection === 'orders'
               ? 'Review customer jobs, catch missing information and hand clean orders into OPPS without mixing them into X LAB.'
-              : 'Update customer-facing product details and pricing. Existing orders keep the pricing snapshot they were created with.'}</p>
+              : activeSection === 'quick-points'
+                ? 'Control the café and trusted collection points customers can use. Active locations flow straight into storefront ordering.'
+                : 'Update customer-facing product details and pricing. Existing orders keep the pricing snapshot they were created with.'}</p>
           </div>
           {activeSection === 'products' ? (
             <div className="admin-intro-actions">
@@ -280,6 +283,8 @@ export default function AdminProductManager({ initialProducts, onCatalogChange }
         <AdminSectionTabs activeSection={activeSection} onChange={setActiveSection}/>
 
         {activeSection === 'orders' ? <AdminOppsHandoffPanel /> : null}
+
+        {activeSection === 'quick-points' ? <AdminQuickPointsPanel onPointsChange={onFulfilmentPointsChange} /> : null}
 
         {activeSection === 'products' ? (
           <>
