@@ -5,6 +5,7 @@ import ProductCard from './components/ProductCard.jsx'
 import ProductConfigurator from './components/ProductConfigurator.jsx'
 import GuidedOrder from './components/GuidedOrder.jsx'
 import PaymentReturn from './components/PaymentReturn.jsx'
+import TrackOrder from './components/TrackOrder.jsx'
 import QuickTaskCard from './components/QuickTaskCard.jsx'
 import SubtleStoryRail from './components/SubtleStoryRail.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
@@ -107,6 +108,10 @@ export default function App() {
     if (!product) return
     if (product.channels?.guided !== false && product.guidedJourneyId) openGuided(product, product.guidedJourneyId)
     else openAdvanced(product)
+  }
+
+  if (window.location.pathname === '/track') {
+    return <TrackOrder/>
   }
 
   const paymentMode = new URLSearchParams(window.location.search).get('qs_payment')

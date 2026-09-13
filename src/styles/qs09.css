@@ -1,0 +1,512 @@
+/* QS-09 — customer order tracking */
+
+.qs-track-page {
+  min-height: 100vh;
+  background: #f3f3ef;
+}
+
+.qs-track-shell {
+  width: min(980px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 64px 0 100px;
+}
+
+.qs-track-intro {
+  max-width: 720px;
+  margin-bottom: 28px;
+}
+
+.qs-track-intro h1 {
+  margin: 10px 0 14px;
+  font-size: clamp(2.6rem, 7vw, 5rem);
+  line-height: .94;
+  letter-spacing: -.065em;
+}
+
+.qs-track-intro p {
+  max-width: 650px;
+  color: #66665f;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+
+.qs-track-search-card,
+.qs-track-status-card,
+.qs-track-card {
+  background: rgba(255,255,255,.96);
+  border: 1px solid #deded8;
+  border-radius: 24px;
+}
+
+.qs-track-search-card {
+  max-width: 720px;
+  padding: clamp(22px, 5vw, 34px);
+}
+
+.qs-track-search-heading {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.qs-track-search-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(0,139,114,.08);
+  color: #008B72;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.qs-track-search-heading h2 {
+  margin: 3px 0 0;
+  font-size: 1.45rem;
+  letter-spacing: -.035em;
+}
+
+.qs-track-search-card form {
+  display: grid;
+  gap: 13px;
+}
+
+.qs-track-search-card label {
+  display: grid;
+  gap: 6px;
+}
+
+.qs-track-search-card label > span {
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.qs-track-search-card input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #d9d9d2;
+  border-radius: 13px;
+  padding: 0 14px;
+  font: inherit;
+  background: #fbfbf8;
+}
+
+.qs-track-search-card input:focus {
+  outline: 2px solid rgba(0,139,114,.16);
+  border-color: #008B72;
+}
+
+.qs-track-search-card .button {
+  width: fit-content;
+}
+
+.qs-track-error {
+  margin-top: 14px;
+  padding: 12px 13px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border-radius: 12px;
+  background: #fff1eb;
+  color: #8d2f13;
+  font-size: .83rem;
+  font-weight: 700;
+}
+
+.qs-track-privacy,
+.qs-track-trust {
+  display: block;
+  margin-top: 18px;
+  color: #777770;
+  line-height: 1.5;
+}
+
+.qs-track-result {
+  display: grid;
+  gap: 16px;
+}
+
+.qs-track-status-card {
+  padding: clamp(22px, 5vw, 34px);
+}
+
+.qs-track-status-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.qs-track-status-top h2 {
+  margin: 6px 0 8px;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  letter-spacing: -.055em;
+  line-height: 1;
+}
+
+.qs-track-status-top p {
+  margin: 0;
+  color: #66665f;
+  max-width: 620px;
+  line-height: 1.55;
+}
+
+.qs-track-status-pill {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #eeeeea;
+  font-size: .72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.qs-track-status-pill.good {
+  background: rgba(0,139,114,.10);
+  color: #176453;
+}
+
+.qs-track-status-pill.bad {
+  background: #fff0e9;
+  color: #963312;
+}
+
+.qs-track-status-pill.purple {
+  background: rgba(215,191,255,.24);
+  color: #5b4184;
+}
+
+.qs-track-progress {
+  position: relative;
+  margin-top: 34px;
+  padding: 0 8px;
+}
+
+.qs-track-progress-line {
+  position: absolute;
+  top: 15px;
+  left: 30px;
+  right: 30px;
+  height: 2px;
+  background: #e6e6e0;
+}
+
+.qs-track-progress-line > span {
+  display: block;
+  height: 100%;
+  background: #008B72;
+  transition: width .35s ease;
+}
+
+.qs-track-progress-steps {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.qs-track-step {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 8px;
+  color: #8a8a82;
+}
+
+.qs-track-step-dot {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #eeeeea;
+  border: 3px solid #fff;
+  font-size: .72rem;
+  font-weight: 800;
+  z-index: 1;
+}
+
+.qs-track-step.reached {
+  color: #171715;
+}
+
+.qs-track-step.reached .qs-track-step-dot {
+  color: #fff;
+  background: #008B72;
+}
+
+.qs-track-step.current .qs-track-step-dot {
+  box-shadow: 0 0 0 5px rgba(0,139,114,.11);
+}
+
+.qs-track-step strong {
+  font-size: .72rem;
+}
+
+.qs-track-updated {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid #e6e6e0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: .76rem;
+}
+
+.qs-track-updated > span {
+  color: #777770;
+}
+
+.qs-track-updated button {
+  margin-left: auto;
+  border: 1px solid #d9d9d2;
+  background: #fff;
+  border-radius: 999px;
+  min-height: 34px;
+  padding: 0 12px;
+  font: inherit;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.qs-track-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.qs-track-card {
+  padding: 20px;
+}
+
+.qs-track-card-title {
+  margin-top: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.qs-track-card-title strong {
+  font-size: 1.15rem;
+}
+
+.qs-track-card-title > span {
+  font-weight: 800;
+}
+
+.qs-track-card p,
+.qs-track-card small {
+  color: #6a6a63;
+  line-height: 1.5;
+}
+
+.qs-track-card p {
+  margin: 8px 0 0;
+}
+
+.qs-track-card small {
+  display: block;
+  margin-top: 7px;
+}
+
+.qs-track-card a {
+  margin-top: 10px;
+  color: #008B72;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.qs-track-items-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.qs-track-card-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: end;
+  padding: 20px;
+  border-bottom: 1px solid #e6e6e0;
+}
+
+.qs-track-card-heading h3 {
+  margin: 4px 0 0;
+  font-size: 1.3rem;
+}
+
+.qs-track-card-heading > span {
+  color: #777770;
+  font-size: .75rem;
+}
+
+.qs-track-items > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 20px;
+  align-items: center;
+}
+
+.qs-track-items > div + div {
+  border-top: 1px solid #efefe9;
+}
+
+.qs-track-items > div > div {
+  display: grid;
+  gap: 4px;
+}
+
+.qs-track-items small {
+  color: #777770;
+}
+
+.qs-track-items > div > span {
+  font-weight: 800;
+}
+
+.qs-track-update-card,
+.qs-track-team-message,
+.qs-track-attention {
+  border-radius: 20px;
+  padding: 18px 20px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.qs-track-update-card {
+  background: rgba(0,139,114,.07);
+  border: 1px solid rgba(0,139,114,.16);
+}
+
+.qs-track-update-card.delivery {
+  background: rgba(215,191,255,.12);
+  border-color: rgba(118,80,175,.14);
+}
+
+.qs-track-update-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,.82);
+  color: #008B72;
+  flex: 0 0 auto;
+}
+
+.qs-track-update-card > div:last-child {
+  display: grid;
+  gap: 4px;
+}
+
+.qs-track-update-card p {
+  margin: 5px 0 0;
+  color: #53534d;
+  line-height: 1.5;
+}
+
+.qs-track-update-card small {
+  color: #72726a;
+}
+
+.qs-track-team-message {
+  background: #fff;
+  border: 1px solid #deded8;
+}
+
+.qs-track-team-message > svg {
+  color: #008B72;
+  flex: 0 0 auto;
+}
+
+.qs-track-team-message span {
+  font-weight: 800;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.qs-track-team-message p {
+  margin: 5px 0 0;
+  color: #5d5d57;
+  line-height: 1.55;
+}
+
+.qs-track-attention {
+  background: #fff6e8;
+  border: 1px solid #efddb7;
+  color: #774c04;
+}
+
+.qs-track-attention p {
+  margin: 5px 0 0;
+}
+
+.qs-track-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.qs-track-trust {
+  margin-top: 0;
+}
+
+.handoff-preview-actions .qs-track-copy-button {
+  background: #fff;
+  color: #171715;
+}
+
+@media (max-width: 720px) {
+  .qs-track-shell {
+    width: min(100% - 22px, 980px);
+    padding-top: 36px;
+  }
+
+  .qs-track-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .qs-track-status-top {
+    display: grid;
+  }
+
+  .qs-track-status-pill {
+    width: fit-content;
+  }
+
+  .qs-track-progress {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .qs-track-progress-line {
+    left: 16px;
+    right: 16px;
+  }
+
+  .qs-track-step strong {
+    font-size: .65rem;
+  }
+
+  .qs-track-updated {
+    flex-wrap: wrap;
+  }
+
+  .qs-track-updated button {
+    margin-left: 0;
+  }
+
+  .qs-track-actions {
+    display: grid;
+  }
+}

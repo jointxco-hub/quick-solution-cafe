@@ -1,0 +1,18 @@
+-- QS-09 secure customer tracking.
+-- Applied to XOS Staging as 20260913202423_qs_09_secure_customer_tracking.
+--
+-- Canonical live objects created/replaced by this migration:
+--   commerce.service_order_tracking_tokens
+--   commerce.qs_issue_tracking_token(uuid)
+--   public.get_quick_solution_tracking(text,text,text)
+--   public.create_quick_solution_order(...)  -- now returns trackingToken + expiry
+--
+-- Security invariants:
+--   * raw tracking token is never stored
+--   * SHA-256 token hashes only
+--   * 180-day expiry
+--   * public tracking returns null for wrong token/contact/order
+--   * customer-safe projection only; no private files/internal notes/finance internals
+--
+-- This repo records the migration boundary while XOS Staging remains the source of the applied
+-- canonical function bodies. See QS-09-SETUP.md for acceptance behavior.

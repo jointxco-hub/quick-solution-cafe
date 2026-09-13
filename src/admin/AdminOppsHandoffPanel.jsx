@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import {
+  adminIssueQuickSolutionTrackingToken,
   buildOppsAppUrl,
   loadQuickSolutionOppsHandoffs,
   previewQuickSolutionOppsHandoff,
@@ -113,6 +114,7 @@ export default function AdminOppsHandoffPanel() {
   const [loadState, setLoadState] = useState('loading')
   const [previewingId, setPreviewingId] = useState('')
   const [sendingId, setSendingId] = useState('')
+  const [issuingTrackingId, setIssuingTrackingId] = useState('')
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
   const autoPreviewed = useRef(new Set())
@@ -238,6 +240,31 @@ export default function AdminOppsHandoffPanel() {
     }
   }
 
+  const copyCustomerTrackingLink = async () => {
+    if (!selected?.serviceOrderId) return
+    setIssuingTrackingId(selected.serviceOrderId)
+    setError('')
+    try {
+      const result = await adminIssueQuickSolutionTrackingToken(selected.serviceOrderId)
+      if (!result?.trackingToken || !result?.orderNumber) throw new Error('Tracking link could not be created.')
+      const params = new URLSearchParams({
+        order: result.orderNumber,
+        token: result.trackingToken
+      })
+      const link = `${window.location.origin}/track?${params.toString()}`
+      if (navigator?.clipboard) {
+        await navigator.clipboard.writeText(link)
+        setNotice('Customer tracking link copied.')
+      } else {
+        window.prompt('Copy customer tracking link', link)
+      }
+    } catch (nextError) {
+      setError(nextError?.message || 'Could not create the customer tracking link.')
+    } finally {
+      setIssuingTrackingId('')
+    }
+  }
+
   const copyOppsId = async () => {
     if (!selected?.oppsOrderId || !navigator?.clipboard) return
     try {
@@ -276,7 +303,7 @@ export default function AdminOppsHandoffPanel() {
       <div className="handoff-layout">
         <aside className="handoff-queue">
           <div className="handoff-queue-title"><strong>Customer orders</strong><small>{queue.length} visible</small></div>
-          {loadState === 'loading' ? <div className="handoff-empty">Loading ordersâ€¦</div> : null}
+          {loadState === 'loading' ? <div className="handoff-empty">Loading orders…</div> : null}
           {loadState !== 'loading' && queue.length === 0 ? <div className="handoff-empty">No Quick Solution orders are available yet.</div> : null}
           <div className="handoff-list">
             {queue.map((item) => (
@@ -320,9 +347,10 @@ export default function AdminOppsHandoffPanel() {
                   <p>{selected.customerName} · {money(selected.totalAmount)} · submitted {dateTime(selected.submittedAt)}</p>
                 </div>
                 <div className="handoff-preview-actions">
-                  <button type="button" onClick={() => refreshPreview(selected.serviceOrderId)} disabled={previewingId === selected.serviceOrderId || selected.handoffStatus === 'sent'}><Icon name="refresh" size={16}/> {previewingId === selected.serviceOrderId ? 'Checkingâ€¦' : selected.handoffStatus === 'sent' ? 'Checks saved' : 'Re-check order'}</button>
+                  <button type="button" className="qs-track-copy-button" onClick={copyCustomerTrackingLink} disabled={issuingTrackingId === selected.serviceOrderId}><Icon name="copy" size={16}/> {issuingTrackingId === selected.serviceOrderId ? 'Creating…' : 'Copy tracking link'}</button>
+                  <button type="button" onClick={() => refreshPreview(selected.serviceOrderId)} disabled={previewingId === selected.serviceOrderId || selected.handoffStatus === 'sent'}><Icon name="refresh" size={16}/> {previewingId === selected.serviceOrderId ? 'Checking…' : selected.handoffStatus === 'sent' ? 'Checks saved' : 'Re-check order'}</button>
                   <button type="button" className="button dark" onClick={sendSelected} disabled={sendingId === selected.serviceOrderId || !canSend}>
-                    <Icon name="send" size={16}/> {selected.handoffStatus === 'sent' ? 'Sent to OPPS' : sendingId === selected.serviceOrderId ? 'Sendingâ€¦' : blockerItems.length ? 'Fix issues first' : 'Send to OPPS'}
+                    <Icon name="send" size={16}/> {selected.handoffStatus === 'sent' ? 'Sent to OPPS' : sendingId === selected.serviceOrderId ? 'Sending…' : blockerItems.length ? 'Fix issues first' : 'Send to OPPS'}
                   </button>
                 </div>
               </div>
@@ -336,7 +364,7 @@ export default function AdminOppsHandoffPanel() {
 
               <div className="handoff-detail-grid">
                 <DetailRow label="Order state" value={SERVICE_STATUS_LABELS[selected.serviceStatus] || selected.serviceStatus} />
-                <DetailRow label="Last checked" value={selected.lastPreviewedAt ? dateTime(selected.lastPreviewedAt) : previewingId === selected.serviceOrderId ? 'Checking nowâ€¦' : 'Checking automaticallyâ€¦'} />
+                <DetailRow label="Last checked" value={selected.lastPreviewedAt ? dateTime(selected.lastPreviewedAt) : previewingId === selected.serviceOrderId ? 'Checking now…' : 'Checking automatically…'} />
                 <DetailRow label="OPPS link" value={selected.oppsOrderId ? 'Created and linked' : 'Not created yet'} />
                 <DetailRow label="Operational handoff" value={HANDOFF_LABELS[selected.handoffStatus] || selected.handoffStatus} />
               </div>
@@ -384,7 +412,7 @@ export default function AdminOppsHandoffPanel() {
                       </div>
                     </>
                   ) : (
-                    <div className="handoff-empty small">{previewingId === selected.serviceOrderId ? 'Checking the order nowâ€¦' : 'The order preview will load automatically.'}</div>
+                    <div className="handoff-empty small">{previewingId === selected.serviceOrderId ? 'Checking the order now…' : 'The order preview will load automatically.'}</div>
                   )}
                 </div>
 

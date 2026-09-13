@@ -6,6 +6,7 @@ import {
   clearQuickSolutionPaymentSession,
   readQuickSolutionPaymentSession
 } from '../lib/paymentSession.js'
+import { buildQuickSolutionTrackingHref, readQuickSolutionTrackingSession } from '../lib/trackingSession.js'
 
 function money(value) {
   return new Intl.NumberFormat('en-ZA', {
@@ -20,6 +21,7 @@ export default function PaymentReturn() {
   const orderId = params.get('order') || ''
   const mode = params.get('qs_payment') || 'return'
   const session = useMemo(() => readQuickSolutionPaymentSession(orderId), [orderId])
+  const trackingSession = useMemo(() => readQuickSolutionTrackingSession(orderId), [orderId])
 
   const [state, setState] = useState(mode === 'cancel' ? 'cancelled' : 'checking')
   const [status, setStatus] = useState(null)
@@ -84,19 +86,22 @@ export default function PaymentReturn() {
 
   const orderNumber = session?.orderNumber || status?.orderNumber || 'Your Quick Solution order'
   const amount = session?.amount || status?.amount || 0
+  const trackingHref = trackingSession?.trackingToken
+    ? buildQuickSolutionTrackingHref(trackingSession.orderNumber || orderNumber, trackingSession.trackingToken)
+    : '/track'
 
   const content = {
     paid: {
       eyebrow: 'Payment confirmed',
       title: 'You’re paid up.',
       copy: 'PayFast confirmed the payment and Quick Solution has updated this order.',
-      icon: 'check'
+      icon: 'checkCircle'
     },
     cancelled: {
       eyebrow: 'Payment not completed',
       title: 'Your order is still saved.',
       copy: 'No problem. The order remains in Quick Solution and you can pay again when you are ready.',
-      icon: 'close'
+      icon: 'xCircle'
     },
     pending: {
       eyebrow: 'Confirming payment',
@@ -158,6 +163,7 @@ export default function PaymentReturn() {
                 Check payment again
               </button>
             )}
+            <a className="button primary-green" href={trackingHref}><Icon name="search" size={16}/> Track this order</a>
             <a className="button ghost" href="/">Back to Quick Solution</a>
             <a className="button ghost" href="https://wa.me/27754534646" target="_blank" rel="noreferrer">
               Need help? WhatsApp us

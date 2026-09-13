@@ -1,0 +1,10 @@
+-- QS-09 staff tracking links.
+-- Applied to XOS Staging as 20260913202552_qs_09_staff_tracking_links.
+--
+-- Adds:
+--   public.admin_issue_quick_solution_tracking_token(uuid)
+--
+-- Auth:
+--   signed-in app admin OR OPPS staff with access to the Quick Solution tenant.
+-- Returns a fresh tracking token/link payload for the selected service order.
+-- Previous active tracking tokens are not invalidated.

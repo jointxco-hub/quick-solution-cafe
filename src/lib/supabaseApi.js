@@ -354,3 +354,19 @@ export async function getQuickSolutionPaymentStatus(orderId, paymentToken) {
     payment_token: paymentToken
   })
 }
+
+
+export async function getQuickSolutionTracking({ orderNumber, trackingToken = null, contact = null }) {
+  return rpc('get_quick_solution_tracking', {
+    p_order_number: String(orderNumber || '').trim(),
+    p_tracking_token: trackingToken || null,
+    p_contact: contact || null
+  })
+}
+
+export async function adminIssueQuickSolutionTrackingToken(serviceOrderId) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('admin_issue_quick_solution_tracking_token', {
+    p_service_order_id: serviceOrderId
+  }, { accessToken })
+}

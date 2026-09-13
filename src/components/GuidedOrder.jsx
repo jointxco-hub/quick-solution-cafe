@@ -6,6 +6,7 @@ import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pri
 import { fulfilmentOptions } from '../data/products.js'
 import { beginQuickSolutionPayment, createQuickSolutionOrder, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
+import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from '../lib/trackingSession.js'
 
 function optionLabel(product, fieldId, value) {
   const field = product.fields.find((item) => item.id === fieldId)
@@ -216,6 +217,14 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
       })
 
       setOrderResponse(response)
+      if (response?.orderId && response?.orderNumber && response?.trackingToken) {
+        saveQuickSolutionTrackingSession({
+          orderId: response.orderId,
+          orderNumber: response.orderNumber,
+          trackingToken: response.trackingToken,
+          trackingTokenExpiresAt: response.trackingTokenExpiresAt
+        })
+      }
       if (response?.orderId && response?.paymentToken) {
         saveQuickSolutionPaymentSession({
           orderId: response.orderId,
@@ -299,6 +308,9 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
     const confirmationListingUrl = confirmationPoint?.easyLocateLink?.canonicalUrl || ''
     const confirmationPointKind = fulfilment === 'quick-point' ? 'Quick Point collection' : 'Collect from Quick Solution'
     const whatsappText = encodeURIComponent(`Hi Quick Solution, my order is ${orderNumber}. I need help with the file or next step.`)
+    const trackingHref = orderResponse?.trackingToken
+      ? buildQuickSolutionTrackingHref(orderNumber, orderResponse.trackingToken)
+      : '/track'
 
     if (paymentState === 'starting') {
       return <PaymentRedirectLoader orderNumber={orderNumber} amount={total}/>
@@ -405,6 +417,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
             }
           }}>Retry secure upload</button>}
           {file && uploadError && <a className="button ghost" href={`https://wa.me/27754534646?text=${whatsappText}`} target="_blank" rel="noreferrer">Use WhatsApp instead</a>}
+          <a className="button dark" href={trackingHref}><Icon name="search" size={16}/> Track this order</a>
           <button className="button ghost" type="button" onClick={resetOrder}>Start another order</button>
         </div>
       </div>
