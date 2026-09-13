@@ -16,7 +16,15 @@ export default function Icon({ name, size = 20, className = '' }) {
     user: <><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></>,
     shirt: <><path d="m8 4-5 3 3 5 2-1v9h8v-9l2 1 3-5-5-3a4 4 0 0 1-8 0Z"/></>,
     help: <><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.4 2.4 0 1 1 3.8 2c-.9.6-1.6 1.1-1.6 2.5"/><path d="M12 17h.01"/></>,
-    message: <><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></>
+    message: <><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></>,
+    checkCircle: <><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.4 2.4 4.8-5"/></>,
+    alertCircle: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5"/><path d="M12 16h.01"/></>,
+    xCircle: <><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6"/><path d="m15 9-6 6"/></>,
+    refresh: <><path d="M21 2v6h-6"/><path d="M3 22v-6h6"/><path d="M20 8a8.5 8.5 0 0 0-14.5-3L3 8"/><path d="M4 16a8.5 8.5 0 0 0 14.5 3L21 16"/></>,
+    send: <><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></>,
+    external: <><path d="M7 17 17 7"/><path d="M10 7h7v7"/><path d="M17 14v3a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3"/></>,
+    layers: <><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 16 9 5 9-5"/></>,
+    copy: <><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></>
   }
 
   return <svg {...common}>{icons[name] || icons.arrowRight}</svg>

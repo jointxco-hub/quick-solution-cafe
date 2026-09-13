@@ -5,6 +5,7 @@ import ProductCard from './components/ProductCard.jsx'
 import ProductConfigurator from './components/ProductConfigurator.jsx'
 import GuidedOrder from './components/GuidedOrder.jsx'
 import QuickTaskCard from './components/QuickTaskCard.jsx'
+import SubtleStoryRail from './components/SubtleStoryRail.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
 import { categories, guidedJourneys, products as defaultProducts, quickTasks } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
@@ -175,6 +176,8 @@ export default function App() {
         <section className="category-strip" aria-label="Service categories">
           <div className="shell category-scroll">{categories.map((category) => <span key={category}>{category}</span>)}</div>
         </section>
+
+        <SubtleStoryRail />
 
         <section id="start" className="shell section start-section">
           <div className="section-heading accessible-heading">

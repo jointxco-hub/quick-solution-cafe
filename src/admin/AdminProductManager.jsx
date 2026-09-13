@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon.jsx'
+import AdminOppsHandoffPanel from './AdminOppsHandoffPanel.jsx'
 import { cloneCatalog, exportCatalog } from '../lib/catalogStore.js'
 import {
   getAdminSession,
@@ -30,7 +31,7 @@ function PricingEditor({ product, onChange }) {
     <div className="admin-section-block">
       <div className="admin-section-title">
         <div><span className="eyebrow">Pricing rules</span><h3>{product.pricing.strategy}</h3></div>
-        <span className="schema-tag">{product.pricingVersion}</span>
+        <span className="schema-tag">Pricing version · {product.pricingVersion}</span>
       </div>
 
       {Object.entries(product.pricing).filter(([key, value]) => key !== 'strategy' && typeof value === 'number').map(([key, value]) => (
@@ -93,10 +94,10 @@ function AdminSignIn({ onSignedIn }) {
   return (
     <div className="admin-auth-page">
       <div className="admin-auth-card">
-        <a className="brand" href="#top"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Product Admin</small></span></a>
+        <a className="brand" href="#top"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
         <span className="eyebrow">Secure staff access</span>
-        <h1>Product & pricing control.</h1>
-        <p>Use your XOS / OPPS staff account. Customer ordering remains available without an account; catalogue changes are staff-only.</p>
+        <h1>Run orders. Control products.</h1>
+        <p>Use your XOS / OPPS staff account. Customer ordering stays simple; operational controls stay staff-only.</p>
         <form onSubmit={submit} className="admin-auth-form">
           <label className="admin-field"><span>Email</span><input autoComplete="username" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="staff@jointx.co.za"/></label>
           <label className="admin-field"><span>Password</span><input autoComplete="current-password" type="password" required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your XOS password"/></label>
@@ -109,6 +110,33 @@ function AdminSignIn({ onSignedIn }) {
   )
 }
 
+function AdminSectionTabs({ activeSection, onChange }) {
+  const tabs = [
+    { id: 'orders', label: 'Orders' },
+    { id: 'products', label: 'Products' },
+    { id: 'quick-points', label: 'Quick Points', disabled: true, badge: 'Soon' },
+    { id: 'settings', label: 'Settings', disabled: true, badge: 'Soon' }
+  ]
+
+  return (
+    <nav className="admin-section-tabs" aria-label="Quick Solution admin sections">
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          type="button"
+          className={activeSection === tab.id ? 'active' : ''}
+          disabled={tab.disabled}
+          aria-current={activeSection === tab.id ? 'page' : undefined}
+          onClick={() => !tab.disabled && onChange(tab.id)}
+        >
+          <span>{tab.label}</span>
+          {tab.badge ? <small>{tab.badge}</small> : null}
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 export default function AdminProductManager({ initialProducts, onCatalogChange }) {
   const [session, setSession] = useState(() => getAdminSession())
   const [draft, setDraft] = useState(() => cloneCatalog(initialProducts))
@@ -118,6 +146,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange }
   const [saveState, setSaveState] = useState('idle')
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
+  const [activeSection, setActiveSection] = useState('orders')
 
   const activeCount = useMemo(() => draft.filter((item) => item.active !== false).length, [draft])
   const selectedIndex = draft.findIndex((product) => product.id === selectedId)
@@ -142,7 +171,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange }
       setNotice('Live catalogue loaded from XOS Staging.')
       return data
     } catch (nextError) {
-      setError(nextError.message || 'Could not load Product Admin.')
+      setError(nextError.message || 'Could not load Quick Solution Admin.')
       setLoadState('error')
       if (nextError.status === 401) {
         await signOutAdmin()
@@ -215,94 +244,106 @@ export default function AdminProductManager({ initialProducts, onCatalogChange }
   if (!session) return <AdminSignIn onSignedIn={onSignedIn}/>
 
   if (loadState === 'loading' && draft.length === 0) {
-    return <div className="admin-loading"><span className="brand-dot green"/><strong>Loading live Product Admin…</strong></div>
+    return <div className="admin-loading"><span className="brand-dot green"/><strong>Loading Quick Solution Admin…</strong></div>
   }
 
   return (
     <div className="admin-app">
       <header className="admin-header">
-        <a className="brand" href="#top"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Product Admin</small></span></a>
+        <a className="brand" href="#top"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
         <div className="admin-header-actions">
-          <span>{activeCount} live products</span>
+          {activeSection === 'products' ? <span>{activeCount} live products</span> : <span>Location 001</span>}
           <span className="admin-live-badge"><i/> XOS Staging</span>
           <a className="button ghost" href="#top">View storefront</a>
-          <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button>
+          {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
+          <button className="admin-signout-button" type="button" onClick={logout}>Sign out</button>
         </div>
       </header>
 
       <main className="admin-shell">
-        <section className="admin-intro">
+        <section className="admin-intro compact-admin-intro">
           <div>
-            <span className="eyebrow">QS-03.1 · Location 001</span>
-            <h1>Product & pricing control.</h1>
-            <p>This is now the live Quick Solution catalogue. Saving publishes product configuration and a new pricing version to XOS Staging; existing orders keep their original pricing snapshot.</p>
+            <span className="eyebrow">Quick Solution Admin · Location 001</span>
+            <h1>{activeSection === 'orders' ? 'Orders first.' : 'Product & pricing control.'}</h1>
+            <p>{activeSection === 'orders'
+              ? 'Review customer jobs, catch missing information and hand clean orders into OPPS without mixing them into X LAB.'
+              : 'Update customer-facing product details and pricing. Existing orders keep the pricing snapshot they were created with.'}</p>
           </div>
-          <div className="admin-intro-actions">
-            <button type="button" onClick={() => exportCatalog(draft)}><Icon name="upload" size={18}/> Export JSON</button>
-            <button type="button" onClick={reload}>Reload live data</button>
-            <button type="button" onClick={logout}>Sign out</button>
-          </div>
+          {activeSection === 'products' ? (
+            <div className="admin-intro-actions">
+              <button type="button" onClick={() => exportCatalog(draft)}><Icon name="upload" size={18}/> Export JSON</button>
+              <button type="button" onClick={reload}>Reload live data</button>
+            </div>
+          ) : null}
         </section>
 
-        {(notice || error) && <div className={`admin-system-message ${error ? 'error' : ''}`}>{error || notice}</div>}
+        <AdminSectionTabs activeSection={activeSection} onChange={setActiveSection}/>
 
-        <div className="admin-layout">
-          <aside className="admin-products">
-            <div className="admin-products-title"><strong>Products</strong><small>{draft.length} configured</small></div>
-            {draft.map((item) => (
-              <button key={item.id} type="button" className={selectedId === item.id ? 'active' : ''} onClick={() => setSelectedId(item.id)}>
-                <span><strong>{item.name}</strong><small>{item.category}</small></span>
-                <span className={`status-dot ${item.active === false ? 'off' : ''}`}/>
-              </button>
-            ))}
-          </aside>
+        {activeSection === 'orders' ? <AdminOppsHandoffPanel /> : null}
 
-          {product && (
-            <section className="admin-editor">
-              <div className="admin-editor-heading">
-                <div><span className="eyebrow">Product</span><h2>{product.name}</h2></div>
-                <label className="switch-row"><span>Live</span><input type="checkbox" checked={product.active !== false} onChange={(event) => updateTop('active', event.target.checked)}/><i/></label>
-              </div>
+        {activeSection === 'products' ? (
+          <>
+            {(notice || error) && <div className={`admin-system-message ${error ? 'error' : ''}`}>{error || notice}</div>}
 
-              <div className="admin-section-block">
-                <span className="eyebrow">Customer-facing details</span>
-                <div className="admin-two-col">
-                  <label className="admin-field"><span>Product name</span><input value={product.name} onChange={(event) => updateTop('name', event.target.value)}/></label>
-                  <label className="admin-field"><span>Category</span><input value={product.category} onChange={(event) => updateTop('category', event.target.value)}/></label>
-                </div>
-                <label className="admin-field"><span>Plain-language description</span><textarea rows="3" value={product.plainDescription} onChange={(event) => updateTop('plainDescription', event.target.value)}/></label>
-              </div>
+            <div className="admin-layout">
+              <aside className="admin-products">
+                <div className="admin-products-title"><strong>Products</strong><small>{draft.length} configured</small></div>
+                {draft.map((item) => (
+                  <button key={item.id} type="button" className={selectedId === item.id ? 'active' : ''} onClick={() => setSelectedId(item.id)}>
+                    <span><strong>{item.name}</strong><small>{item.category}</small></span>
+                    <span className={`status-dot ${item.active === false ? 'off' : ''}`}/>
+                  </button>
+                ))}
+              </aside>
 
-              <div className="admin-section-block">
-                <span className="eyebrow">Where this product appears</span>
-                <div className="channel-grid">
-                  {[
-                    ['storefront', 'Customer storefront', 'Visible in the service catalogue.'],
-                    ['guided', 'Guided ordering', 'Simple step-by-step experience.'],
-                    ['pos', 'Counter POS', 'Available for staff-assisted sales.'],
-                    ['quote', 'Quotes', 'Can be added to a formal quote.']
-                  ].map(([key, label, helper]) => (
-                    <label className={`channel-card ${product.channels?.[key] ? 'selected' : ''}`} key={key}>
-                      <input type="checkbox" checked={Boolean(product.channels?.[key])} onChange={(event) => updateChannel(key, event.target.checked)}/>
-                      <span><strong>{label}</strong><small>{helper}</small></span>
-                      <i/>
-                    </label>
-                  ))}
-                </div>
-              </div>
+              {product && (
+                <section className="admin-editor">
+                  <div className="admin-editor-heading">
+                    <div><span className="eyebrow">Product</span><h2>{product.name}</h2></div>
+                    <label className="switch-row"><span>Live</span><input type="checkbox" checked={product.active !== false} onChange={(event) => updateTop('active', event.target.checked)}/><i/></label>
+                  </div>
 
-              <PricingEditor product={product} onChange={replaceSelected}/>
+                  <div className="admin-section-block">
+                    <span className="eyebrow">Customer-facing details</span>
+                    <div className="admin-two-col">
+                      <label className="admin-field"><span>Product name</span><input value={product.name} onChange={(event) => updateTop('name', event.target.value)}/></label>
+                      <label className="admin-field"><span>Category</span><input value={product.category} onChange={(event) => updateTop('category', event.target.value)}/></label>
+                    </div>
+                    <label className="admin-field"><span>Plain-language description</span><textarea rows="3" value={product.plainDescription} onChange={(event) => updateTop('plainDescription', event.target.value)}/></label>
+                  </div>
 
-              <div className="admin-save-bar">
-                <div>
-                  <strong>{hasChanges ? `${dirtyIds.size} product${dirtyIds.size === 1 ? '' : 's'} with unsaved changes` : 'Live catalogue is in sync'}</strong>
-                  <span>{hasChanges ? 'Saving creates a new pricing version while preserving every historical order snapshot.' : `Signed in as ${session?.user?.email || 'XOS staff'}.`}</span>
-                </div>
-                <button className="button primary-green" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : 'Save changes'}</button>
-              </div>
-            </section>
-          )}
-        </div>
+                  <div className="admin-section-block">
+                    <span className="eyebrow">Where this product appears</span>
+                    <div className="channel-grid">
+                      {[
+                        ['storefront', 'Customer storefront', 'Visible in the service catalogue.'],
+                        ['guided', 'Guided ordering', 'Simple step-by-step experience.'],
+                        ['pos', 'Counter POS', 'Available for staff-assisted sales.'],
+                        ['quote', 'Quotes', 'Can be added to a formal quote.']
+                      ].map(([key, label, helper]) => (
+                        <label className={`channel-card ${product.channels?.[key] ? 'selected' : ''}`} key={key}>
+                          <input type="checkbox" checked={Boolean(product.channels?.[key])} onChange={(event) => updateChannel(key, event.target.checked)}/>
+                          <span><strong>{label}</strong><small>{helper}</small></span>
+                          <i/>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <PricingEditor product={product} onChange={replaceSelected}/>
+
+                  <div className="admin-save-bar">
+                    <div>
+                      <strong>{hasChanges ? `${dirtyIds.size} product${dirtyIds.size === 1 ? '' : 's'} with unsaved changes` : 'Live catalogue is in sync'}</strong>
+                      <span>{hasChanges ? 'Saving creates a new pricing version while preserving every historical order snapshot.' : `Signed in as ${session?.user?.email || 'XOS staff'}.`}</span>
+                    </div>
+                    <button className="button primary-green" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : 'Save changes'}</button>
+                  </div>
+                </section>
+              )}
+            </div>
+          </>
+        ) : null}
       </main>
     </div>
   )

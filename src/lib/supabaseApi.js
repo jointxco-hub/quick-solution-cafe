@@ -2,6 +2,7 @@ const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/
 const SUPABASE_KEY = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '')
 const TENANT_SLUG = String(import.meta.env.VITE_QS_TENANT_SLUG || 'quick-solution')
 const ADMIN_SESSION_KEY = 'qsc_admin_session_v1'
+const OPPS_APP_URL = String(import.meta.env.VITE_OPPS_APP_URL || 'https://ops.jointx.co.za').replace(/\/$/, '')
 
 export function isSupabaseConfigured() {
   return Boolean(SUPABASE_URL && SUPABASE_KEY)
@@ -235,4 +236,23 @@ export async function saveQuickSolutionProduct(product) {
     p_pricing_definition: buildPricingDefinition(product),
     p_expected_pricing_version: product.pricingVersion
   }, { accessToken })
+}
+
+export async function loadQuickSolutionOppsHandoffs() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('admin_list_quick_solution_opps_handoffs', { p_tenant_slug: TENANT_SLUG }, { accessToken })
+}
+
+export async function previewQuickSolutionOppsHandoff(serviceOrderId) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('admin_preview_quick_solution_opps_handoff', { p_service_order_id: serviceOrderId }, { accessToken })
+}
+
+export async function sendQuickSolutionOrderToOpps(serviceOrderId) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('admin_send_quick_solution_order_to_opps', { p_service_order_id: serviceOrderId }, { accessToken })
+}
+
+export function buildOppsAppUrl(orderId = '') {
+  return orderId ? `${OPPS_APP_URL}?orderId=${encodeURIComponent(orderId)}` : OPPS_APP_URL
 }

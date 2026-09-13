@@ -1,5 +1,6 @@
 import React from 'react'
 import Icon from './Icon.jsx'
+import ProductScene from './ProductScene.jsx'
 
 export default function ProductCard({ product, active = false, onConfigure }) {
   return (
@@ -7,6 +8,9 @@ export default function ProductCard({ product, active = false, onConfigure }) {
       <div className="product-card-top">
         <span className="eyebrow">{product.category}</span>
         <Icon name="arrowUpRight" size={18}/>
+      </div>
+      <div className="product-card-media" aria-hidden="true">
+        <ProductScene productId={product.id} />
       </div>
       <div>
         <h3>{product.name}</h3>
