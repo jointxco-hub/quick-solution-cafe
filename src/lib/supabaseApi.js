@@ -275,7 +275,6 @@ export async function saveQuickSolutionFulfilmentPoint(point) {
       address: point?.address || {},
       contactPhone: point?.contactPhone || null,
       contactEmail: point?.contactEmail || null,
-      easyLocateBusinessRef: point?.easyLocateBusinessRef || null,
       latitude: point?.latitude === '' || point?.latitude == null ? null : Number(point.latitude),
       longitude: point?.longitude === '' || point?.longitude == null ? null : Number(point.longitude),
       collectionEnabled: point?.collectionEnabled !== false,
@@ -286,4 +285,44 @@ export async function saveQuickSolutionFulfilmentPoint(point) {
       sortOrder: Number(point?.sortOrder || 100)
     }
   }, { accessToken })
+}
+
+
+async function easyLocateConnectorRequest(body) {
+  const accessToken = await getAdminAccessToken()
+  if (!isSupabaseConfigured()) throw new Error('Supabase is not configured.')
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/quick-solution-easy-locate`, {
+    method: 'POST',
+    headers: {
+      ...apiHeaders(accessToken),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body || {})
+  })
+
+  return parseResponse(response, 'Easy Locate connector request failed')
+}
+
+export async function getEasyLocateConnectorStatus() {
+  return easyLocateConnectorRequest({ action: 'status' })
+}
+
+export async function searchEasyLocateBusinesses(query) {
+  return easyLocateConnectorRequest({ action: 'search', query: String(query || '').trim() })
+}
+
+export async function linkEasyLocateBusiness(fulfilmentPointId, businessSlug) {
+  return easyLocateConnectorRequest({
+    action: 'link',
+    fulfilmentPointId,
+    businessSlug
+  })
+}
+
+export async function unlinkEasyLocateBusiness(fulfilmentPointId) {
+  return easyLocateConnectorRequest({
+    action: 'unlink',
+    fulfilmentPointId
+  })
 }

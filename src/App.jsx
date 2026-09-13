@@ -268,7 +268,7 @@ export default function App() {
                   <strong>{point.name}</strong>
                   <span>{[point.address?.area || point.address?.city, Array.isArray(point.services) ? point.services.slice(0, 2).join(' · ') : 'Collection point'].filter(Boolean).join(' · ')}</span>
                 </div>
-                <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Location 001' : point.easyLocateBusinessRef ? 'Quick Point · Easy Locate' : 'Quick Point'}</span>
+                <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Location 001' : point.easyLocateLink ? 'Quick Point · Easy Locate' : 'Quick Point'}</span>
               </div>
             ))}
           </div>
