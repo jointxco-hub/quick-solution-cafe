@@ -326,3 +326,31 @@ export async function unlinkEasyLocateBusiness(fulfilmentPointId) {
     fulfilmentPointId
   })
 }
+
+async function quickSolutionPaymentRequest(body) {
+  if (!isSupabaseConfigured()) throw new Error('Supabase is not configured.')
+
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/quick-solution-payfast`, {
+    method: 'POST',
+    headers: apiHeaders(null),
+    body: JSON.stringify(body || {})
+  })
+
+  return parseResponse(response, 'Quick Solution payment request failed')
+}
+
+export async function beginQuickSolutionPayment(orderId, paymentToken) {
+  return quickSolutionPaymentRequest({
+    action: 'init',
+    order_id: orderId,
+    payment_token: paymentToken
+  })
+}
+
+export async function getQuickSolutionPaymentStatus(orderId, paymentToken) {
+  return quickSolutionPaymentRequest({
+    action: 'status',
+    order_id: orderId,
+    payment_token: paymentToken
+  })
+}

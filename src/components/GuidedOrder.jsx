@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react'
+﻿import React, { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon.jsx'
 import FieldControl from './FieldControl.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
 import { fulfilmentOptions } from '../data/products.js'
-import { createQuickSolutionOrder, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
+import { beginQuickSolutionPayment, createQuickSolutionOrder, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 
 function optionLabel(product, fieldId, value) {
   const field = product.fields.find((item) => item.id === fieldId)
@@ -94,6 +94,8 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
   const [orderResponse, setOrderResponse] = useState(null)
   const [uploadedFile, setUploadedFile] = useState(null)
   const [uploadError, setUploadError] = useState('')
+  const [paymentState, setPaymentState] = useState('idle')
+  const [paymentError, setPaymentError] = useState('')
 
   useEffect(() => {
     setConfig(getDefaultConfig(product, preset))
@@ -113,6 +115,8 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
     setOrderResponse(null)
     setUploadedFile(null)
     setUploadError('')
+    setPaymentState('idle')
+    setPaymentError('')
   }, [product, journey, preset])
 
   const result = useMemo(() => calculateProductPrice(product, config), [product, config])
@@ -153,6 +157,8 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
     setOrderResponse(null)
     setUploadedFile(null)
     setUploadError('')
+    setPaymentState('idle')
+    setPaymentError('')
     setIdempotencyKey(makeIdempotencyKey())
   }
 
@@ -233,6 +239,42 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
     }
   }
 
+  const startPayment = async () => {
+    if (!orderResponse?.orderId || !orderResponse?.paymentToken) {
+      setPaymentError('This order does not have an active payment session yet.')
+      return
+    }
+
+    setPaymentState('starting')
+    setPaymentError('')
+    try {
+      const result = await beginQuickSolutionPayment(orderResponse.orderId, orderResponse.paymentToken)
+      if (result?.alreadyPaid || result?.paymentStatus === 'paid') {
+        setPaymentState('paid')
+        return
+      }
+      if (!result?.payment_url) throw new Error('PayFast did not return a payment link.')
+      window.open(result.payment_url, '_blank', 'noopener,noreferrer')
+      setPaymentState('waiting')
+    } catch (error) {
+      setPaymentState('error')
+      setPaymentError(error?.message || 'Could not open PayFast.')
+    }
+  }
+
+  const checkPayment = async () => {
+    if (!orderResponse?.orderId || !orderResponse?.paymentToken) return
+    setPaymentState('checking')
+    setPaymentError('')
+    try {
+      const result = await getQuickSolutionPaymentStatus(orderResponse.orderId, orderResponse.paymentToken)
+      setPaymentState(result?.paid ? 'paid' : 'waiting')
+      if (!result?.paid) setPaymentError('PayFast has not confirmed this payment yet.')
+    } catch (error) {
+      setPaymentState('error')
+      setPaymentError(error?.message || 'Could not check the payment yet.')
+    }
+  }
   if (complete) {
     const total = Number(orderResponse?.totalAmount ?? estimatedOrderTotal)
     const orderNumber = orderResponse?.orderNumber || 'Order created'
@@ -274,6 +316,46 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
           </div>
         )}
 
+        {orderResponse?.paymentToken && fulfilment !== 'delivery' && (
+          <div className={`qs-payment-card ${paymentState === 'paid' ? 'paid' : paymentState === 'waiting' ? 'pending' : ''}`}>
+            <div className="qs-payment-card-head">
+              <div>
+                <span className="eyebrow">Payment</span>
+                <strong>{paymentState === 'paid' ? 'Payment confirmed' : `Pay ${formatMoney(total)} securely`}</strong>
+                <small>{paymentState === 'paid' ? 'PayFast confirmed this order as paid.' : 'Your order already exists. Payment updates the same order — it does not create a duplicate.'}</small>
+              </div>
+              <span className={`qs-payment-status ${paymentState === 'paid' ? 'paid' : paymentState === 'waiting' ? 'waiting' : ''}`}>
+                {paymentState === 'paid' ? 'Paid' : paymentState === 'waiting' || paymentState === 'checking' ? 'Awaiting confirmation' : 'Unpaid'}
+              </span>
+            </div>
+            {paymentState !== 'paid' && (
+              <div className="qs-payment-actions">
+                <button className="button primary-green" type="button" disabled={paymentState === 'starting'} onClick={startPayment}>
+                  {paymentState === 'starting' ? 'Opening PayFastâ€¦' : 'Pay securely with PayFast'}
+                </button>
+                {(paymentState === 'waiting' || paymentState === 'checking' || paymentState === 'error') && (
+                  <button className="button ghost" type="button" disabled={paymentState === 'checking'} onClick={checkPayment}>
+                    {paymentState === 'checking' ? 'Checkingâ€¦' : 'Check payment'}
+                  </button>
+                )}
+              </div>
+            )}
+            {paymentError ? <p className="qs-payment-error">{paymentError}</p> : null}
+          </div>
+        )}
+
+        {orderResponse?.paymentToken && fulfilment === 'delivery' && (
+          <div className="qs-payment-card pending">
+            <div className="qs-payment-card-head">
+              <div>
+                <span className="eyebrow">Payment</span>
+                <strong>Delivery price first.</strong>
+                <small>Quick Solution must confirm the delivery fee before PayFast opens, so you cannot be charged the wrong total.</small>
+              </div>
+              <span className="qs-payment-status waiting">Waiting for delivery price</span>
+            </div>
+          </div>
+        )}
         {file && uploadedFile && (
           <div className="secure-file-note success">
             <strong>{file.name} uploaded securely.</strong>
@@ -371,7 +453,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
             {fulfilment === 'cafe' && cafePoints.length > 0 && (
               <div className="collection-point-picker">
                 <div className="collection-point-picker-head">
-                  <div><span className="eyebrow">Collect from Quick Solution</span><strong>Choose the café or branch.</strong></div>
+                  <div><span className="eyebrow">Collect from Quick Solution</span><strong>Choose the cafÃ© or branch.</strong></div>
                   <small>{cafePoints.length} location{cafePoints.length === 1 ? '' : 's'} available</small>
                 </div>
                 <div className="collection-point-grid">
@@ -381,7 +463,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
                       point={point}
                       selected={selectedPointId === point.id}
                       onSelect={() => setSelectedPointId(point.id)}
-                      typeLabel="Quick Solution café"
+                      typeLabel="Quick Solution cafÃ©"
                     />
                   ))}
                 </div>
@@ -459,7 +541,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
             <button className="button primary-green" type="button" onClick={() => setStepIndex((value) => value + 1)}>Continue <Icon name="arrowRight" size={17}/></button>
           ) : (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-              {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : `Create order · ${formatMoney(estimatedOrderTotal)}`}
+              {submitState === 'submitting' ? 'Creating orderâ€¦' : submitState === 'uploading' ? 'Uploading file securelyâ€¦' : `Create order · ${formatMoney(estimatedOrderTotal)}`}
               {submitState !== 'submitting' && submitState !== 'uploading' && <Icon name="arrowRight" size={17}/>}
             </button>
           )}
@@ -483,3 +565,9 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
     </div>
   )
 }
+
+
+
+
+
+

@@ -1,0 +1,86 @@
+/* QS-08: payment confirmation + compact relative-time metadata. */
+
+.qs-payment-card {
+  margin-top: 16px;
+  border: 1px solid #dfdfd8;
+  border-radius: 20px;
+  background: #fff;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  text-align: left;
+}
+
+.qs-payment-card.paid {
+  background: rgba(0,139,114,.07);
+  border-color: rgba(0,139,114,.18);
+}
+
+.qs-payment-card.pending {
+  background: rgba(215,191,255,.12);
+}
+
+.qs-payment-card-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.qs-payment-card-head > div {
+  display: grid;
+  gap: 4px;
+}
+
+.qs-payment-card-head strong {
+  font-size: 1rem;
+}
+
+.qs-payment-card-head small,
+.qs-payment-card > p {
+  color: #676761;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.qs-payment-status {
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: .72rem;
+  font-weight: 800;
+  white-space: nowrap;
+  background: #f2f2ee;
+}
+
+.qs-payment-status.paid {
+  background: rgba(0,139,114,.12);
+  color: #226457;
+}
+
+.qs-payment-status.waiting {
+  background: rgba(215,191,255,.28);
+  color: #5a3d8f;
+}
+
+.qs-payment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.qs-payment-error {
+  margin: 0;
+  color: #9a2d0d !important;
+  font-weight: 700;
+}
+
+@media (max-width: 620px) {
+  .qs-payment-card-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .qs-payment-actions > * {
+    flex: 1;
+    justify-content: center;
+  }
+}

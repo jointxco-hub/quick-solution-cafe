@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import {
   buildOppsAppUrl,
@@ -29,10 +29,30 @@ function money(value) {
   return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 2 }).format(Number(value || 0))
 }
 
-function dateTime(value) {
+function fullDateTime(value) {
   if (!value) return '—'
   try {
     return new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+  } catch {
+    return value
+  }
+}
+
+function dateTime(value) {
+  if (!value) return '—'
+  try {
+    const date = new Date(value)
+    const now = new Date()
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const dayDiff = Math.round((startToday - startDate) / 86400000)
+    const clock = new Intl.DateTimeFormat('en-ZA', { hour: '2-digit', minute: '2-digit', hour12: false }).format(date)
+    if (dayDiff === 0) return `Today ${clock}`
+    if (dayDiff === 1) return `Yesterday ${clock}`
+    if (date.getFullYear() === now.getFullYear()) {
+      return new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short' }).format(date)
+    }
+    return new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
   } catch {
     return value
   }
@@ -149,7 +169,7 @@ export default function AdminOppsHandoffPanel() {
     handoffPoint?.address?.area || handoffPoint?.address?.city,
     handoffPoint?.address?.line1
   ].filter(Boolean).join(' · ')
-  const handoffPointKind = quickSolutionMeta?.fulfilment_type === 'quick_point' ? 'Quick Point' : quickSolutionMeta?.fulfilment_type === 'cafe' ? 'Quick Solution café' : null
+  const handoffPointKind = quickSolutionMeta?.fulfilment_type === 'quick_point' ? 'Quick Point' : quickSolutionMeta?.fulfilment_type === 'cafe' ? 'Quick Solution cafÃ©' : null
   const fulfilmentDisplay = handoffPoint?.name
     ? `${handoffPointKind || 'Collection'} · ${handoffPoint.name}`
     : fulfilmentLabel(proposedOppsOrder?.fulfillment_type)
@@ -256,7 +276,7 @@ export default function AdminOppsHandoffPanel() {
       <div className="handoff-layout">
         <aside className="handoff-queue">
           <div className="handoff-queue-title"><strong>Customer orders</strong><small>{queue.length} visible</small></div>
-          {loadState === 'loading' ? <div className="handoff-empty">Loading orders…</div> : null}
+          {loadState === 'loading' ? <div className="handoff-empty">Loading ordersâ€¦</div> : null}
           {loadState !== 'loading' && queue.length === 0 ? <div className="handoff-empty">No Quick Solution orders are available yet.</div> : null}
           <div className="handoff-list">
             {queue.map((item) => (
@@ -275,7 +295,7 @@ export default function AdminOppsHandoffPanel() {
                 </div>
                 <div className="handoff-card-meta">
                   <span>{money(item.totalAmount)}</span>
-                  <span>{dateTime(item.submittedAt)}</span>
+                  <span title={fullDateTime(item.submittedAt)}>{dateTime(item.submittedAt)}</span>
                 </div>
                 <div className="handoff-card-tags">
                   <StatusPill label={paymentLabel(item.paymentStatus)} tone={toneForStatus(item.paymentStatus)} />
@@ -300,9 +320,9 @@ export default function AdminOppsHandoffPanel() {
                   <p>{selected.customerName} · {money(selected.totalAmount)} · submitted {dateTime(selected.submittedAt)}</p>
                 </div>
                 <div className="handoff-preview-actions">
-                  <button type="button" onClick={() => refreshPreview(selected.serviceOrderId)} disabled={previewingId === selected.serviceOrderId || selected.handoffStatus === 'sent'}><Icon name="refresh" size={16}/> {previewingId === selected.serviceOrderId ? 'Checking…' : selected.handoffStatus === 'sent' ? 'Checks saved' : 'Re-check order'}</button>
+                  <button type="button" onClick={() => refreshPreview(selected.serviceOrderId)} disabled={previewingId === selected.serviceOrderId || selected.handoffStatus === 'sent'}><Icon name="refresh" size={16}/> {previewingId === selected.serviceOrderId ? 'Checkingâ€¦' : selected.handoffStatus === 'sent' ? 'Checks saved' : 'Re-check order'}</button>
                   <button type="button" className="button dark" onClick={sendSelected} disabled={sendingId === selected.serviceOrderId || !canSend}>
-                    <Icon name="send" size={16}/> {selected.handoffStatus === 'sent' ? 'Sent to OPPS' : sendingId === selected.serviceOrderId ? 'Sending…' : blockerItems.length ? 'Fix issues first' : 'Send to OPPS'}
+                    <Icon name="send" size={16}/> {selected.handoffStatus === 'sent' ? 'Sent to OPPS' : sendingId === selected.serviceOrderId ? 'Sendingâ€¦' : blockerItems.length ? 'Fix issues first' : 'Send to OPPS'}
                   </button>
                 </div>
               </div>
@@ -316,7 +336,7 @@ export default function AdminOppsHandoffPanel() {
 
               <div className="handoff-detail-grid">
                 <DetailRow label="Order state" value={SERVICE_STATUS_LABELS[selected.serviceStatus] || selected.serviceStatus} />
-                <DetailRow label="Last checked" value={selected.lastPreviewedAt ? dateTime(selected.lastPreviewedAt) : previewingId === selected.serviceOrderId ? 'Checking now…' : 'Checking automatically…'} />
+                <DetailRow label="Last checked" value={selected.lastPreviewedAt ? dateTime(selected.lastPreviewedAt) : previewingId === selected.serviceOrderId ? 'Checking nowâ€¦' : 'Checking automaticallyâ€¦'} />
                 <DetailRow label="OPPS link" value={selected.oppsOrderId ? 'Created and linked' : 'Not created yet'} />
                 <DetailRow label="Operational handoff" value={HANDOFF_LABELS[selected.handoffStatus] || selected.handoffStatus} />
               </div>
@@ -364,7 +384,7 @@ export default function AdminOppsHandoffPanel() {
                       </div>
                     </>
                   ) : (
-                    <div className="handoff-empty small">{previewingId === selected.serviceOrderId ? 'Checking the order now…' : 'The order preview will load automatically.'}</div>
+                    <div className="handoff-empty small">{previewingId === selected.serviceOrderId ? 'Checking the order nowâ€¦' : 'The order preview will load automatically.'}</div>
                   )}
                 </div>
 
@@ -385,7 +405,7 @@ export default function AdminOppsHandoffPanel() {
                     <DetailRow label="Quick Solution ID" value={selected.serviceOrderId} />
                     <DetailRow label="OPPS order ID" value={selected.oppsOrderId || '—'} />
                     <DetailRow label="Mapping version" value={selected.mappingVersion || preview?.mappingVersion || '—'} />
-                    <DetailRow label="Sent at" value={selected.sentAt ? dateTime(selected.sentAt) : '—'} />
+                    <DetailRow label="Sent at" value={selected.sentAt ? fullDateTime(selected.sentAt) : '—'} />
                   </div>
                 </details>
               </div>
@@ -396,3 +416,6 @@ export default function AdminOppsHandoffPanel() {
     </section>
   )
 }
+
+
+

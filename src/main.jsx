@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './styles/app.css'
@@ -7,6 +7,7 @@ import './styles/qs031.css'
 import './styles/qs04c.css'
 import './styles/qs05.css'
 import './styles/qs07.css'
+import './styles/qs08.css'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -44,3 +45,4 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <ErrorBoundary><App /></ErrorBoundary>
   </React.StrictMode>
 )
+
