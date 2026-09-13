@@ -1,3 +1,0 @@
--- The remote staging migration qualified pgcrypto calls with extensions.gen_random_bytes
--- and extensions.digest because security-definer functions run with an empty search_path.
--- The reproducible definitions are already folded into 20260913163950_qs_03_1_upload_tokens.sql.
