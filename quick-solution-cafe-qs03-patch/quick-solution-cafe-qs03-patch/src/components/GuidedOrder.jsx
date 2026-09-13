@@ -3,7 +3,7 @@ import Icon from './Icon.jsx'
 import FieldControl from './FieldControl.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
 import { fulfilmentOptions } from '../data/products.js'
-import { createQuickSolutionOrder, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
+import { createQuickSolutionOrder, isSupabaseConfigured } from '../lib/supabaseApi.js'
 
 function optionLabel(product, fieldId, value) {
   const field = product.fields.find((item) => item.id === fieldId)
@@ -51,8 +51,6 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
   const [submitState, setSubmitState] = useState('idle')
   const [submitError, setSubmitError] = useState('')
   const [orderResponse, setOrderResponse] = useState(null)
-  const [uploadedFile, setUploadedFile] = useState(null)
-  const [uploadError, setUploadError] = useState('')
 
   useEffect(() => {
     setConfig(getDefaultConfig(product, preset))
@@ -70,8 +68,6 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
     setSubmitState('idle')
     setSubmitError('')
     setOrderResponse(null)
-    setUploadedFile(null)
-    setUploadError('')
   }, [product, journey, preset])
 
   const result = useMemo(() => calculateProductPrice(product, config), [product, config])
@@ -99,8 +95,6 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
     setSubmitState('idle')
     setSubmitError('')
     setOrderResponse(null)
-    setUploadedFile(null)
-    setUploadError('')
     setIdempotencyKey(makeIdempotencyKey())
   }
 
@@ -156,23 +150,6 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
       })
 
       setOrderResponse(response)
-
-      if (file) {
-        setSubmitState('uploading')
-        try {
-          const upload = await uploadQuickSolutionFile({
-            orderId: response.orderId,
-            orderItemId: response.orderItemId,
-            uploadToken: response.uploadToken,
-            file
-          })
-          setUploadedFile(upload?.file || null)
-          setUploadError('')
-        } catch (nextUploadError) {
-          setUploadError(nextUploadError?.message || 'The order was saved, but the file upload did not finish.')
-        }
-      }
-
       setSubmitState('success')
       setComplete(true)
     } catch (error) {
@@ -193,35 +170,14 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
         <h2>{orderNumber}</h2>
         <p>We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.</p>
         <div className="complete-summary"><strong>{product.name}</strong><span>{formatMoney(total)}</span></div>
-        {file && uploadedFile && (
-          <div className="secure-file-note success">
-            <strong>{file.name} uploaded securely.</strong>
-            <span>The file is linked to this exact order item in private Joint X storage. Staff access is tenant-scoped.</span>
-          </div>
-        )}
-        {file && uploadError && (
-          <div className="secure-file-note error">
-            <strong>Your order is safe, but the file still needs attention.</strong>
-            <span>{uploadError}</span>
-          </div>
-        )}
-        {!file && (
-          <div className="secure-file-note neutral">
-            <strong>No file was attached.</strong>
-            <span>If this job needs artwork or a document, Quick Solution can request it before production.</span>
+        {file && (
+          <div className="staging-file-note">
+            <strong>Keep {file.name} ready.</strong>
+            <span>The order is saved, but file storage is the next QS-03 step. For this staging build you can send the file with the order number on WhatsApp.</span>
           </div>
         )}
         <div className="complete-actions">
-          {file && uploadError && <button className="button primary-green" type="button" onClick={async () => {
-            setUploadError('')
-            try {
-              const upload = await uploadQuickSolutionFile({ orderId: orderResponse.orderId, orderItemId: orderResponse.orderItemId, uploadToken: orderResponse.uploadToken, file })
-              setUploadedFile(upload?.file || null)
-            } catch (nextUploadError) {
-              setUploadError(nextUploadError?.message || 'File upload failed again.')
-            }
-          }}>Retry secure upload</button>}
-          {file && uploadError && <a className="button ghost" href={`https://wa.me/27754534646?text=${whatsappText}`} target="_blank" rel="noreferrer">Use WhatsApp instead</a>}
+          {file && <a className="button primary-green" href={`https://wa.me/27754534646?text=${whatsappText}`} target="_blank" rel="noreferrer">Send file on WhatsApp</a>}
           <button className="button ghost" type="button" onClick={resetOrder}>Start another order</button>
         </div>
       </div>
@@ -334,7 +290,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
                 <span>Anything we should know? <small>optional</small></span>
                 <textarea value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} placeholder="Deadline, special instructions, or context"/>
               </label>
-              {file && <p className="file-stage-message secure"><strong>{file.name}</strong> will be uploaded to private Joint X storage after the order number is created. Maximum file size: 20MB.</p>}
+              {file && <p className="file-stage-message"><strong>{file.name}</strong> is selected on this device. File storage is being connected next; this staging order records the filename only.</p>}
             </div>
 
             {submitError && <div className="checkout-error" role="alert">{submitError}</div>}
@@ -342,13 +298,13 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
         )}
 
         <div className="guided-actions">
-          <button className="button ghost" type="button" disabled={stepIndex === 0 || submitState === 'submitting' || submitState === 'uploading'} onClick={() => setStepIndex((value) => Math.max(0, value - 1))}>Back</button>
+          <button className="button ghost" type="button" disabled={stepIndex === 0 || submitState === 'submitting'} onClick={() => setStepIndex((value) => Math.max(0, value - 1))}>Back</button>
           {stepIndex < journey.steps.length - 1 ? (
             <button className="button primary-green" type="button" onClick={() => setStepIndex((value) => value + 1)}>Continue <Icon name="arrowRight" size={17}/></button>
           ) : (
-            <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-              {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : `Create order · ${formatMoney(result.total)}`}
-              {submitState !== 'submitting' && submitState !== 'uploading' && <Icon name="arrowRight" size={17}/>}
+            <button className="button primary-green" type="button" disabled={submitState === 'submitting'} onClick={submitOrder}>
+              {submitState === 'submitting' ? 'Creating order…' : `Create order · ${formatMoney(result.total)}`}
+              {submitState !== 'submitting' && <Icon name="arrowRight" size={17}/>}
             </button>
           )}
         </div>
