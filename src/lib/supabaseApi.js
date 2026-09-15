@@ -253,8 +253,12 @@ export async function sendQuickSolutionOrderToOpps(serviceOrderId) {
   return rpc('admin_send_quick_solution_order_to_opps', { p_service_order_id: serviceOrderId }, { accessToken })
 }
 
-export function buildOppsAppUrl(orderId = '') {
-  return orderId ? `${OPPS_APP_URL}?orderId=${encodeURIComponent(orderId)}` : OPPS_APP_URL
+export function buildOppsAppUrl(orderId = '', tenantSlug = TENANT_SLUG) {
+  const params = new URLSearchParams()
+  if (tenantSlug) params.set('tenant', tenantSlug)
+  if (orderId) params.set('open', orderId)
+  const query = params.toString()
+  return `${OPPS_APP_URL}/Orders${query ? `?${query}` : ''}`
 }
 
 
