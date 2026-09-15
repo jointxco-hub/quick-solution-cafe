@@ -1,11 +1,25 @@
-import React from 'react'
+﻿import React from 'react'
 import Icon from './Icon.jsx'
-import ProductScene from './ProductScene.jsx'
 
 const proofItems = [
-  { id: 'a4-print', kicker: 'Everyday print', title: 'Documents, CVs & school work', copy: 'Upload before you arrive and collect when it is ready.' },
-  { id: 'business-cards', kicker: 'Business essentials', title: 'Branding that feels considered', copy: 'Cards, labels, signs and practical brand pieces for local businesses.' },
-  { id: 'printed-tshirt', kicker: 'Apparel & events', title: 'Merch, uniforms & event pieces', copy: 'From one shirt to a growing team, configured without print jargon.' }
+  {
+    image: '/qs11/proof-product-branding.webp',
+    kicker: 'Product branding',
+    title: 'Turn everyday products into brands.',
+    copy: 'Labels and product branding designed to make local businesses look considered and retail-ready.'
+  },
+  {
+    image: '/qs11/proof-packaging-range.webp',
+    kicker: 'Labels & packaging',
+    title: 'Brand the things customers take home.',
+    copy: 'Packaging, stickers and labels for food, household, beauty and growing product businesses.'
+  },
+  {
+    image: '/qs11/proof-event-branding.webp',
+    kicker: 'Events & outdoor',
+    title: 'Show up properly in the real world.',
+    copy: 'Gazebos, displays, banners and event branding built for visibility beyond the screen.'
+  }
 ]
 
 export default function ProofGallery() {
@@ -14,15 +28,17 @@ export default function ProofGallery() {
       <div className="qs10-proof-heading">
         <div>
           <span className="eyebrow">Made for real life</span>
-          <h2 id="qs10-proof-title">Real businesses.<br/>Real events.<br/>Everyday needs.</h2>
+          <h2 id="qs10-proof-title">Real businesses.<br/>Real events.<br/>Real products.</h2>
         </div>
-        <p>Quick Solution brings Joint X production closer to the community — from a single document to complete business branding.</p>
+        <p>Quick Solution brings Joint X production closer to the community — from one-off jobs to complete business branding.</p>
       </div>
 
       <div className="qs10-proof-grid">
         {proofItems.map((item) => (
-          <article className="qs10-proof-card" key={item.id}>
-            <div className="qs10-proof-media" aria-hidden="true"><ProductScene productId={item.id}/></div>
+          <article className="qs10-proof-card" key={item.title}>
+            <div className="qs10-proof-media">
+              <img src={item.image} alt="" loading="lazy"/>
+            </div>
             <div className="qs10-proof-copy">
               <span>{item.kicker}</span>
               <strong>{item.title}</strong>
@@ -39,8 +55,12 @@ export default function ProofGallery() {
           <strong>Order online. Collect locally.</strong>
           <p>Start from home, upload your files, then collect from Quick Solution or a nearby Quick Point.</p>
         </div>
-        <a className="button ghost" href="#quick-points">Explore collection options <Icon name="arrowRight" size={16}/></a>
+        <a className="button ghost" href="#quick-points">
+          Explore collection options <Icon name="arrowRight" size={16}/>
+        </a>
       </div>
     </section>
   )
 }
+
+
