@@ -216,6 +216,49 @@ export const products = [
 
 export const guidedJourneys = [
   {
+    id: 'sticker-guided',
+    productId: 'vinyl-stickers',
+    title: 'Make stickers or labels',
+    intro: 'Tell us the print area, whether you need cutting, and what is happening with the artwork.',
+    steps: [
+      {
+        id: 'size',
+        eyebrow: 'Step 1',
+        title: 'How much vinyl do you need?',
+        helper: 'Enter the total printed width and height in metres.',
+        fields: ['width', 'height']
+      },
+      {
+        id: 'finish',
+        eyebrow: 'Step 2',
+        title: 'Should we cut the stickers for you?',
+        helper: 'Print only is supplied as printed vinyl. Print + cut adds R100.',
+        fields: ['material', 'finishing']
+      },
+      {
+        id: 'artwork',
+        eyebrow: 'Step 3',
+        title: 'What about the artwork?',
+        helper: 'Upload ready artwork or ask Joint X to check or help with the design.',
+        fields: ['artwork', 'file', 'turnaround']
+      },
+      {
+        id: 'fulfilment',
+        eyebrow: 'Step 4',
+        title: 'How do you want to receive it?',
+        helper: 'Collect from Quick Solution, use a Quick Point, or arrange delivery.',
+        type: 'fulfilment'
+      },
+      {
+        id: 'review',
+        eyebrow: 'Final step',
+        title: 'Check your sticker order',
+        helper: 'Review the print area, cutting option, artwork and collection details.',
+        type: 'review'
+      }
+    ]
+  },
+  {
     id: 'document-guided',
     productId: 'a4-print',
     title: 'Print a document',

@@ -79,13 +79,28 @@ function makeIdempotencyKey() {
   return `qsc-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
-export default function GuidedOrder({ product, journey, preset = {}, task, onAdvanced, fulfilmentPoints = [] }) {
+export default function GuidedOrder({
+  product,
+  journey,
+  preset = {},
+  task,
+  onAdvanced,
+  fulfilmentPoints = [],
+  initialStepId = null,
+  initialFile = null
+}) {
   const [config, setConfig] = useState(() => getDefaultConfig(product, preset))
-  const [file, setFile] = useState(null)
+  const [file, setFile] = useState(initialFile)
   const [fulfilment, setFulfilment] = useState('cafe')
   const [selectedPointId, setSelectedPointId] = useState('')
   const [deliveryAddress, setDeliveryAddress] = useState('')
-  const [stepIndex, setStepIndex] = useState(0)
+  const initialStepIndex = Math.max(
+    0,
+    initialStepId
+      ? journey.steps.findIndex((step) => step.id === initialStepId)
+      : 0
+  )
+  const [stepIndex, setStepIndex] = useState(initialStepIndex)
   const [complete, setComplete] = useState(false)
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
@@ -102,11 +117,14 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
 
   useEffect(() => {
     setConfig(getDefaultConfig(product, preset))
-    setFile(null)
+    setFile(initialFile)
     setFulfilment('cafe')
     setSelectedPointId('')
     setDeliveryAddress('')
-    setStepIndex(0)
+    const nextStepIndex = initialStepId
+      ? journey.steps.findIndex((step) => step.id === initialStepId)
+      : 0
+    setStepIndex(Math.max(0, nextStepIndex))
     setComplete(false)
     setCustomerName('')
     setCustomerPhone('')
@@ -120,7 +138,7 @@ export default function GuidedOrder({ product, journey, preset = {}, task, onAdv
     setUploadError('')
     setPaymentState('idle')
     setPaymentError('')
-  }, [product, journey, preset])
+  }, [product, journey, preset, initialStepId, initialFile])
 
   const result = useMemo(() => calculateProductPrice(product, config), [product, config])
   const step = journey.steps[stepIndex]

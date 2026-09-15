@@ -3,7 +3,13 @@ import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pri
 import Icon from './Icon.jsx'
 import FieldControl from './FieldControl.jsx'
 
-export default function ProductConfigurator({ product, preset = {}, onSnapshot, onGuided }) {
+export default function ProductConfigurator({
+  product,
+  preset = {},
+  onSnapshot,
+  onGuided,
+  onContinue
+}) {
   const [config, setConfig] = useState(() => getDefaultConfig(product, preset))
   const [file, setFile] = useState(null)
 
@@ -71,8 +77,21 @@ export default function ProductConfigurator({ product, preset = {}, onSnapshot, 
           <span>Configuration and pricing are captured together so the counter, quote and production job can use the same details.</span>
         </div>
 
-        <button className="primary-light" type="button">{product.nextActionLabel || 'Review order'}</button>
-        <button className="secondary-dark" type="button">Save as quote</button>
+        <button
+          className="primary-light"
+          type="button"
+          onClick={() => onContinue?.({ config, file })}
+        >
+          {product.nextActionLabel || 'Review order'}
+        </button>
+        <button
+          className="secondary-dark"
+          type="button"
+          disabled
+          title="Quote saving will be added in the next phase."
+        >
+          Save as quote · coming soon
+        </button>
         <a className="help-link" href="https://wa.me/27754534646" target="_blank" rel="noreferrer">
           <Icon name="message" size={17}/> Need help? WhatsApp us
         </a>

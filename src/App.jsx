@@ -20,6 +20,8 @@ export default function App() {
   const [catalogSource, setCatalogSource] = useState('local')
   const [selectedId, setSelectedId] = useState('a4-print')
   const [preset, setPreset] = useState({})
+  const [guidedStartStep, setGuidedStartStep] = useState(null)
+  const [guidedInitialFile, setGuidedInitialFile] = useState(null)
   const [query, setQuery] = useState('')
   const [orderMode, setOrderMode] = useState('guided')
   const [journeyId, setJourneyId] = useState('document-guided')
@@ -81,8 +83,21 @@ export default function App() {
     setSelectedId(product.id)
     setPreset(nextPreset)
     setJourneyId(nextJourneyId || product.guidedJourneyId)
+    setGuidedStartStep(null)
+    setGuidedInitialFile(null)
     setOrderMode('guided')
     setTaskContext(task)
+    scrollToConfigure()
+  }
+
+  const continueFromAdvanced = (product, config, file) => {
+    setSelectedId(product.id)
+    setPreset(config)
+    setJourneyId(product.guidedJourneyId)
+    setTaskContext(null)
+    setGuidedInitialFile(file || null)
+    setGuidedStartStep('fulfilment')
+    setOrderMode('guided')
     scrollToConfigure()
   }
 
@@ -258,10 +273,18 @@ export default function App() {
                   preset={preset}
                   task={taskContext}
                   fulfilmentPoints={fulfilmentPoints}
+                  initialStepId={guidedStartStep}
+                  initialFile={guidedInitialFile}
                   onAdvanced={() => setOrderMode('advanced')}
                 />
               ) : (
-                <ProductConfigurator key={`${selectedProduct.id}-${JSON.stringify(preset)}`} product={selectedProduct} preset={preset} onGuided={selectedJourney ? () => setOrderMode('guided') : null}/>
+                <ProductConfigurator
+                  key={`${selectedProduct.id}-${JSON.stringify(preset)}`}
+                  product={selectedProduct}
+                  preset={preset}
+                  onGuided={selectedJourney ? () => openGuided(selectedProduct, selectedJourney.id, preset) : null}
+                  onContinue={({ config, file }) => continueFromAdvanced(selectedProduct, config, file)}
+                />
               )}
             </div>
           </section>
