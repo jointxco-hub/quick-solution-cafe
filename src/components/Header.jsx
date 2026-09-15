@@ -14,7 +14,7 @@ export default function Header() {
       </a>
       <nav className="desktop-nav" aria-label="Primary navigation">
         <a href={`${homePrefix}#start`}>Start</a>
-        <a href={`${homePrefix}#services`}>Services</a>
+        <a href={`${homePrefix}#services`}>Browse Products</a>
         <a href={`${homePrefix}#quick-points`}><Icon name="pin" size={16}/> Quick Points</a>
         <a href="/track"><Icon name="search" size={15}/> Track order</a>
       </nav>
