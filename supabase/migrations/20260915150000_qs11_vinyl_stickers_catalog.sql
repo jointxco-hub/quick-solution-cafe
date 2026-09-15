@@ -35,7 +35,8 @@ select
 from public.tenants t
 where t.slug='quick-solution'
   and not exists (
-    select 1 from commerce.products p
+    select 1
+    from commerce.products p
     where p.tenant_id=t.id and p.slug='vinyl-stickers'
   );
 
@@ -81,46 +82,120 @@ select
   jsonb_build_object(
     'id','vinyl-stickers',
     'name','Vinyl Stickers & Labels',
-    'shortName','Vinyl stickers',
-    'category','Brand & Packaging',
+    'shortName','Stickers',
+    'category','Labels & Packaging',
     'description','Custom vinyl for bottles, packaging, windows and everyday business branding.',
-    'plainDescription','Choose the size, print-only or print-and-cut, and upload your artwork.',
-    'image','/qs11/product-vinyl.webp',
+    'plainDescription','Choose the print area, whether you need cutting, and upload your artwork when ready.',
+    'image','/qs11/product-vinyl-labels-clean.webp',
     'keywords',jsonb_build_array('vinyl','sticker','stickers','label','labels','bottle','packaging','perfume','food','product branding'),
     'popular',true,
     'active',true,
     'channels',jsonb_build_object('storefront',true,'guided',true,'pos',true,'quote',true),
-    'guidedJourneyId','vinyl-guided',
+    'guidedJourneyId','sticker-guided',
     'nextActionLabel','Continue to collection',
-    'pricing',jsonb_build_object('strategy','PER_AREA','baseRate',pvc.base_rate,'minimumBillableArea',pvc.min_area,'unit','m²'),
+    'pricing',jsonb_build_object(
+      'strategy','PER_AREA',
+      'baseRate',pvc.base_rate,
+      'minimumBillableArea',pvc.min_area,
+      'unit','m²'
+    ),
     'fields',jsonb_build_array(
-      jsonb_build_object('id','width','type','number','label','How wide is the printed area?','shortLabel','Width','suffix','metres','default',1,'min',0.05,'step',0.05,'required',true),
-      jsonb_build_object('id','height','type','number','label','How high is the printed area?','shortLabel','Height','suffix','metres','default',1,'min',0.05,'step',0.05,'required',true),
-      jsonb_build_object('id','material','type','select','label','Vinyl type','shortLabel','Material','default','standard','options',jsonb_build_array(
-        jsonb_build_object('id','standard','label','White self-adhesive vinyl','helper','A versatile choice for bottles, packaging, windows and smooth surfaces.','multiplier',1)
-      )),
-      jsonb_build_object('id','finishing','type','segmented','label','How should we finish it?','shortLabel','Finish','default','print-only','options',jsonb_build_array(
-        jsonb_build_object('id','print-only','label','Print only','helper','Supplied as printed vinyl.','fee',0),
-        jsonb_build_object('id','print-cut','label','Print + cut','helper','We cut the stickers / labels for you.','fee',100)
-      )),
-      jsonb_build_object('id','artwork','type','select','label','What is happening with the design?','shortLabel','Artwork','default','ready','options',jsonb_build_array(
-        jsonb_build_object('id','ready','label','My artwork is ready','fee',0),
-        jsonb_build_object('id','check','label','Please check my artwork','fee',75),
-        jsonb_build_object('id','design','label','I need help with the design','fee',250)
-      )),
-      jsonb_build_object('id','turnaround','type','select','label','When do you need it?','default','standard','options',jsonb_build_array(
-        jsonb_build_object('id','standard','label','Standard turnaround','multiplier',1),
-        jsonb_build_object('id','express','label','Express — where available','multiplier',1.2)
-      )),
-      jsonb_build_object('id','file','type','file','label','Artwork file','help','PDF or transparent PNG is ideal. We can confirm cut lines before production.')
+      jsonb_build_object(
+        'id','width',
+        'type','number',
+        'label','How wide is the printed area?',
+        'shortLabel','Width',
+        'suffix','metres',
+        'default',1,
+        'min',0.1,
+        'step',0.1,
+        'required',true
+      ),
+      jsonb_build_object(
+        'id','height',
+        'type','number',
+        'label','How high is the printed area?',
+        'shortLabel','Height',
+        'suffix','metres',
+        'default',1,
+        'min',0.1,
+        'step',0.1,
+        'required',true
+      ),
+      jsonb_build_object(
+        'id','material',
+        'type','select',
+        'label','Vinyl type',
+        'shortLabel','Material',
+        'default','standard',
+        'options',jsonb_build_array(
+          jsonb_build_object(
+            'id','standard',
+            'label','White self-adhesive vinyl',
+            'helper','A versatile choice for bottles, packaging, windows and smooth surfaces.',
+            'multiplier',1
+          )
+        )
+      ),
+      jsonb_build_object(
+        'id','finishing',
+        'type','segmented',
+        'label','How should we finish it?',
+        'shortLabel','Finish',
+        'default','print-only',
+        'options',jsonb_build_array(
+          jsonb_build_object(
+            'id','print-only',
+            'label','Print only',
+            'helper','Supplied as printed vinyl.',
+            'fee',0
+          ),
+          jsonb_build_object(
+            'id','print-cut',
+            'label','Print + cut',
+            'helper','We cut the stickers / labels for you.',
+            'fee',100
+          )
+        )
+      ),
+      jsonb_build_object(
+        'id','artwork',
+        'type','select',
+        'label','What is happening with the design?',
+        'shortLabel','Artwork',
+        'default','ready',
+        'options',jsonb_build_array(
+          jsonb_build_object('id','ready','label','My artwork is ready','fee',0),
+          jsonb_build_object('id','check','label','Please check my artwork','fee',75),
+          jsonb_build_object('id','design','label','I need help with the design','fee',250)
+        )
+      ),
+      jsonb_build_object(
+        'id','turnaround',
+        'type','select',
+        'label','When do you need it?',
+        'default','standard',
+        'options',jsonb_build_array(
+          jsonb_build_object('id','standard','label','Standard turnaround','multiplier',1),
+          jsonb_build_object('id','express','label','Express — where available','multiplier',1.2)
+        )
+      ),
+      jsonb_build_object(
+        'id','file',
+        'type','file',
+        'label','Artwork file',
+        'help','PDF or transparent PNG is ideal. We can confirm cut lines before production.'
+      )
     )
   ),
-  '2026-09-qsc-04',
+  '2026-09-qsc-05',
   jsonb_build_object(
     'strategy','PER_AREA',
     'baseRate',pvc.base_rate,
     'minimumBillableArea',pvc.min_area,
-    'materials',jsonb_build_object('standard',jsonb_build_object('multiplier',1)),
+    'materials',jsonb_build_object(
+      'standard',jsonb_build_object('multiplier',1)
+    ),
     'finishing',jsonb_build_object(
       'print-only',jsonb_build_object('fee',0),
       'print-cut',jsonb_build_object('fee',100)
@@ -138,7 +213,9 @@ select
   'published',
   15
 from pvc
-join commerce.products p on p.tenant_id=pvc.tenant_id and p.slug='vinyl-stickers'
+join commerce.products p
+  on p.tenant_id=pvc.tenant_id
+ and p.slug='vinyl-stickers'
 on conflict (tenant_id, source_key) do update
 set product_id=excluded.product_id,
     customer_definition=excluded.customer_definition,
