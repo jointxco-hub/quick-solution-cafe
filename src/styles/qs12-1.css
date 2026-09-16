@@ -1,0 +1,55 @@
+
+/* QS-12.1: media guided-flow location step polish. Kept deliberately restrained. */
+
+.location-reassurance {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--soft-green);
+  color: #0a6b57;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.location-reassurance svg {
+  flex: 0 0 auto;
+}
+
+.field-inline-error {
+  display: block;
+  margin-top: 2px;
+  color: #8e2605;
+  font-weight: 700;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.review-location-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 13px 0;
+  border-bottom: 1px solid #e9e9e3;
+  font-size: 14px;
+}
+
+.review-location-row > span:first-child {
+  color: #73736d;
+  flex: 0 0 auto;
+}
+
+.review-location-value {
+  display: grid;
+  gap: 3px;
+  text-align: right;
+}
+
+.review-location-value > small {
+  color: #77756f;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.4;
+}

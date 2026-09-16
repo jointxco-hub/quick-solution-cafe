@@ -26,10 +26,33 @@ function pointCategory(point) {
   return Array.isArray(categories) && categories.length ? categories.slice(0, 2).join(' · ') : null
 }
 
-function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0, showFulfilment = true }) {
+function shootLocationLabel(shootLocation) {
+  if (shootLocation === 'cafe') return 'At Quick Solution Café'
+  if (shootLocation === 'onsite-team') return 'Photo / video team at your location'
+  return 'Photographer / videographer at your location'
+}
+
+function LocationSummaryRow({ config }) {
+  return (
+    <div className="review-location-row">
+      <span>Shoot location</span>
+      <div className="review-location-value">
+        <strong>{shootLocationLabel(config.shootLocation)}</strong>
+        {config.shootLocation !== 'cafe' && config.shootAddress ? <small>{config.shootAddress}</small> : null}
+      </div>
+    </div>
+  )
+}
+
+function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0, showFulfilment = true, isServiceRequest = false }) {
   const rows = product.fields
     .filter((field) => field.type !== 'file')
-    .map((field) => ({ label: field.shortLabel || field.label, value: optionLabel(product, field.id, config[field.id]) }))
+    .filter((field) => !(isServiceRequest && field.id === 'shootAddress'))
+    .map((field) => (
+      isServiceRequest && field.id === 'shootLocation'
+        ? { id: field.id, special: true }
+        : { id: field.id, label: field.shortLabel || field.label, value: optionLabel(product, field.id, config[field.id]) }
+    ))
 
   const fulfilmentLabel = fulfilment === 'delivery'
     ? 'Delivery'
@@ -37,7 +60,11 @@ function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilme
 
   return (
     <div className="review-list">
-      {rows.map((row) => <div key={row.label}><span>{row.label}</span><strong>{row.value}</strong></div>)}
+      {rows.map((row) => (
+        row.special
+          ? <LocationSummaryRow key={row.id} config={config}/>
+          : <div key={row.id}><span>{row.label}</span><strong>{row.value}</strong></div>
+      ))}
       <div><span>File</span><strong>{file?.name || 'No file selected yet'}</strong></div>
       {showFulfilment ? (
         <>
@@ -118,6 +145,7 @@ export default function GuidedOrder({
   const [uploadError, setUploadError] = useState('')
   const [paymentState, setPaymentState] = useState('idle')
   const [paymentError, setPaymentError] = useState('')
+  const [locationError, setLocationError] = useState('')
 
   useEffect(() => {
     setConfig(getDefaultConfig(product, preset))
@@ -142,6 +170,7 @@ export default function GuidedOrder({
     setUploadError('')
     setPaymentState('idle')
     setPaymentError('')
+    setLocationError('')
   }, [product, journey, preset, initialStepId, initialFile])
 
   useEffect(() => {
@@ -162,6 +191,27 @@ export default function GuidedOrder({
   const step = journey.steps[stepIndex]
   const progress = ((stepIndex + 1) / journey.steps.length) * 100
   const update = (id, value) => setConfig((previous) => ({ ...previous, [id]: value }))
+
+  const chooseShootLocation = (value) => {
+    setLocationError('')
+    setConfig((previous) => ({
+      ...previous,
+      shootLocation: value,
+      // The address belongs to client-location/onsite-team only. Switching
+      // back to cafe must not leave a stale address to be submitted as the
+      // service location (see submitOrder's serviceLocation.address build).
+      shootAddress: value === 'cafe' ? '' : previous.shootAddress
+    }))
+  }
+
+  const goNext = () => {
+    if (step.type === 'location' && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
+      setLocationError('Add the area or address where the shoot should happen.')
+      return
+    }
+    setLocationError('')
+    setStepIndex((value) => value + 1)
+  }
 
   const cafePoints = fulfilmentPoints.filter((point) => point.kind === 'cafe' && point.collectionEnabled !== false)
   const quickPoints = fulfilmentPoints.filter((point) => point.kind === 'quick_point' && point.collectionEnabled !== false)
@@ -394,8 +444,8 @@ export default function GuidedOrder({
             <span className="complete-fulfilment-icon"><Icon name="camera" size={21}/></span>
             <div>
               <span className="eyebrow">Media service request</span>
-              <strong>{config.shootLocation === 'cafe' ? 'At Quick Solution Café' : config.shootLocation === 'onsite-team' ? 'Photo / video team at your location' : 'Photographer / videographer at your location'}</strong>
-              {config.shootAddress ? <small>{config.shootAddress}</small> : null}
+              <strong>{shootLocationLabel(config.shootLocation)}</strong>
+              {config.shootLocation !== 'cafe' && config.shootAddress ? <small>{config.shootAddress}</small> : null}
               <span>{[config.preferredDate, config.preferredTime].filter(Boolean).join(' · ') || 'Schedule to be confirmed'}</span>
             </div>
           </div>
@@ -536,6 +586,44 @@ export default function GuidedOrder({
           </div>
         )}
 
+        {step.type === 'location' && (() => {
+          const shootLocationField = product.fields.find((item) => item.id === 'shootLocation')
+          const isCafe = config.shootLocation === 'cafe'
+          return (
+            <div className="guided-fields">
+              {shootLocationField && (
+                <FieldControl
+                  field={shootLocationField}
+                  value={config.shootLocation}
+                  onChange={chooseShootLocation}
+                  guided
+                />
+              )}
+              {isCafe ? (
+                <div className="location-reassurance field-full">
+                  <Icon name="store" size={18}/>
+                  <span>We’ll use the Quick Solution Café location.</span>
+                </div>
+              ) : (
+                <label className="checkout-field field-full">
+                  <span>{config.shootLocation === 'onsite-team' ? 'Where should the team go?' : 'Where should we come?'}</span>
+                  <input
+                    type="text"
+                    value={config.shootAddress || ''}
+                    onChange={(event) => {
+                      update('shootAddress', event.target.value)
+                      if (locationError) setLocationError('')
+                    }}
+                    placeholder="Area, venue or full address"
+                  />
+                  <small>{config.shootLocation === 'onsite-team' ? 'This is where we will send the photo / video team.' : 'This is where your photographer or videographer will come to.'}</small>
+                  {locationError && <span className="field-inline-error" role="alert">{locationError}</span>}
+                </label>
+              )}
+            </div>
+          )
+        })()}
+
         {step.type === 'fulfilment' && (
           <>
             <div className="fulfilment-grid">
@@ -612,7 +700,7 @@ export default function GuidedOrder({
 
         {step.type === 'review' && (
           <>
-            <ReviewRows product={product} config={config} fulfilment={fulfilment} file={file} selectedPoint={selectedPoint} fulfilmentFee={selectedFulfilmentFee} showFulfilment={!isServiceRequest}/>
+            <ReviewRows product={product} config={config} fulfilment={fulfilment} file={file} selectedPoint={selectedPoint} fulfilmentFee={selectedFulfilmentFee} showFulfilment={!isServiceRequest} isServiceRequest={isServiceRequest}/>
             <div className="guest-note"><Icon name="user" size={19}/><span><strong>No account required for a quick order.</strong> We only need a name and one reliable way to contact you.</span></div>
 
             <div className="checkout-contact">
@@ -648,7 +736,7 @@ export default function GuidedOrder({
         <div className="guided-actions">
           <button className="button ghost" type="button" disabled={stepIndex === 0 || submitState === 'submitting' || submitState === 'uploading'} onClick={() => setStepIndex((value) => Math.max(0, value - 1))}>Back</button>
           {stepIndex < journey.steps.length - 1 ? (
-            <button className="button primary-green" type="button" onClick={() => setStepIndex((value) => value + 1)}>Continue <Icon name="arrowRight" size={17}/></button>
+            <button className="button primary-green" type="button" onClick={goNext}>Continue <Icon name="arrowRight" size={17}/></button>
           ) : (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
               {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : isServiceRequest ? 'Send media request' : `Create order · ${formatMoney(estimatedOrderTotal)}`}

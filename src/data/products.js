@@ -365,7 +365,7 @@ export const guidedJourneys = [
         eyebrow: 'Step 2',
         title: 'Where should the shoot happen?',
         helper: 'Come to the Café, have us send a photographer to you, or request a photo / video team for bigger coverage.',
-        fields: ['shootLocation', 'shootAddress']
+        type: 'location'
       },
       {
         id: 'crew',

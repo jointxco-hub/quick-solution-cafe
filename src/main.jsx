@@ -12,6 +12,7 @@ import './styles/qs084.css'
 import './styles/qs085.css'
 import './styles/qs09.css'
 import './styles/qs10.css'
+import './styles/qs12-1.css'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
