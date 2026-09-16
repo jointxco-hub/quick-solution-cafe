@@ -147,7 +147,7 @@ export default function App() {
           <div className="hero-copy">
             <span className="eyebrow">Joint X Quick Solution CafÃ© Â· Location 001</span>
             <h1>Printing, branding<br/>& <em>everyday solutions.</em></h1>
-            <p>From documents and stickers to apparel, signage and business essentials â€” quick, clean and local. Tell us what you are trying to make and we will guide the technical details.</p>
+            <p>From documents and stickers to apparel, signage, photo, video and business essentials â€” quick, clean and local. Tell us what you are trying to make and we will guide the technical details.</p>
 
             <form className="search-wrap" onSubmit={submitSearch}>
               <div className="search-box">
@@ -156,7 +156,7 @@ export default function App() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   aria-label="Tell Quick Solution what you need"
-                  placeholder="Try â€œprint my CVâ€, â€œhomeworkâ€, â€œbannerâ€..."
+                  placeholder="Try â€œprint my CVâ€, â€œbannerâ€, â€œheadshotâ€, â€œvideo shootâ€..."
                 />
                 <button type="submit">Guide me</button>
               </div>
@@ -247,7 +247,7 @@ export default function App() {
                     >{product.shortName}</button>
                   ))}
                 </div>
-                {selectedProduct.channels?.guided !== false && selectedProduct.guidedJourneyId && (
+                {selectedProduct.channels?.guided !== false && selectedProduct.guidedJourneyId && selectedProduct.channels?.advanced !== false && (
                   <div className="mode-choice">
                     <div className="mode-choice-copy">
                       <span>Order mode</span>

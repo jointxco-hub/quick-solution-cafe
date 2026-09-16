@@ -7,7 +7,7 @@ export function FileControl({ field, file, onFileChange, guided = false }) {
       <input
         className="visually-hidden"
         type="file"
-        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+        accept={field.accept || ".pdf,.doc,.docx,.png,.jpg,.jpeg"}
         onChange={(event) => onFileChange?.(event.target.files?.[0] || null)}
       />
       <span className="upload-icon"><Icon name="upload" size={21}/></span>
@@ -66,6 +66,36 @@ export default function FieldControl({ field, value, onChange, file, onFileChang
           />
           {field.suffix && <small>{field.suffix}</small>}
         </div>
+      </label>
+    )
+  }
+
+  if (field.type === 'textarea') {
+    return (
+      <label className="field field-full">
+        <span>{field.label}</span>
+        <textarea
+          value={value || ''}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={field.placeholder || ''}
+          rows={4}
+        />
+        {field.help && <small>{field.help}</small>}
+      </label>
+    )
+  }
+
+  if (field.type === 'text' || field.type === 'date' || field.type === 'time') {
+    return (
+      <label className="field">
+        <span>{field.label}</span>
+        <input
+          type={field.type}
+          value={value || ''}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={field.placeholder || ''}
+        />
+        {field.help && <small>{field.help}</small>}
       </label>
     )
   }

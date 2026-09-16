@@ -148,6 +148,29 @@ export async function createQuickSolutionOrder({
   })
 }
 
+export async function createQuickSolutionServiceRequest({
+  productKey,
+  configuration,
+  customerName,
+  customerEmail,
+  customerPhone,
+  serviceLocation,
+  customerNotes,
+  idempotencyKey
+}) {
+  return rpc('create_quick_solution_service_request', {
+    p_tenant_slug: TENANT_SLUG,
+    p_product_key: productKey,
+    p_configuration: configuration,
+    p_customer_name: customerName,
+    p_customer_email: customerEmail || null,
+    p_customer_phone: customerPhone || null,
+    p_service_location: serviceLocation || null,
+    p_customer_notes: customerNotes || null,
+    p_idempotency_key: idempotencyKey
+  })
+}
+
 export async function uploadQuickSolutionFile({ orderId, orderItemId, uploadToken, file }) {
   if (!file) return null
   if (!orderId || !uploadToken) throw new Error('The order upload session is missing. Please create the order again.')
@@ -211,6 +234,13 @@ export function buildPricingDefinition(product) {
       artwork: optionMap(product, 'artwork', 'fee')
     }
   }
+  if (strategy === 'ENQUIRY') {
+    return {
+      strategy,
+      quoteRequired: true,
+      serviceType: product?.serviceType || 'service'
+    }
+  }
   throw new Error(`Unsupported pricing strategy: ${strategy || 'unknown'}`)
 }
 
@@ -253,8 +283,12 @@ export async function sendQuickSolutionOrderToOpps(serviceOrderId) {
   return rpc('admin_send_quick_solution_order_to_opps', { p_service_order_id: serviceOrderId }, { accessToken })
 }
 
-export function buildOppsAppUrl(orderId = '') {
-  return orderId ? `${OPPS_APP_URL}?orderId=${encodeURIComponent(orderId)}` : OPPS_APP_URL
+export function buildOppsAppUrl(orderId = '', tenantSlug = TENANT_SLUG) {
+  const params = new URLSearchParams()
+  if (tenantSlug) params.set('tenant', tenantSlug)
+  if (orderId) params.set('open', orderId)
+  const query = params.toString()
+  return `${OPPS_APP_URL}/Orders${query ? `?${query}` : ''}`
 }
 
 

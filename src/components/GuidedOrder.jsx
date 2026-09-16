@@ -4,7 +4,7 @@ import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
 import FieldControl from './FieldControl.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
 import { fulfilmentOptions } from '../data/products.js'
-import { beginQuickSolutionPayment, createQuickSolutionOrder, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
+import { beginQuickSolutionPayment, createQuickSolutionOrder, createQuickSolutionServiceRequest, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
 import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from '../lib/trackingSession.js'
 
@@ -26,7 +26,7 @@ function pointCategory(point) {
   return Array.isArray(categories) && categories.length ? categories.slice(0, 2).join(' · ') : null
 }
 
-function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0 }) {
+function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0, showFulfilment = true }) {
   const rows = product.fields
     .filter((field) => field.type !== 'file')
     .map((field) => ({ label: field.shortLabel || field.label, value: optionLabel(product, field.id, config[field.id]) }))
@@ -39,9 +39,13 @@ function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilme
     <div className="review-list">
       {rows.map((row) => <div key={row.label}><span>{row.label}</span><strong>{row.value}</strong></div>)}
       <div><span>File</span><strong>{file?.name || 'No file selected yet'}</strong></div>
-      <div><span>{fulfilment === 'delivery' ? 'Fulfilment' : 'Collection point'}</span><strong>{fulfilmentLabel}</strong></div>
-      {selectedPoint && pointArea(selectedPoint) ? <div><span>Area</span><strong>{pointArea(selectedPoint)}</strong></div> : null}
-      {selectedPoint ? <div><span>Collection fee</span><strong>{fulfilmentFee > 0 ? formatMoney(fulfilmentFee) : 'Free'}</strong></div> : null}
+      {showFulfilment ? (
+        <>
+          <div><span>{fulfilment === 'delivery' ? 'Fulfilment' : 'Collection point'}</span><strong>{fulfilmentLabel}</strong></div>
+          {selectedPoint && pointArea(selectedPoint) ? <div><span>Area</span><strong>{pointArea(selectedPoint)}</strong></div> : null}
+          {selectedPoint ? <div><span>Collection fee</span><strong>{fulfilmentFee > 0 ? formatMoney(fulfilmentFee) : 'Free'}</strong></div> : null}
+        </>
+      ) : null}
     </div>
   )
 }
@@ -140,7 +144,21 @@ export default function GuidedOrder({
     setPaymentError('')
   }, [product, journey, preset, initialStepId, initialFile])
 
+  useEffect(() => {
+    if (!complete) return
+
+    const timer = window.setTimeout(() => {
+      document.querySelector('.guided-complete')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }, 60)
+
+    return () => window.clearTimeout(timer)
+  }, [complete])
+
   const result = useMemo(() => calculateProductPrice(product, config), [product, config])
+  const isServiceRequest = product?.pricing?.strategy === 'ENQUIRY' || product?.serviceType === 'media'
   const step = journey.steps[stepIndex]
   const progress = ((stepIndex + 1) / journey.steps.length) * 100
   const update = (id, value) => setConfig((previous) => ({ ...previous, [id]: value }))
@@ -148,8 +166,8 @@ export default function GuidedOrder({
   const cafePoints = fulfilmentPoints.filter((point) => point.kind === 'cafe' && point.collectionEnabled !== false)
   const quickPoints = fulfilmentPoints.filter((point) => point.kind === 'quick_point' && point.collectionEnabled !== false)
   const selectedPoint = fulfilmentPoints.find((point) => point.id === selectedPointId)
-  const selectedFulfilmentFee = fulfilment === 'delivery' ? 0 : Number(selectedPoint?.feeAmount || 0)
-  const estimatedOrderTotal = Number(result.total || 0) + selectedFulfilmentFee
+  const selectedFulfilmentFee = isServiceRequest || fulfilment === 'delivery' ? 0 : Number(selectedPoint?.feeAmount || 0)
+  const estimatedOrderTotal = isServiceRequest ? 0 : Number(result.total || 0) + selectedFulfilmentFee
 
   useEffect(() => {
     if (fulfilment === 'cafe' && cafePoints.length && !cafePoints.some((point) => point.id === selectedPointId)) {
@@ -201,8 +219,18 @@ export default function GuidedOrder({
       return
     }
 
-    if (fulfilment === 'delivery' && deliveryAddress.trim().length < 5) {
+    if (!isServiceRequest && fulfilment === 'delivery' && deliveryAddress.trim().length < 5) {
       setSubmitError('Add the delivery address so we know where the order should go.')
+      return
+    }
+
+    if (isServiceRequest && !config.preferredDate) {
+      setSubmitError('Choose a preferred shoot date. We will confirm availability before the booking is final.')
+      return
+    }
+
+    if (isServiceRequest && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
+      setSubmitError('Add the area or address where the shoot should happen.')
       return
     }
 
@@ -215,24 +243,43 @@ export default function GuidedOrder({
 
     try {
       const backendFulfilment = fulfilment === 'quick-point' ? 'quick_point' : fulfilment
-      const response = await createQuickSolutionOrder({
-        productKey: product.id,
-        configuration: {
-          ...config,
-          fileName: file?.name || null,
-          clientEstimate: estimatedOrderTotal
-        },
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        customerEmail: customerEmail.trim(),
-        fulfilmentType: backendFulfilment,
-        fulfilmentPointId: fulfilment === 'delivery'
-          ? null
-          : (selectedPointId || cafePoints[0]?.id || null),
-        deliveryAddress: fulfilment === 'delivery' ? { address_line: deliveryAddress.trim() } : null,
-        customerNotes: customerNotes.trim(),
-        idempotencyKey
-      })
+      const requestConfiguration = {
+        ...config,
+        fileName: file?.name || null,
+        clientEstimate: estimatedOrderTotal,
+        serviceType: isServiceRequest ? (product.serviceType || 'service') : null
+      }
+
+      const response = isServiceRequest
+        ? await createQuickSolutionServiceRequest({
+            productKey: product.id,
+            configuration: requestConfiguration,
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim(),
+            customerEmail: customerEmail.trim(),
+            serviceLocation: {
+              type: config.shootLocation || 'cafe',
+              address: String(config.shootAddress || '').trim() || null,
+              preferredDate: config.preferredDate || null,
+              preferredTime: config.preferredTime || null
+            },
+            customerNotes: customerNotes.trim(),
+            idempotencyKey
+          })
+        : await createQuickSolutionOrder({
+            productKey: product.id,
+            configuration: requestConfiguration,
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim(),
+            customerEmail: customerEmail.trim(),
+            fulfilmentType: backendFulfilment,
+            fulfilmentPointId: fulfilment === 'delivery'
+              ? null
+              : (selectedPointId || cafePoints[0]?.id || null),
+            deliveryAddress: fulfilment === 'delivery' ? { address_line: deliveryAddress.trim() } : null,
+            customerNotes: customerNotes.trim(),
+            idempotencyKey
+          })
 
       setOrderResponse(response)
       if (response?.orderId && response?.orderNumber && response?.trackingToken) {
@@ -337,12 +384,24 @@ export default function GuidedOrder({
     return (
       <div className="guided-complete">
         <div className="complete-mark"><Icon name="bag" size={28}/></div>
-        <span className="eyebrow">Order received</span>
+        <span className="eyebrow">{isServiceRequest ? 'Request received' : 'Order received'}</span>
         <h2>{orderNumber}</h2>
-        <p>We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.</p>
-        <div className="complete-summary"><strong>{product.name}</strong><span>{formatMoney(total)}</span></div>
+        <p>{isServiceRequest ? 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.' : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
+        <div className="complete-summary"><strong>{product.name}</strong><span>{isServiceRequest ? 'Quote after review' : formatMoney(total)}</span></div>
 
-        {fulfilment !== 'delivery' && confirmationPoint && (
+        {isServiceRequest && (
+          <div className="complete-fulfilment-card">
+            <span className="complete-fulfilment-icon"><Icon name="camera" size={21}/></span>
+            <div>
+              <span className="eyebrow">Media service request</span>
+              <strong>{config.shootLocation === 'cafe' ? 'At Quick Solution Café' : config.shootLocation === 'onsite-team' ? 'Photo / video team at your location' : 'Photographer / videographer at your location'}</strong>
+              {config.shootAddress ? <small>{config.shootAddress}</small> : null}
+              <span>{[config.preferredDate, config.preferredTime].filter(Boolean).join(' · ') || 'Schedule to be confirmed'}</span>
+            </div>
+          </div>
+        )}
+
+        {!isServiceRequest && fulfilment !== 'delivery' && confirmationPoint && (
           <div className="complete-fulfilment-card">
             <span className="complete-fulfilment-icon"><Icon name={confirmationPoint.kind === 'cafe' ? 'store' : 'pin'} size={21}/></span>
             <div>
@@ -355,7 +414,7 @@ export default function GuidedOrder({
           </div>
         )}
 
-        {fulfilment === 'delivery' && (
+        {!isServiceRequest && fulfilment === 'delivery' && (
           <div className="complete-fulfilment-card">
             <span className="complete-fulfilment-icon"><Icon name="truck" size={21}/></span>
             <div>
@@ -366,7 +425,7 @@ export default function GuidedOrder({
           </div>
         )}
 
-        {orderResponse?.paymentToken && fulfilment !== 'delivery' && (
+        {!isServiceRequest && orderResponse?.paymentToken && fulfilment !== 'delivery' && (
           <div className={`qs-payment-card ${paymentState === 'paid' ? 'paid' : paymentState === 'waiting' ? 'pending' : ''}`}>
             <div className="qs-payment-card-head">
               <div>
@@ -394,7 +453,7 @@ export default function GuidedOrder({
           </div>
         )}
 
-        {orderResponse?.paymentToken && fulfilment === 'delivery' && (
+        {!isServiceRequest && orderResponse?.paymentToken && fulfilment === 'delivery' && (
           <div className="qs-payment-card pending">
             <div className="qs-payment-card-head">
               <div>
@@ -553,7 +612,7 @@ export default function GuidedOrder({
 
         {step.type === 'review' && (
           <>
-            <ReviewRows product={product} config={config} fulfilment={fulfilment} file={file} selectedPoint={selectedPoint} fulfilmentFee={selectedFulfilmentFee}/>
+            <ReviewRows product={product} config={config} fulfilment={fulfilment} file={file} selectedPoint={selectedPoint} fulfilmentFee={selectedFulfilmentFee} showFulfilment={!isServiceRequest}/>
             <div className="guest-note"><Icon name="user" size={19}/><span><strong>No account required for a quick order.</strong> We only need a name and one reliable way to contact you.</span></div>
 
             <div className="checkout-contact">
@@ -592,7 +651,7 @@ export default function GuidedOrder({
             <button className="button primary-green" type="button" onClick={() => setStepIndex((value) => value + 1)}>Continue <Icon name="arrowRight" size={17}/></button>
           ) : (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-              {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : `Create order · ${formatMoney(estimatedOrderTotal)}`}
+              {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : isServiceRequest ? 'Send media request' : `Create order · ${formatMoney(estimatedOrderTotal)}`}
               {submitState !== 'submitting' && submitState !== 'uploading' && <Icon name="arrowRight" size={17}/>}
             </button>
           )}
@@ -600,17 +659,17 @@ export default function GuidedOrder({
       </div>
 
       <aside className="guided-summary" aria-live="polite">
-        <span className="eyebrow inverse">Estimated total</span>
-        <div className="guided-price">{formatMoney(estimatedOrderTotal)}</div>
-        <p>{result.summary}</p>
+        <span className="eyebrow inverse">{isServiceRequest ? 'Request type' : 'Estimated total'}</span>
+        <div className="guided-price">{isServiceRequest ? 'Quote' : formatMoney(estimatedOrderTotal)}</div>
+        <p>{isServiceRequest ? 'We will confirm pricing after reviewing the crew, location and scope.' : result.summary}</p>
         <div className="price-lines compact-lines">
           {result.lines.map((line, index) => (
             <div key={`${line.label}-${index}`}><span>{line.label}</span><strong>{line.text ?? formatMoney(line.value)}</strong></div>
           ))}
-          {fulfilment !== 'delivery' && selectedPoint ? <div><span>{selectedPoint.name} collection</span><strong>{selectedFulfilmentFee > 0 ? formatMoney(selectedFulfilmentFee) : 'Free'}</strong></div> : null}
-          {fulfilment === 'delivery' ? <div><span>Delivery</span><strong>Confirmed before payment</strong></div> : null}
+          {!isServiceRequest && fulfilment !== 'delivery' && selectedPoint ? <div><span>{selectedPoint.name} collection</span><strong>{selectedFulfilmentFee > 0 ? formatMoney(selectedFulfilmentFee) : 'Free'}</strong></div> : null}
+          {!isServiceRequest && fulfilment === 'delivery' ? <div><span>Delivery</span><strong>Confirmed before payment</strong></div> : null}
         </div>
-        <div className="summary-confidence"><span className="brand-dot green"/><span>The backend recalculates the price before saving the order, so the browser cannot invent its own total.</span></div>
+        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.' : 'The backend recalculates the price before saving the order, so the browser cannot invent its own total.'}</span></div>
         <a className="help-link" href="https://wa.me/27754534646" target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
       </aside>
     </div>

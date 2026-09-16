@@ -211,10 +211,192 @@ export const products = [
       },
       { id: 'file', type: 'file', label: 'Artwork file', help: 'PNG with a transparent background is ideal.' }
     ]
+  },
+  {
+    id: 'media-services',
+    name: 'Photography & Video',
+    shortName: 'Photo + Video',
+    category: 'Photo & Video',
+    description: 'From quick café shoots to full on-location photo and video production.',
+    plainDescription: 'Choose what you need, where the shoot should happen and which medium should lead.',
+    keywords: ['photography', 'photo', 'video', 'videography', 'headshot', 'id photo', 'product photography', 'content', 'reels', 'event', 'matric dance', 'onsite shoot'],
+    popular: true,
+    active: true,
+    serviceType: 'media',
+    channels: { ...customerChannels, advanced: false },
+    guidedJourneyId: 'media-guided',
+    nextActionLabel: 'Send request',
+    pricingVersion: '2026-09-qsc-06',
+    pricing: { strategy: 'ENQUIRY', quoteRequired: true },
+    fields: [
+      {
+        id: 'mediumFocus',
+        type: 'segmented',
+        label: 'What do you need?',
+        shortLabel: 'Media focus',
+        default: 'balanced',
+        options: [
+          { id: 'photo-only', label: 'Photography only', helper: 'Still photography is the full focus.' },
+          { id: 'video-only', label: 'Video only', helper: 'Video is the full focus.' },
+          { id: 'photo-led', label: 'Photo-led', helper: 'Photography is primary with a few supporting video clips.' },
+          { id: 'video-led', label: 'Video-led', helper: 'Video is primary with a smaller set of supporting photos.' },
+          { id: 'balanced', label: 'Photo + video', helper: 'A balanced mix of photography and video.' }
+        ]
+      },
+      {
+        id: 'shootType',
+        type: 'select',
+        label: 'What are we shooting?',
+        shortLabel: 'Shoot type',
+        default: 'business-content',
+        options: [
+          { id: 'id-passport', label: 'ID / passport photos' },
+          { id: 'headshot', label: 'Professional headshot / CV / LinkedIn' },
+          { id: 'products', label: 'Products / ecommerce' },
+          { id: 'business-content', label: 'Business / brand content' },
+          { id: 'social-content', label: 'Social media / reels content' },
+          { id: 'staff-team', label: 'Staff / team portraits' },
+          { id: 'event', label: 'Event coverage' },
+          { id: 'matric-dance', label: 'Matric dance' },
+          { id: 'property-location', label: 'Property / location' },
+          { id: 'campaign', label: 'Campaign / commercial shoot' },
+          { id: 'other', label: 'Something else' }
+        ]
+      },
+      {
+        id: 'shootLocation',
+        type: 'segmented',
+        label: 'Where should the shoot happen?',
+        shortLabel: 'Shoot location',
+        default: 'cafe',
+        options: [
+          { id: 'cafe', label: 'At Quick Solution Café', helper: 'Come to us for quick portraits, headshots, product shots and short content sessions.' },
+          { id: 'client-location', label: 'Shoot at my location', helper: 'We send our photographer or videographer to your home, office, shop, venue or chosen location.' },
+          { id: 'onsite-team', label: 'Send a photo / video team', helper: 'For bigger coverage, events, campaigns or shoots that need more than one person.' }
+        ]
+      },
+      {
+        id: 'crew',
+        type: 'select',
+        label: 'Who should we send?',
+        shortLabel: 'Crew',
+        default: 'recommend',
+        options: [
+          { id: 'photographer', label: 'Photographer' },
+          { id: 'videographer', label: 'Videographer' },
+          { id: 'photo-video-duo', label: 'Photographer + videographer' },
+          { id: 'content-team', label: 'Small content team' },
+          { id: 'recommend', label: 'Not sure — recommend the right setup' }
+        ]
+      },
+      {
+        id: 'duration',
+        type: 'select',
+        label: 'Roughly how long do you think you need?',
+        shortLabel: 'Duration',
+        default: 'not-sure',
+        options: [
+          { id: 'under-1h', label: 'Under 1 hour' },
+          { id: '1h', label: 'About 1 hour' },
+          { id: '2h', label: 'About 2 hours' },
+          { id: 'half-day', label: 'Half day' },
+          { id: 'full-day', label: 'Full day' },
+          { id: 'not-sure', label: 'Not sure yet' }
+        ]
+      },
+      {
+        id: 'preferredDate',
+        type: 'date',
+        label: 'Preferred shoot date',
+        shortLabel: 'Preferred date',
+        default: ''
+      },
+      {
+        id: 'preferredTime',
+        type: 'time',
+        label: 'Preferred start time',
+        shortLabel: 'Preferred time',
+        default: ''
+      },
+      {
+        id: 'shootAddress',
+        type: 'text',
+        label: 'Shoot address / area',
+        shortLabel: 'Address',
+        placeholder: 'Area, venue or full address',
+        help: 'If you are coming to the Café, you can leave this blank.',
+        default: ''
+      },
+      {
+        id: 'deliverables',
+        type: 'textarea',
+        label: 'What do you want us to deliver?',
+        shortLabel: 'Deliverables',
+        placeholder: 'Example: one 60-second promo video, 3 reels and 15 edited photos.',
+        help: 'Tell us the outcome rather than technical camera details.',
+        default: ''
+      },
+      {
+        id: 'file',
+        type: 'file',
+        label: 'Reference / moodboard',
+        help: 'Optional. Upload an image or PDF reference if it helps explain the look you want.'
+      }
+    ]
   }
 ]
 
 export const guidedJourneys = [
+  {
+    id: 'media-guided',
+    productId: 'media-services',
+    title: 'Book photography or video',
+    intro: 'Tell us the outcome, where the shoot should happen and which medium should lead.',
+    steps: [
+      {
+        id: 'coverage',
+        eyebrow: 'Step 1',
+        title: 'What should we create?',
+        helper: 'Choose photo, video or a combination. If you need both, tell us which one should be the main focus.',
+        fields: ['mediumFocus', 'shootType']
+      },
+      {
+        id: 'location',
+        eyebrow: 'Step 2',
+        title: 'Where should the shoot happen?',
+        helper: 'Come to the Café, have us send a photographer to you, or request a photo / video team for bigger coverage.',
+        fields: ['shootLocation', 'shootAddress']
+      },
+      {
+        id: 'crew',
+        eyebrow: 'Step 3',
+        title: 'What kind of crew do you need?',
+        helper: 'Choose what sounds right. If you are unsure, we will recommend the right photographer, videographer or team.',
+        fields: ['crew', 'duration']
+      },
+      {
+        id: 'schedule',
+        eyebrow: 'Step 4',
+        title: 'When should we plan for?',
+        helper: 'Give us your preferred date and time. We will confirm availability before the booking is final.',
+        fields: ['preferredDate', 'preferredTime']
+      },
+      {
+        id: 'brief',
+        eyebrow: 'Step 5',
+        title: 'What should the finished content do for you?',
+        helper: 'Describe the photos, videos or content you want delivered. A reference is optional.',
+        fields: ['deliverables', 'file']
+      },
+      {
+        id: 'review',
+        eyebrow: 'Final step',
+        title: 'Check your media request',
+        helper: 'We will review the brief, crew, location and schedule before confirming the quote.',
+        type: 'review'
+      }
+    ]
+  },
   {
     id: 'sticker-guided',
     productId: 'vinyl-stickers',
@@ -320,6 +502,7 @@ export const fulfilmentOptions = [
 
 export const categories = [
   'Quick Print',
+  'Photo & Video',
   'Signs & Large Format',
   'Clothing & Merch',
   'Business Essentials',
@@ -378,6 +561,16 @@ export const quickTasks = [
     journeyId: 'tshirt-guided',
     preset: {},
     icon: 'shirt'
+  },
+  {
+    id: 'media-shoot',
+    kicker: 'Photo & video',
+    label: 'Book a shoot',
+    helper: 'Come to the Café or have us send a photographer, videographer or team to you.',
+    productId: 'media-services',
+    journeyId: 'media-guided',
+    preset: {},
+    icon: 'camera'
   },
   {
     id: 'help',

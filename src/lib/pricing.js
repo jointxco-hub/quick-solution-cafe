@@ -131,6 +131,21 @@ function priceConfigurable(product, config) {
   }
 }
 
+function priceEnquiry(product, config) {
+  return {
+    total: 0,
+    summary: 'Quote after review',
+    lines: [
+      { label: 'Service request', text: 'Photo / video brief captured' },
+      { label: 'Pricing', text: 'Confirmed after crew, location and scope review' }
+    ],
+    metrics: {
+      quoteRequired: true,
+      serviceType: product.serviceType || 'service'
+    }
+  }
+}
+
 export function calculateProductPrice(product, config) {
   let calculation
   switch (product.pricing.strategy) {
@@ -138,6 +153,7 @@ export function calculateProductPrice(product, config) {
     case 'PER_PAGE': calculation = pricePages(product, config); break
     case 'TIERED': calculation = priceTiered(product, config); break
     case 'CONFIGURABLE': calculation = priceConfigurable(product, config); break
+    case 'ENQUIRY': calculation = priceEnquiry(product, config); break
     default: calculation = { total: 0, summary: 'Quote required', lines: [], metrics: {} }
   }
 
