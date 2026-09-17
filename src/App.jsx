@@ -376,6 +376,7 @@ export default function App() {
         onClose={() => setCartOpen(false)}
         onRemove={removeCartItem}
         onContinueShopping={continueShopping}
+        onOrderCreated={() => setCart([])}
       />
       {cartNotice ? <div className="qs-cart-toast" role="status"><Icon name="bag" size={16}/><span>{cartNotice}</span></div> : null}
       {cart.length > 0 && !cartOpen ? (

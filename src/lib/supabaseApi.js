@@ -121,6 +121,35 @@ export async function loadQuickSolutionCatalog() {
   return rpc('get_quick_solution_catalog', { p_tenant_slug: TENANT_SLUG })
 }
 
+export async function createQuickSolutionCartOrder({
+  items,
+  customerName,
+  customerEmail,
+  customerPhone,
+  fulfilmentType,
+  fulfilmentPointId,
+  deliveryAddress,
+  customerNotes,
+  idempotencyKey
+}) {
+  return rpc('create_quick_solution_cart_order', {
+    p_tenant_slug: TENANT_SLUG,
+    p_items: (items || []).map((item) => ({
+      clientItemKey: item.clientItemKey,
+      productKey: item.productKey,
+      configuration: item.configuration || {}
+    })),
+    p_customer_name: customerName,
+    p_customer_email: customerEmail || null,
+    p_customer_phone: customerPhone || null,
+    p_fulfilment_type: fulfilmentType,
+    p_fulfilment_point_id: fulfilmentPointId || null,
+    p_delivery_address: deliveryAddress || null,
+    p_customer_notes: customerNotes || null,
+    p_idempotency_key: idempotencyKey
+  })
+}
+
 export async function createQuickSolutionOrder({
   productKey,
   configuration,

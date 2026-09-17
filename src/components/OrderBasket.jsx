@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon.jsx'
 import { formatMoney } from '../lib/pricing.js'
+import { beginQuickSolutionPayment, createQuickSolutionCartOrder, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
+import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
+import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from '../lib/trackingSession.js'
 
 function displayFileName(file, fileMeta) {
   const raw = String(file?.originalName || file?.name || fileMeta?.originalName || fileMeta?.name || '').trim()
@@ -22,7 +25,8 @@ export default function OrderBasket({
   fulfilmentPoints = [],
   onClose,
   onRemove,
-  onContinueShopping
+  onContinueShopping,
+  onOrderCreated
 }) {
   const [phase, setPhase] = useState('basket')
   const [fulfilment, setFulfilment] = useState('cafe')
@@ -32,6 +36,13 @@ export default function OrderBasket({
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
   const [customerNotes, setCustomerNotes] = useState('')
+  const [submitState, setSubmitState] = useState('idle')
+  const [submitError, setSubmitError] = useState('')
+  const [orderResponse, setOrderResponse] = useState(null)
+  const [uploadResults, setUploadResults] = useState([])
+  const [paymentState, setPaymentState] = useState('idle')
+  const [paymentError, setPaymentError] = useState('')
+  const [idempotencyKey] = useState(() => globalThis.crypto?.randomUUID?.() || `qsc-cart-${Date.now()}-${Math.random().toString(36).slice(2)}`)
 
   const total = items.reduce((sum, item) => sum + Number(item.total || 0), 0)
   const cafePoints = useMemo(
@@ -58,7 +69,164 @@ export default function OrderBasket({
     }
   }, [fulfilment, visiblePoints, selectedPointId])
 
+  const submitCombinedOrder = async () => {
+    setSubmitError('')
+    if (!items.length) {
+      setSubmitError('Add at least one item to your order.')
+      return
+    }
+    if (customerName.trim().length < 2) {
+      setSubmitError('Please add the name we should use for this order.')
+      return
+    }
+    if (!customerPhone.trim() && !customerEmail.trim()) {
+      setSubmitError('Add a WhatsApp/phone number or email so we can contact you.')
+      return
+    }
+    if (fulfilment === 'quick-point' && !selectedPointId) {
+      setSubmitError('Choose a Quick Point.')
+      return
+    }
+    if (fulfilment !== 'delivery' && !selectedPointId && visiblePoints.length) {
+      setSubmitError('Choose a collection point.')
+      return
+    }
+    if (fulfilment === 'delivery' && deliveryAddress.trim().length < 5) {
+      setSubmitError('Add the delivery address.')
+      return
+    }
+
+    setSubmitState('submitting')
+    try {
+      const response = await createQuickSolutionCartOrder({
+        items: items.map((item) => ({
+          clientItemKey: item.cartId,
+          productKey: item.productId,
+          configuration: item.config || {}
+        })),
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim(),
+        fulfilmentType: fulfilment === 'quick-point' ? 'quick_point' : fulfilment,
+        fulfilmentPointId: fulfilment === 'delivery' ? null : selectedPointId,
+        deliveryAddress: fulfilment === 'delivery' ? { address_line: deliveryAddress.trim() } : null,
+        customerNotes: customerNotes.trim(),
+        idempotencyKey
+      })
+
+      const backendItems = Array.isArray(response?.items) ? response.items : []
+      const results = []
+
+      for (const item of items) {
+        if (!item.file) continue
+        const backendItem = backendItems.find((candidate) => candidate.clientItemKey === item.cartId)
+        if (!backendItem?.orderItemId) {
+          results.push({ cartId: item.cartId, ok: false, name: displayFileName(item.file, item.fileMeta), error: 'Order item mapping was not returned.' })
+          continue
+        }
+        try {
+          await uploadQuickSolutionFile({
+            orderId: response.orderId,
+            orderItemId: backendItem.orderItemId,
+            uploadToken: response.uploadToken,
+            file: item.file
+          })
+          results.push({ cartId: item.cartId, ok: true, name: displayFileName(item.file, item.fileMeta) })
+        } catch (error) {
+          results.push({ cartId: item.cartId, ok: false, name: displayFileName(item.file, item.fileMeta), error: error?.message || 'Upload failed.' })
+        }
+      }
+
+      setUploadResults(results)
+      setOrderResponse(response)
+      if (response?.orderId && response?.orderNumber && response?.trackingToken) {
+        saveQuickSolutionTrackingSession({
+          orderId: response.orderId,
+          orderNumber: response.orderNumber,
+          trackingToken: response.trackingToken,
+          trackingTokenExpiresAt: response.trackingTokenExpiresAt
+        })
+      }
+      if (response?.orderId && response?.paymentToken) {
+        saveQuickSolutionPaymentSession({
+          orderId: response.orderId,
+          paymentToken: response.paymentToken,
+          orderNumber: response.orderNumber,
+          amount: response.totalAmount
+        })
+      }
+      setSubmitState('success')
+      setPhase('success')
+      onOrderCreated?.(response)
+    } catch (error) {
+      setSubmitState('error')
+      setSubmitError(error?.message || 'We could not create the combined order.')
+    }
+  }
+
+  const startCombinedPayment = async () => {
+    if (!orderResponse?.orderId || !orderResponse?.paymentToken) return
+    setPaymentError('')
+    setPaymentState('starting')
+    try {
+      const result = await beginQuickSolutionPayment(orderResponse.orderId, orderResponse.paymentToken)
+      if (result?.alreadyPaid || result?.paymentStatus === 'paid') {
+        setPaymentState('paid')
+        return
+      }
+      if (!result?.payment_url) throw new Error('PayFast did not return a payment link.')
+      window.location.assign(result.payment_url)
+    } catch (error) {
+      setPaymentState('error')
+      setPaymentError(error?.message || 'Could not open PayFast.')
+    }
+  }
+
   if (!open) return null
+
+  if (phase === 'success' && orderResponse) {
+    const failedUploads = uploadResults.filter((item) => !item.ok)
+    const trackingHref = orderResponse.trackingToken
+      ? buildQuickSolutionTrackingHref(orderResponse.orderNumber, orderResponse.trackingToken)
+      : '/track'
+    return (
+      <div className="qs-cart-backdrop" role="presentation">
+        <aside className="qs-cart-sheet" role="dialog" aria-modal="true" aria-label="Order created">
+          <div className="qs-cart-head">
+            <div><span className="eyebrow">Order received</span><h2>{orderResponse.orderNumber}</h2></div>
+            <button type="button" className="qs-cart-close" onClick={onClose} aria-label="Close basket">×</button>
+          </div>
+          <div className="qs-cart-success">
+            <div className="complete-mark"><Icon name="bag" size={26}/></div>
+            <h3>One order. {orderResponse.items?.length || 0} items.</h3>
+            <p>Quick Solution saved your basket as one XOS order with separate production items.</p>
+            <div className="qs-checkout-total">
+              <div><span>Total</span><small>{orderResponse.deliveryFeeStatus === 'pending_confirmation' ? 'Delivery fee still to be confirmed' : 'Order total'}</small></div>
+              <strong>{formatMoney(orderResponse.totalAmount)}</strong>
+            </div>
+            {uploadResults.length ? (
+              <div className="qs-upload-results">
+                {uploadResults.map((item) => <div key={item.cartId} className={item.ok ? 'ok' : 'error'}><span>{item.ok ? '✓' : '!'}</span><div><strong>{item.name}</strong><small>{item.ok ? 'Uploaded to the matching order item' : item.error}</small></div></div>)}
+              </div>
+            ) : null}
+            {failedUploads.length ? <p className="checkout-error">{failedUploads.length} file upload{failedUploads.length === 1 ? '' : 's'} still need attention. The order itself is already safe.</p> : null}
+            <div className="qs-cart-success-actions">
+              {orderResponse.paymentToken && orderResponse.deliveryFeeStatus !== 'pending_confirmation' && paymentState !== 'paid' ? (
+                <button className="button primary-green" type="button" disabled={paymentState === 'starting'} onClick={startCombinedPayment}>
+                  {paymentState === 'starting' ? 'Opening PayFast…' : `Pay ${formatMoney(orderResponse.totalAmount)} securely`}
+                </button>
+              ) : null}
+              {orderResponse.deliveryFeeStatus === 'pending_confirmation' ? <div className="secure-file-note neutral"><strong>Delivery price first.</strong><span>We will confirm the delivery fee before payment opens.</span></div> : null}
+              {paymentState === 'paid' ? <div className="secure-file-note success"><strong>Payment confirmed.</strong></div> : null}
+              {paymentError ? <p className="checkout-error">{paymentError}</p> : null}
+              <a className="button dark" href={trackingHref}><Icon name="search" size={16}/> Track this order</a>
+              <button className="button ghost" type="button" onClick={onClose}>Done</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    )
+  }
 
   return (
     <div className="qs-cart-backdrop" role="presentation" onClick={onClose}>
@@ -171,10 +339,11 @@ export default function OrderBasket({
               <strong>{formatMoney(total)}</strong>
             </div>
 
-            <button className="button dark qs-place-order" type="button" disabled title="Multi-item backend order creation is QS-13.3">
-              Place combined order · backend next
+            {submitError ? <div className="checkout-error" role="alert">{submitError}</div> : null}
+            <button className="button dark qs-place-order" type="button" disabled={submitState === 'submitting'} onClick={submitCombinedOrder}>
+              {submitState === 'submitting' ? 'Creating one combined order…' : `Place combined order · ${formatMoney(total)}`}
             </button>
-            <p className="qs-cart-note">This checkout now collects fulfilment and customer details once for the whole basket. The next step connects it to one multi-item XOS order.</p>
+            <p className="qs-cart-note">Your basket is submitted as one XOS order with separate order items. Server pricing is recalculated before anything is saved.</p>
           </div>
         )}
       </aside>

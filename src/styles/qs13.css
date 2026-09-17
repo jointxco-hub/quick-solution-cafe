@@ -109,3 +109,16 @@
   .qs-cart-sheet .checkout-two{display:grid!important;grid-template-columns:1fr!important}
   .qs-cart-sheet .qs-checkout-choice-grid{display:grid!important;grid-template-columns:1fr!important}
 }
+
+
+/* QS-13.3 · combined XOS order confirmation */
+.qs-cart-success{display:grid;gap:16px;padding:24px 0}
+.qs-cart-success h3{font-size:24px;margin:0}
+.qs-cart-success>p{margin:0;color:#65625d;line-height:1.5}
+.qs-upload-results{display:grid;gap:8px}
+.qs-upload-results>div{display:flex;gap:10px;align-items:flex-start;padding:12px 13px;border-radius:13px;background:#f5f4f1}
+.qs-upload-results>div.ok{background:#eff8f4}
+.qs-upload-results>div.error{background:#fff1ef}
+.qs-upload-results>div>div{display:grid;gap:2px}
+.qs-upload-results small{color:#706c65}
+.qs-cart-success-actions{display:grid;gap:10px}
