@@ -14,10 +14,18 @@ export function loadCart() {
 
 export function saveCart(items) {
   if (typeof window === 'undefined') return
-  const serializable = (items || []).map(({ file, ...item }) => ({
-    ...item,
-    fileMeta: file ? { name: file.name, size: file.size, type: file.type } : item.fileMeta || null
-  }))
+  const serializable = (items || []).map(({ file, files, ...item }) => {
+    const normalizedFiles = Array.isArray(files) ? files : file ? [file] : []
+    return {
+      ...item,
+      fileMeta: normalizedFiles[0]
+        ? { name: normalizedFiles[0].name, size: normalizedFiles[0].size, type: normalizedFiles[0].type }
+        : item.fileMeta || null,
+      filesMeta: normalizedFiles.length
+        ? normalizedFiles.map((entry) => ({ name: entry.name, size: entry.size, type: entry.type }))
+        : item.filesMeta || []
+    }
+  })
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable))
 }
 

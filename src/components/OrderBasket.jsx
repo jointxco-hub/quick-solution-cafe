@@ -14,6 +14,18 @@ function displayFileName(file, fileMeta) {
   return ext ? `Uploaded ${ext} file` : 'Uploaded file'
 }
 
+function itemFiles(item) {
+  if (Array.isArray(item?.files) && item.files.length) return item.files
+  if (item?.file) return [item.file]
+  return []
+}
+
+function itemFileMetas(item) {
+  if (Array.isArray(item?.filesMeta) && item.filesMeta.length) return item.filesMeta
+  if (item?.fileMeta) return [item.fileMeta]
+  return []
+}
+
 function pointLabel(point) {
   const address = point?.address || {}
   return [address.area || address.city, address.line1].filter(Boolean).join(' · ')
@@ -118,22 +130,28 @@ export default function OrderBasket({
       const results = []
 
       for (const item of items) {
-        if (!item.file) continue
+        const files = itemFiles(item)
+        if (!files.length) continue
         const backendItem = backendItems.find((candidate) => candidate.clientItemKey === item.cartId)
         if (!backendItem?.orderItemId) {
-          results.push({ cartId: item.cartId, ok: false, name: displayFileName(item.file, item.fileMeta), error: 'Order item mapping was not returned.' })
+          for (const file of files) {
+            results.push({ cartId: item.cartId, ok: false, name: displayFileName(file), error: 'Order item mapping was not returned.' })
+          }
           continue
         }
-        try {
-          await uploadQuickSolutionFile({
-            orderId: response.orderId,
-            orderItemId: backendItem.orderItemId,
-            uploadToken: response.uploadToken,
-            file: item.file
-          })
-          results.push({ cartId: item.cartId, ok: true, name: displayFileName(item.file, item.fileMeta) })
-        } catch (error) {
-          results.push({ cartId: item.cartId, ok: false, name: displayFileName(item.file, item.fileMeta), error: error?.message || 'Upload failed.' })
+
+        for (const file of files) {
+          try {
+            await uploadQuickSolutionFile({
+              orderId: response.orderId,
+              orderItemId: backendItem.orderItemId,
+              uploadToken: response.uploadToken,
+              file
+            })
+            results.push({ cartId: item.cartId, ok: true, name: displayFileName(file) })
+          } catch (error) {
+            results.push({ cartId: item.cartId, ok: false, name: displayFileName(file), error: error?.message || 'Upload failed.' })
+          }
         }
       }
 
@@ -248,7 +266,14 @@ export default function OrderBasket({
                     <span className="eyebrow">{item.category}</span>
                     <strong>{item.productName}</strong>
                     <small>{item.summary || 'Configured item'}</small>
-                    {displayFileName(item.file, item.fileMeta) ? <small>File: {displayFileName(item.file, item.fileMeta)}</small> : null}
+                    {(() => {
+                      const liveFiles = itemFiles(item)
+                      const metaFiles = itemFileMetas(item)
+                      const count = liveFiles.length || metaFiles.length
+                      if (!count) return null
+                      if (count === 1) return <small>File: {displayFileName(liveFiles[0], metaFiles[0])}</small>
+                      return <small>{count} files attached</small>
+                    })()}
                   </div>
                   <div className="qs-cart-item-side">
                     <strong>{item.quoteRequired ? 'Quote' : formatMoney(item.total)}</strong>

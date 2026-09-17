@@ -33,6 +33,11 @@ function shootLocationLabel(shootLocation) {
 }
 
 function displayFileName(file) {
+  if (Array.isArray(file)) {
+    if (!file.length) return 'No files selected yet'
+    if (file.length === 1) return file[0]?.name || '1 file selected'
+    return `${file.length} files selected`
+  }
   const raw = String(file?.originalName || file?.name || '').trim()
   if (!raw) return 'No file selected yet'
   const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(\.[a-z0-9]+)?$/i
@@ -216,6 +221,7 @@ export default function GuidedOrder({
       product,
       config,
       file,
+      files: Array.isArray(file) ? file : (file ? [file] : []),
       total: estimatedOrderTotal,
       summary: result.summary,
       quoteRequired: false

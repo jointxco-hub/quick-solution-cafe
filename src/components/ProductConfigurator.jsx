@@ -38,6 +38,7 @@ export default function ProductConfigurator({
       product,
       config,
       file,
+      files: Array.isArray(file) ? file : (file ? [file] : []),
       total: result.total,
       summary: result.summary,
       quoteRequired: product?.pricing?.strategy === 'ENQUIRY'

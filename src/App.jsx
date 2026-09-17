@@ -80,15 +80,23 @@ export default function App() {
     saveCart(cart)
   }, [cart])
 
-  const addToCart = ({ product, config, file, total = 0, summary = '', quoteRequired = false }) => {
+  const addToCart = ({ product, config, file, files, total = 0, summary = '', quoteRequired = false }) => {
     const cartId = globalThis.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const normalizedFiles = Array.isArray(files)
+      ? files
+      : Array.isArray(file)
+        ? file
+        : file
+          ? [file]
+          : []
     setCart((items) => [...items, {
       cartId,
       productId: product.id,
       productName: product.name,
       category: product.category,
       config,
-      file,
+      files: normalizedFiles,
+      file: normalizedFiles[0] || null,
       total: Number(total || 0),
       summary,
       quoteRequired: Boolean(quoteRequired)

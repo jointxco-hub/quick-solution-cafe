@@ -81,7 +81,7 @@ export const products = [
     pricingVersion: '2026-09-qsc-02',
     pricing: { strategy: 'PER_PAGE' },
     fields: [
-      { id: 'file', type: 'file', label: 'Choose your document', help: 'PDF is best. DOCX, JPG and PNG are also accepted.' },
+      { id: 'file', type: 'file', label: 'Upload your documents', help: 'Select several files at once. PDF is best. DOCX, JPG and PNG are also accepted.', multiple: true, maxFiles: 25 },
       { id: 'pages', type: 'number', label: 'How many pages are in the document?', shortLabel: 'Pages', default: 1, min: 1, step: 1, required: true },
       { id: 'copies', type: 'number', label: 'How many copies do you need?', shortLabel: 'Copies', default: 1, min: 1, step: 1, required: true },
       {
