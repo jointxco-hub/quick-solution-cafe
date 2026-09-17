@@ -32,6 +32,15 @@ function shootLocationLabel(shootLocation) {
   return 'Photographer / videographer at your location'
 }
 
+function displayFileName(file) {
+  const raw = String(file?.originalName || file?.name || '').trim()
+  if (!raw) return 'No file selected yet'
+  const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(\.[a-z0-9]+)?$/i
+  if (!uuidLike.test(raw)) return raw
+  const ext = raw.includes('.') ? raw.split('.').pop().toUpperCase() : ''
+  return ext ? `Uploaded ${ext} file` : 'Uploaded file'
+}
+
 function LocationSummaryRow({ config }) {
   return (
     <div className="review-location-row">
@@ -65,7 +74,7 @@ function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilme
           ? <LocationSummaryRow key={row.id} config={config}/>
           : <div key={row.id}><span>{row.label}</span><strong>{row.value}</strong></div>
       ))}
-      <div><span>File</span><strong>{file?.name || 'No file selected yet'}</strong></div>
+      <div><span>File</span><strong>{displayFileName(file)}</strong></div>
       {showFulfilment ? (
         <>
           <div><span>{fulfilment === 'delivery' ? 'Fulfilment' : 'Collection point'}</span><strong>{fulfilmentLabel}</strong></div>
@@ -147,6 +156,7 @@ export default function GuidedOrder({
   const [paymentState, setPaymentState] = useState('idle')
   const [paymentError, setPaymentError] = useState('')
   const [locationError, setLocationError] = useState('')
+  const [itemAdded, setItemAdded] = useState(false)
 
   useEffect(() => {
     setConfig(getDefaultConfig(product, preset))
@@ -172,6 +182,7 @@ export default function GuidedOrder({
     setPaymentState('idle')
     setPaymentError('')
     setLocationError('')
+    setItemAdded(false)
   }, [product, journey, preset, initialStepId, initialFile])
 
   useEffect(() => {
@@ -194,7 +205,23 @@ export default function GuidedOrder({
     : journey.steps.filter((item) => item.type !== 'fulfilment')
   const step = shoppingSteps[stepIndex]
   const progress = ((stepIndex + 1) / shoppingSteps.length) * 100
-  const update = (id, value) => setConfig((previous) => ({ ...previous, [id]: value }))
+  const update = (id, value) => {
+    setItemAdded(false)
+    setConfig((previous) => ({ ...previous, [id]: value }))
+  }
+
+  const addCurrentItemToCart = () => {
+    if (itemAdded) return
+    onAddToCart?.({
+      product,
+      config,
+      file,
+      total: estimatedOrderTotal,
+      summary: result.summary,
+      quoteRequired: false
+    })
+    setItemAdded(true)
+  }
 
   const chooseShootLocation = (value) => {
     setLocationError('')
@@ -560,7 +587,7 @@ export default function GuidedOrder({
       <div className="guided-main">
         <div className="guided-topline">
           <button className="text-button" type="button" onClick={onAdvanced}>Switch to Full options</button>
-          <span>{stepIndex + 1} of {journey.steps.length}</span>
+          <span>{stepIndex + 1} of {shoppingSteps.length}</span>
         </div>
         <div className="progress-track"><span style={{ width: `${progress}%` }}/></div>
 
@@ -582,7 +609,7 @@ export default function GuidedOrder({
                   value={config[field.id]}
                   onChange={(value) => update(field.id, value)}
                   file={file}
-                  onFileChange={setFile}
+                  onFileChange={(nextFile) => { setFile(nextFile); setItemAdded(false) }}
                   guided
                 />
               )
@@ -768,18 +795,12 @@ export default function GuidedOrder({
           ) : (
             <div className="qs-cart-review-actions">
               <button
-                className="button primary-green"
+                className={`button primary-green ${itemAdded ? 'added' : ''}`}
                 type="button"
-                onClick={() => onAddToCart?.({
-                  product,
-                  config,
-                  file,
-                  total: estimatedOrderTotal,
-                  summary: result.summary,
-                  quoteRequired: false
-                })}
+                disabled={itemAdded}
+                onClick={addCurrentItemToCart}
               >
-                Add to order <Icon name="bag" size={17}/>
+                {itemAdded ? 'Added to order' : 'Add to order'} <Icon name={itemAdded ? 'check' : 'bag'} size={17}/>
               </button>
             </div>
           )}

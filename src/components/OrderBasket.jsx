@@ -2,6 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon.jsx'
 import { formatMoney } from '../lib/pricing.js'
 
+function displayFileName(file, fileMeta) {
+  const raw = String(file?.originalName || file?.name || fileMeta?.originalName || fileMeta?.name || '').trim()
+  if (!raw) return ''
+  const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(\.[a-z0-9]+)?$/i
+  if (!uuidLike.test(raw)) return raw
+  const ext = raw.includes('.') ? raw.split('.').pop().toUpperCase() : ''
+  return ext ? `Uploaded ${ext} file` : 'Uploaded file'
+}
+
 function pointLabel(point) {
   const address = point?.address || {}
   return [address.area || address.city, address.line1].filter(Boolean).join(' · ')
@@ -71,7 +80,7 @@ export default function OrderBasket({
                     <span className="eyebrow">{item.category}</span>
                     <strong>{item.productName}</strong>
                     <small>{item.summary || 'Configured item'}</small>
-                    {item.file?.name || item.fileMeta?.name ? <small>File: {item.file?.name || item.fileMeta?.name}</small> : null}
+                    {displayFileName(item.file, item.fileMeta) ? <small>File: {displayFileName(item.file, item.fileMeta)}</small> : null}
                   </div>
                   <div className="qs-cart-item-side">
                     <strong>{item.quoteRequired ? 'Quote' : formatMoney(item.total)}</strong>
