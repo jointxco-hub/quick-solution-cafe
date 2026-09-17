@@ -7,7 +7,8 @@ const productImages = {
   'vinyl-stickers': '/qs11/product-vinyl-labels-clean.webp',
   'a4-print': '/qs11/product-document-printing-clean.webp',
   'business-cards': '/qs11/product-business-cards-clean.webp',
-  'printed-tshirt': '/qs11/product-tshirt-clean.webp'
+  'printed-tshirt': '/qs11/product-tshirt-clean.webp',
+  'media-services': '/qs12/product-photography-video.webp'
 }
 
 export default function ProductCard({ product, active = false, onConfigure }) {
