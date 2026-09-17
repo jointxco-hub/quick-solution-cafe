@@ -27,6 +27,7 @@ export default function App() {
   const [query, setQuery] = useState('')
   const [cart, setCart] = useState(() => loadCart())
   const [cartOpen, setCartOpen] = useState(false)
+  const [cartNotice, setCartNotice] = useState('')
   const [orderMode, setOrderMode] = useState('guided')
   const [journeyId, setJourneyId] = useState('document-guided')
   const [taskContext, setTaskContext] = useState(null)
@@ -92,7 +93,8 @@ export default function App() {
       summary,
       quoteRequired: Boolean(quoteRequired)
     }])
-    setCartOpen(true)
+    setCartNotice(`${product.name} added to your order`)
+    window.setTimeout(() => setCartNotice(''), 2200)
   }
 
   const removeCartItem = (cartId) => setCart((items) => items.filter((item) => item.cartId !== cartId))
@@ -370,10 +372,12 @@ export default function App() {
       <OrderBasket
         items={cart}
         open={cartOpen}
+        fulfilmentPoints={fulfilmentPoints}
         onClose={() => setCartOpen(false)}
         onRemove={removeCartItem}
         onContinueShopping={continueShopping}
       />
+      {cartNotice ? <div className="qs-cart-toast" role="status"><Icon name="bag" size={16}/><span>{cartNotice}</span></div> : null}
       {cart.length > 0 && !cartOpen ? (
         <button className="qs-cart-floating" type="button" onClick={() => setCartOpen(true)}>
           <span><strong>{cart.length} item{cart.length === 1 ? '' : 's'}</strong><small>View order</small></span>

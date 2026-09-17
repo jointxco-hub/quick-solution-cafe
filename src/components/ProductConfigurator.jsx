@@ -92,13 +92,7 @@ export default function ProductConfigurator({
         >
           Add to order
         </button>
-        <button
-          className="secondary-dark"
-          type="button"
-          onClick={() => onContinue?.({ config, file })}
-        >
-          Buy this item now
-        </button>
+        <p className="qs-shop-first-note">Add this item to your order. You will choose collection or delivery and enter your details once at checkout.</p>
         <button
           className="secondary-dark"
           type="button"

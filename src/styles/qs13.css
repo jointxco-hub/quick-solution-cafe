@@ -34,3 +34,44 @@
   .qs-cart-review-actions{width:100%;margin-left:0;display:grid}
   .qs-cart-review-actions .button{width:100%}
 }
+
+
+/* QS-13.2 · shop first, checkout once */
+.qs-cart-toast{
+  position:fixed;right:24px;bottom:86px;z-index:95;display:flex;align-items:center;gap:9px;
+  background:#fff;border:1px solid rgba(17,17,15,.12);border-radius:999px;padding:11px 15px;
+  box-shadow:0 12px 36px rgba(17,17,15,.14);font-weight:700;font-size:13px
+}
+.qs-shopping-ready{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-radius:16px;background:#f0f7f4;margin-top:16px}
+.qs-shopping-ready>div{display:grid;gap:4px}
+.qs-shopping-ready span{color:#5f655f;line-height:1.45}
+.qs-shop-first-note{font-size:12px;line-height:1.45;opacity:.72;margin:0}
+.qs-basket-checkout{display:grid;gap:18px;padding:18px 0 4px}
+.qs-checkout-back{justify-self:start}
+.qs-checkout-section{display:grid;gap:14px;padding:17px;border:1px solid rgba(17,17,15,.1);border-radius:18px;background:#faf9f7}
+.qs-checkout-section-head{display:grid;gap:4px}
+.qs-checkout-section-head h3{margin:0;font-size:20px}
+.qs-checkout-section-head p{margin:0;color:#6d6a64;font-size:13px}
+.qs-checkout-choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.qs-checkout-choice-grid>button{display:flex;align-items:flex-start;gap:9px;text-align:left;border:1px solid rgba(17,17,15,.12);background:#fff;border-radius:14px;padding:12px;cursor:pointer}
+.qs-checkout-choice-grid>button.selected{border-color:#008B72;box-shadow:0 0 0 1px #008B72 inset}
+.qs-checkout-choice-grid>button:disabled{opacity:.45;cursor:not-allowed}
+.qs-checkout-choice-grid span{display:grid;gap:2px}
+.qs-checkout-choice-grid small{color:#77736c}
+.qs-checkout-points{display:grid;gap:8px}
+.qs-checkout-points>button{display:flex;justify-content:space-between;align-items:center;text-align:left;border:1px solid rgba(17,17,15,.1);background:#fff;border-radius:13px;padding:12px 13px;cursor:pointer}
+.qs-checkout-points>button.selected{border-color:#008B72}
+.qs-checkout-points>button>span:first-child{display:grid;gap:3px}
+.qs-checkout-points small{color:#77736c}
+.qs-checkout-total{display:flex;justify-content:space-between;align-items:center;padding:16px 2px;border-top:1px solid rgba(17,17,15,.1)}
+.qs-checkout-total>div{display:grid;gap:3px}
+.qs-checkout-total small{color:#77736c}
+.qs-checkout-total strong{font-size:22px}
+.qs-place-order{width:100%}
+
+@media(max-width:720px){
+  .qs-cart-toast{left:14px;right:14px;bottom:82px;justify-content:center;border-radius:16px}
+  .qs-checkout-choice-grid{grid-template-columns:1fr}
+  .qs-checkout-section{padding:14px}
+  .qs-basket-checkout .checkout-two{grid-template-columns:1fr}
+}

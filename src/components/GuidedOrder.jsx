@@ -189,8 +189,11 @@ export default function GuidedOrder({
 
   const result = useMemo(() => calculateProductPrice(product, config), [product, config])
   const isServiceRequest = product?.pricing?.strategy === 'ENQUIRY' || product?.serviceType === 'media'
-  const step = journey.steps[stepIndex]
-  const progress = ((stepIndex + 1) / journey.steps.length) * 100
+  const shoppingSteps = isServiceRequest
+    ? journey.steps
+    : journey.steps.filter((item) => item.type !== 'fulfilment')
+  const step = shoppingSteps[stepIndex]
+  const progress = ((stepIndex + 1) / shoppingSteps.length) * 100
   const update = (id, value) => setConfig((previous) => ({ ...previous, [id]: value }))
 
   const chooseShootLocation = (value) => {
@@ -218,7 +221,7 @@ export default function GuidedOrder({
   const quickPoints = fulfilmentPoints.filter((point) => point.kind === 'quick_point' && point.collectionEnabled !== false)
   const selectedPoint = fulfilmentPoints.find((point) => point.id === selectedPointId)
   const selectedFulfilmentFee = isServiceRequest || fulfilment === 'delivery' ? 0 : Number(selectedPoint?.feeAmount || 0)
-  const estimatedOrderTotal = isServiceRequest ? 0 : Number(result.total || 0) + selectedFulfilmentFee
+  const estimatedOrderTotal = isServiceRequest ? 0 : Number(result.total || 0)
 
   useEffect(() => {
     if (fulfilment === 'cafe' && cafePoints.length && !cafePoints.some((point) => point.id === selectedPointId)) {
@@ -701,42 +704,61 @@ export default function GuidedOrder({
 
         {step.type === 'review' && (
           <>
-            <ReviewRows product={product} config={config} fulfilment={fulfilment} file={file} selectedPoint={selectedPoint} fulfilmentFee={selectedFulfilmentFee} showFulfilment={!isServiceRequest} isServiceRequest={isServiceRequest}/>
-            <div className="guest-note"><Icon name="user" size={19}/><span><strong>No account required for a quick order.</strong> We only need a name and one reliable way to contact you.</span></div>
+            <ReviewRows
+              product={product}
+              config={config}
+              fulfilment={fulfilment}
+              file={file}
+              selectedPoint={selectedPoint}
+              fulfilmentFee={selectedFulfilmentFee}
+              showFulfilment={false}
+              isServiceRequest={isServiceRequest}
+            />
 
-            <div className="checkout-contact">
-              <div className="checkout-contact-heading">
-                <span className="eyebrow">Your details</span>
-                <h3>Who is this order for?</h3>
+            {isServiceRequest ? (
+              <>
+                <div className="guest-note"><Icon name="user" size={19}/><span><strong>No account required for a quick request.</strong> We only need a name and one reliable way to contact you.</span></div>
+                <div className="checkout-contact">
+                  <div className="checkout-contact-heading">
+                    <span className="eyebrow">Your details</span>
+                    <h3>Who is this request for?</h3>
+                  </div>
+                  <label className="checkout-field">
+                    <span>Name</span>
+                    <input autoComplete="name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Your name"/>
+                  </label>
+                  <div className="checkout-two">
+                    <label className="checkout-field">
+                      <span>WhatsApp / phone</span>
+                      <input autoComplete="tel" inputMode="tel" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder="e.g. 075 123 4567"/>
+                    </label>
+                    <label className="checkout-field">
+                      <span>Email <small>optional if phone is given</small></span>
+                      <input autoComplete="email" inputMode="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="name@example.com"/>
+                    </label>
+                  </div>
+                  <label className="checkout-field">
+                    <span>Anything we should know? <small>optional</small></span>
+                    <textarea value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} placeholder="Deadline, special instructions, or context"/>
+                  </label>
+                </div>
+                {submitError && <div className="checkout-error" role="alert">{submitError}</div>}
+              </>
+            ) : (
+              <div className="qs-shopping-ready">
+                <Icon name="bag" size={19}/>
+                <div>
+                  <strong>Ready for your basket.</strong>
+                  <span>Add this item and keep shopping. Collection, delivery and your contact details are handled once at checkout.</span>
+                </div>
               </div>
-              <label className="checkout-field">
-                <span>Name</span>
-                <input autoComplete="name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Your name"/>
-              </label>
-              <div className="checkout-two">
-                <label className="checkout-field">
-                  <span>WhatsApp / phone</span>
-                  <input autoComplete="tel" inputMode="tel" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder="e.g. 075 123 4567"/>
-                </label>
-                <label className="checkout-field">
-                  <span>Email <small>optional if phone is given</small></span>
-                  <input autoComplete="email" inputMode="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="name@example.com"/>
-                </label>
-              </div>
-              <label className="checkout-field">
-                <span>Anything we should know? <small>optional</small></span>
-                <textarea value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} placeholder="Deadline, special instructions, or context"/>
-              </label>
-              {file && <p className="file-stage-message secure"><strong>{file.name}</strong> will be uploaded to private Joint X storage after the order number is created. Maximum file size: 20MB.</p>}
-            </div>
-
-            {submitError && <div className="checkout-error" role="alert">{submitError}</div>}
+            )}
           </>
         )}
 
         <div className="guided-actions">
           <button className="button ghost" type="button" disabled={stepIndex === 0 || submitState === 'submitting' || submitState === 'uploading'} onClick={() => setStepIndex((value) => Math.max(0, value - 1))}>Back</button>
-          {stepIndex < journey.steps.length - 1 ? (
+          {stepIndex < shoppingSteps.length - 1 ? (
             <button className="button primary-green" type="button" onClick={goNext}>Continue <Icon name="arrowRight" size={17}/></button>
           ) : isServiceRequest ? (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
@@ -759,9 +781,6 @@ export default function GuidedOrder({
               >
                 Add to order <Icon name="bag" size={17}/>
               </button>
-              <button className="button ghost" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-                {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : `Buy this item now · ${formatMoney(estimatedOrderTotal)}`}
-              </button>
             </div>
           )}
         </div>
@@ -775,8 +794,6 @@ export default function GuidedOrder({
           {result.lines.map((line, index) => (
             <div key={`${line.label}-${index}`}><span>{line.label}</span><strong>{line.text ?? formatMoney(line.value)}</strong></div>
           ))}
-          {!isServiceRequest && fulfilment !== 'delivery' && selectedPoint ? <div><span>{selectedPoint.name} collection</span><strong>{selectedFulfilmentFee > 0 ? formatMoney(selectedFulfilmentFee) : 'Free'}</strong></div> : null}
-          {!isServiceRequest && fulfilment === 'delivery' ? <div><span>Delivery</span><strong>Confirmed before payment</strong></div> : null}
         </div>
         <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.' : 'The backend recalculates the price before saving the order, so the browser cannot invent its own total.'}</span></div>
         <a className="help-link" href="https://wa.me/27754534646" target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
