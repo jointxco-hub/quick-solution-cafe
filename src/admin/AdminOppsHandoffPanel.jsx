@@ -171,7 +171,7 @@ export default function AdminOppsHandoffPanel() {
     handoffPoint?.address?.area || handoffPoint?.address?.city,
     handoffPoint?.address?.line1
   ].filter(Boolean).join(' · ')
-  const handoffPointKind = quickSolutionMeta?.fulfilment_type === 'quick_point' ? 'Quick Point' : quickSolutionMeta?.fulfilment_type === 'cafe' ? 'Quick Solution cafÃ©' : null
+  const handoffPointKind = quickSolutionMeta?.fulfilment_type === 'quick_point' ? 'Quick Point' : quickSolutionMeta?.fulfilment_type === 'cafe' ? 'Quick Solution café' : null
   const fulfilmentDisplay = handoffPoint?.name
     ? `${handoffPointKind || 'Collection'} · ${handoffPoint.name}`
     : fulfilmentLabel(proposedOppsOrder?.fulfillment_type)

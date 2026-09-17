@@ -1,4 +1,4 @@
-/* QS-10A — storefront discovery polish */
+﻿/* QS-10A â€” storefront discovery polish */
 .qs10-proof-section{padding-top:34px}
 .qs10-proof-heading{display:grid;grid-template-columns:1.15fr .85fr;gap:72px;align-items:end;margin-bottom:30px}
 .qs10-proof-heading h2{font-size:clamp(42px,5vw,70px);line-height:.94;letter-spacing:-.055em;margin:14px 0 0}
@@ -32,7 +32,7 @@
   .qs10-local-band{padding:18px}
 }
 
-/* QS-10A.1 � visual refinement */
+/* QS-10A.1 — visual refinement */
 .start-section {
   padding-bottom: 52px;
 }
@@ -121,7 +121,7 @@
   }
 }
 
-/* QS-10B � real storefront photography */
+/* QS-10B — real storefront photography */
 .product-card-media.has-photo {
   background: #ecece7;
 }
@@ -161,3 +161,4 @@
   color: #77776f;
   white-space: nowrap;
 }
+

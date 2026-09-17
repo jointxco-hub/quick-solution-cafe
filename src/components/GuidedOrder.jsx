@@ -651,7 +651,7 @@ export default function GuidedOrder({
             {fulfilment === 'cafe' && cafePoints.length > 0 && (
               <div className="collection-point-picker">
                 <div className="collection-point-picker-head">
-                  <div><span className="eyebrow">Collect from Quick Solution</span><strong>Choose the cafÃ© or branch.</strong></div>
+                  <div><span className="eyebrow">Collect from Quick Solution</span><strong>Choose the café or branch.</strong></div>
                   <small>{cafePoints.length} location{cafePoints.length === 1 ? '' : 's'} available</small>
                 </div>
                 <div className="collection-point-grid">
@@ -661,7 +661,7 @@ export default function GuidedOrder({
                       point={point}
                       selected={selectedPointId === point.id}
                       onSelect={() => setSelectedPointId(point.id)}
-                      typeLabel="Quick Solution cafÃ©"
+                      typeLabel="Quick Solution café"
                     />
                   ))}
                 </div>
