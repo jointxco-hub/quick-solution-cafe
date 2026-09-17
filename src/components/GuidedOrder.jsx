@@ -118,7 +118,8 @@ export default function GuidedOrder({
   onAdvanced,
   fulfilmentPoints = [],
   initialStepId = null,
-  initialFile = null
+  initialFile = null,
+  onAddToCart
 }) {
   const [config, setConfig] = useState(() => getDefaultConfig(product, preset))
   const [file, setFile] = useState(initialFile)
@@ -737,11 +738,31 @@ export default function GuidedOrder({
           <button className="button ghost" type="button" disabled={stepIndex === 0 || submitState === 'submitting' || submitState === 'uploading'} onClick={() => setStepIndex((value) => Math.max(0, value - 1))}>Back</button>
           {stepIndex < journey.steps.length - 1 ? (
             <button className="button primary-green" type="button" onClick={goNext}>Continue <Icon name="arrowRight" size={17}/></button>
-          ) : (
+          ) : isServiceRequest ? (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-              {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : isServiceRequest ? 'Send media request' : `Create order · ${formatMoney(estimatedOrderTotal)}`}
-              {submitState !== 'submitting' && submitState !== 'uploading' && <Icon name="arrowRight" size={17}/>}
+              {submitState === 'submitting' ? 'Sending request…' : 'Send media request'}
+              {submitState !== 'submitting' && <Icon name="arrowRight" size={17}/>}
             </button>
+          ) : (
+            <div className="qs-cart-review-actions">
+              <button
+                className="button primary-green"
+                type="button"
+                onClick={() => onAddToCart?.({
+                  product,
+                  config,
+                  file,
+                  total: estimatedOrderTotal,
+                  summary: result.summary,
+                  quoteRequired: false
+                })}
+              >
+                Add to order <Icon name="bag" size={17}/>
+              </button>
+              <button className="button ghost" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
+                {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : `Buy this item now · ${formatMoney(estimatedOrderTotal)}`}
+              </button>
+            </div>
           )}
         </div>
       </div>

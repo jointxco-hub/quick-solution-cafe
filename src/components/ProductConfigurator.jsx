@@ -8,7 +8,8 @@ export default function ProductConfigurator({
   preset = {},
   onSnapshot,
   onGuided,
-  onContinue
+  onContinue,
+  onAddToCart
 }) {
   const [config, setConfig] = useState(() => getDefaultConfig(product, preset))
   const [file, setFile] = useState(null)
@@ -80,9 +81,23 @@ export default function ProductConfigurator({
         <button
           className="primary-light"
           type="button"
+          onClick={() => onAddToCart?.({
+            product,
+            config,
+            file,
+            total: result.total,
+            summary: result.summary,
+            quoteRequired: product?.pricing?.strategy === 'ENQUIRY'
+          })}
+        >
+          Add to order
+        </button>
+        <button
+          className="secondary-dark"
+          type="button"
           onClick={() => onContinue?.({ config, file })}
         >
-          {product.nextActionLabel || 'Review order'}
+          Buy this item now
         </button>
         <button
           className="secondary-dark"

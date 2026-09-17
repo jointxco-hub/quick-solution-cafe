@@ -10,6 +10,8 @@ import QuickTaskCard from './components/QuickTaskCard.jsx'
 import SubtleStoryRail from './components/SubtleStoryRail.jsx'
 import ProofGallery from './components/ProofGallery.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
+import OrderBasket from './components/OrderBasket.jsx'
+import { loadCart, saveCart } from './lib/cartStore.js'
 import { categories, guidedJourneys, products as defaultProducts, quickTasks } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
@@ -23,6 +25,8 @@ export default function App() {
   const [guidedStartStep, setGuidedStartStep] = useState(null)
   const [guidedInitialFile, setGuidedInitialFile] = useState(null)
   const [query, setQuery] = useState('')
+  const [cart, setCart] = useState(() => loadCart())
+  const [cartOpen, setCartOpen] = useState(false)
   const [orderMode, setOrderMode] = useState('guided')
   const [journeyId, setJourneyId] = useState('document-guided')
   const [taskContext, setTaskContext] = useState(null)
@@ -70,6 +74,32 @@ export default function App() {
   }, [query, customerProducts])
 
   const scrollToConfigure = () => window.setTimeout(() => configureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+
+  useEffect(() => {
+    saveCart(cart)
+  }, [cart])
+
+  const addToCart = ({ product, config, file, total = 0, summary = '', quoteRequired = false }) => {
+    const cartId = globalThis.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    setCart((items) => [...items, {
+      cartId,
+      productId: product.id,
+      productName: product.name,
+      category: product.category,
+      config,
+      file,
+      total: Number(total || 0),
+      summary,
+      quoteRequired: Boolean(quoteRequired)
+    }])
+    setCartOpen(true)
+  }
+
+  const removeCartItem = (cartId) => setCart((items) => items.filter((item) => item.cartId !== cartId))
+  const continueShopping = () => {
+    setCartOpen(false)
+    window.setTimeout(() => document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+  }
 
   const openAdvanced = (product, nextPreset = {}) => {
     setSelectedId(product.id)
@@ -276,6 +306,7 @@ export default function App() {
                   initialStepId={guidedStartStep}
                   initialFile={guidedInitialFile}
                   onAdvanced={() => setOrderMode('advanced')}
+                  onAddToCart={addToCart}
                 />
               ) : (
                 <ProductConfigurator
@@ -284,6 +315,7 @@ export default function App() {
                   preset={preset}
                   onGuided={selectedJourney ? () => openGuided(selectedProduct, selectedJourney.id, preset) : null}
                   onContinue={({ config, file }) => continueFromAdvanced(selectedProduct, config, file)}
+                  onAddToCart={addToCart}
                 />
               )}
             </div>
@@ -335,6 +367,19 @@ export default function App() {
           </div>
         </section>
       </main>
+      <OrderBasket
+        items={cart}
+        open={cartOpen}
+        onClose={() => setCartOpen(false)}
+        onRemove={removeCartItem}
+        onContinueShopping={continueShopping}
+      />
+      {cart.length > 0 && !cartOpen ? (
+        <button className="qs-cart-floating" type="button" onClick={() => setCartOpen(true)}>
+          <span><strong>{cart.length} item{cart.length === 1 ? '' : 's'}</strong><small>View order</small></span>
+          <Icon name="bag" size={18}/>
+        </button>
+      ) : null}
       <footer className="shell footer"><strong>Joint X Quick Solution Café</strong><span>Location 001 · Built on XOS · {catalogSource === 'supabase' ? 'Live staging catalogue' : 'Local fallback'} · <a href="#admin">Product Admin</a></span></footer>
     </div>
   )
