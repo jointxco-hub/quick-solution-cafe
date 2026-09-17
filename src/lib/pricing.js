@@ -57,7 +57,7 @@ function priceArea(product, config) {
 }
 
 function pricePages(product, config) {
-  const pages = Math.max(Number(config.pages || 1), 1)
+  const pages = Math.max(Number(config.pages || 0), 0)
   const copies = Math.max(Number(config.copies || 1), 1)
   const printMode = option(product, 'printMode', config.printMode)
   const sides = option(product, 'sides', config.sides)
@@ -69,7 +69,9 @@ function pricePages(product, config) {
 
   return {
     total,
-    summary: `${pages} page${pages === 1 ? '' : 's'} × ${copies} cop${copies === 1 ? 'y' : 'ies'}`,
+    summary: pages > 0
+      ? `${pages} page${pages === 1 ? '' : 's'} × ${copies} cop${copies === 1 ? 'y' : 'ies'}`
+      : 'Page selection needed',
     lines: [
       { label: printMode.label, value: printCost },
       { label: sides.label, text: sides.id === 'double' ? 'paper-saving option' : 'standard' },

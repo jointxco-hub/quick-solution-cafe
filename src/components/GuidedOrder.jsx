@@ -2,6 +2,7 @@
 import Icon from './Icon.jsx'
 import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
 import FieldControl from './FieldControl.jsx'
+import DocumentPrintPlan from './DocumentPrintPlan.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
 import { fulfilmentOptions } from '../data/products.js'
 import { beginQuickSolutionPayment, createQuickSolutionOrder, createQuickSolutionServiceRequest, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
@@ -215,6 +216,11 @@ export default function GuidedOrder({
     setConfig((previous) => ({ ...previous, [id]: value }))
   }
 
+  const updateMany = (patch) => {
+    setItemAdded(false)
+    setConfig((previous) => ({ ...previous, ...patch }))
+  }
+
   const addCurrentItemToCart = () => {
     if (itemAdded) return
     onAddToCart?.({
@@ -242,6 +248,9 @@ export default function GuidedOrder({
   }
 
   const goNext = () => {
+    if (product.id === 'a4-print' && step.id === 'quantity' && !config.documentPlanValid) {
+      return
+    }
     if (step.type === 'location' && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
       setLocationError('Add the area or address where the shoot should happen.')
       return
@@ -603,7 +612,13 @@ export default function GuidedOrder({
           <p>{step.helper}</p>
         </div>
 
-        {step.fields && (
+        {product.id === 'a4-print' && step.id === 'quantity' ? (
+          <DocumentPrintPlan
+            files={Array.isArray(file) ? file : (file ? [file] : [])}
+            config={config}
+            onChange={updateMany}
+          />
+        ) : step.fields && (
           <div className="guided-fields">
             {step.fields.map((fieldId) => {
               const field = product.fields.find((item) => item.id === fieldId)
@@ -615,7 +630,18 @@ export default function GuidedOrder({
                   value={config[field.id]}
                   onChange={(value) => update(field.id, value)}
                   file={file}
-                  onFileChange={(nextFile) => { setFile(nextFile); setItemAdded(false) }}
+                  onFileChange={(nextFile) => {
+                    setFile(nextFile)
+                    setItemAdded(false)
+                    if (product.id === 'a4-print') {
+                      setConfig((previous) => ({
+                        ...previous,
+                        pages: 0,
+                        documentPlanValid: false,
+                        documentInstructions: []
+                      }))
+                    }
+                  }}
                   guided
                 />
               )
@@ -792,7 +818,14 @@ export default function GuidedOrder({
         <div className="guided-actions">
           <button className="button ghost" type="button" disabled={stepIndex === 0 || submitState === 'submitting' || submitState === 'uploading'} onClick={() => setStepIndex((value) => Math.max(0, value - 1))}>Back</button>
           {stepIndex < shoppingSteps.length - 1 ? (
-            <button className="button primary-green" type="button" onClick={goNext}>Continue <Icon name="arrowRight" size={17}/></button>
+            <button
+              className="button primary-green"
+              type="button"
+              disabled={product.id === 'a4-print' && step.id === 'quantity' && !config.documentPlanValid}
+              onClick={goNext}
+            >
+              Continue <Icon name="arrowRight" size={17}/>
+            </button>
           ) : isServiceRequest ? (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
               {submitState === 'submitting' ? 'Sending request…' : 'Send media request'}

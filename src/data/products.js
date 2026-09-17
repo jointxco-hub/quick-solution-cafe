@@ -82,7 +82,7 @@ export const products = [
     pricing: { strategy: 'PER_PAGE' },
     fields: [
       { id: 'file', type: 'file', label: 'Upload your documents', help: 'Select several files at once. PDF is best. DOCX, JPG and PNG are also accepted.', multiple: true, maxFiles: 25 },
-      { id: 'pages', type: 'number', label: 'How many pages are in the document?', shortLabel: 'Pages', default: 1, min: 1, step: 1, required: true },
+      { id: 'pages', type: 'number', label: 'A4 pages to print', shortLabel: 'Pages to print', default: 0, min: 0, step: 1, required: true },
       { id: 'copies', type: 'number', label: 'How many copies do you need?', shortLabel: 'Copies', default: 1, min: 1, step: 1, required: true },
       {
         id: 'printMode', type: 'segmented', label: 'How should we print it?', shortLabel: 'Print colour', default: 'bw',
@@ -447,7 +447,7 @@ export const guidedJourneys = [
     intro: 'A few simple questions and we will prepare the print job correctly.',
     steps: [
       { id: 'file', eyebrow: 'Step 1', title: 'Send us the document', helper: 'Upload the file from your phone or computer.', fields: ['file'] },
-      { id: 'quantity', eyebrow: 'Step 2', title: 'Tell us how much to print', helper: 'If you are not sure how many pages are in the file, we can confirm before production.', fields: ['pages', 'copies'] },
+      { id: 'quantity', eyebrow: 'Step 2', title: 'Tell us what to print', helper: 'We keep this simple: print everything by default, or open a file only when you need certain pages.', fields: ['pages', 'copies'] },
       { id: 'print', eyebrow: 'Step 3', title: 'Choose how it should look', helper: 'Black & white is usually best for CVs, forms and school work.', fields: ['printMode', 'sides', 'finish'] },
       { id: 'fulfilment', eyebrow: 'Step 4', title: 'How do you want to get it?', helper: 'Choose what is most convenient. You can change this before payment.', type: 'fulfilment' },
       { id: 'review', eyebrow: 'Final step', title: 'Check your order', helper: 'Make sure the details below match what you need.', type: 'review' }

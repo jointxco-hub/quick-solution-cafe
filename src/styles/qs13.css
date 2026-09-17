@@ -231,3 +231,65 @@
     gap:2px;
   }
 }
+
+
+/* QS-13.4.2 · progressive document print instructions */
+.doc-plan{display:grid;gap:16px}
+.doc-plan-intro{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.doc-plan-intro h3{margin:5px 0 5px;font-size:24px}
+.doc-plan-intro p{margin:0;color:#69655f;line-height:1.5;max-width:560px}
+.doc-plan-total{min-width:120px;padding:13px 15px;border-radius:16px;background:#f2f0ec;display:grid;text-align:right}
+.doc-plan-total strong{font-size:25px}
+.doc-plan-total span{font-size:11px;color:#6d6962}
+.doc-plan-total.ready{background:#edf8f4}
+.doc-plan-files{display:grid;gap:10px}
+.doc-plan-file{border:1px solid rgba(17,17,15,.1);border-radius:16px;background:#fff;overflow:hidden}
+.doc-plan-file.needs-info{border-color:rgba(204,51,0,.32)}
+.doc-plan-file-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 15px}
+.doc-plan-file-head>div{display:grid;gap:3px;min-width:0}
+.doc-plan-file-head strong{overflow-wrap:anywhere}
+.doc-plan-file-head small{color:#716d66}
+.doc-plan-change{border:0;background:none;color:#008B72;text-decoration:underline;font-weight:700;cursor:pointer;white-space:nowrap}
+.doc-plan-file-options{display:grid;gap:12px;padding:0 15px 15px;border-top:1px solid rgba(17,17,15,.08)}
+.doc-plan-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px}
+.doc-plan-choice button{display:grid;gap:3px;text-align:left;border:1px solid rgba(17,17,15,.11);background:#faf9f7;border-radius:13px;padding:12px;cursor:pointer}
+.doc-plan-choice button.selected{border-color:#008B72;box-shadow:0 0 0 1px #008B72 inset;background:#f3faf7}
+.doc-plan-choice small{color:#746f68;line-height:1.35}
+.doc-plan-input{margin:0}
+.doc-plan-copies{padding:14px 15px;border:1px solid rgba(17,17,15,.1);border-radius:16px;background:#faf9f7}
+.doc-plan-note{display:flex;gap:8px;align-items:flex-start;padding:13px 15px;border-radius:14px;background:#fff3ef}
+.doc-plan-note span{color:#6c6761}
+.doc-plan-note.ready{background:#edf8f4}
+.doc-plan-empty{display:grid;gap:4px;padding:18px;border-radius:16px;background:#fff3ef}
+.doc-plan-empty span{color:#6c6761}
+
+@media(max-width:720px){
+  .doc-plan-intro{display:grid}
+  .doc-plan-total{min-width:0;text-align:left}
+  .doc-plan-choice{grid-template-columns:1fr}
+  .doc-plan-file-head{align-items:flex-start}
+}
+
+
+/* QS-13.4.2a · document state + upload readability */
+.doc-plan-change:disabled{
+  color:#9b5c49;
+  text-decoration:none;
+  cursor:default;
+}
+.upload-field-multiple .upload-picker{
+  display:grid;
+}
+.upload-field-multiple .upload-copy{
+  overflow:hidden;
+}
+.upload-field-multiple .upload-copy strong,
+.upload-field-multiple .upload-copy small{
+  overflow-wrap:normal;
+  word-break:normal;
+}
+@media(min-width:721px){
+  .upload-field-multiple .upload-picker{
+    grid-template-columns:44px minmax(260px,1fr) auto;
+  }
+}
