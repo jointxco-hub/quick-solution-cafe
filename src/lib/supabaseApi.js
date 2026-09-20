@@ -270,6 +270,23 @@ export function buildPricingDefinition(product) {
       serviceType: product?.serviceType || 'service'
     }
   }
+  if (strategy === 'SUPPLIER_MARGIN' || strategy === 'PHOTOGRAPHY_SESSION') {
+    // These two strategies split pricing into a customer-safe mirror
+    // (product.pricing — selling prices only) and a staff-only
+    // pricing_definition (product.pricingDefinition — reference
+    // prices/margin rate/session rates), unlike every other strategy
+    // above where both are effectively the same numbers. The generic
+    // admin PricingEditor only reads/edits product.pricing and
+    // product.fields[].options[], so it cannot safely edit reference
+    // prices or margin without a dedicated section (not built yet —
+    // see AdminProductManager.jsx). Passing pricingDefinition through
+    // unchanged still lets admins rename/activate-deactivate these
+    // products without corrupting their pricing.
+    if (!product.pricingDefinition) {
+      throw new Error('This product’s rates can only be edited via a database migration until a dedicated admin editor is built for this pricing strategy.')
+    }
+    return product.pricingDefinition
+  }
   throw new Error(`Unsupported pricing strategy: ${strategy || 'unknown'}`)
 }
 

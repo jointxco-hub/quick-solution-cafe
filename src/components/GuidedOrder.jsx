@@ -263,7 +263,13 @@ export default function GuidedOrder({
   const quickPoints = fulfilmentPoints.filter((point) => point.kind === 'quick_point' && point.collectionEnabled !== false)
   const selectedPoint = fulfilmentPoints.find((point) => point.id === selectedPointId)
   const selectedFulfilmentFee = isServiceRequest || fulfilment === 'delivery' ? 0 : Number(selectedPoint?.feeAmount || 0)
-  const estimatedOrderTotal = isServiceRequest ? 0 : Number(result.total || 0)
+  // ENQUIRY always reports metrics.quoteRequired:true, so this stays
+  // 0/"Quote" for it unchanged — PHOTOGRAPHY_SESSION can report a real,
+  // server-matching total once every chosen option (session/extra
+  // edits/deliverables) is priced, and the customer should see that
+  // live estimate instead of a blanket "Quote" for the whole flow.
+  const isPricedServiceRequest = isServiceRequest && result.metrics?.quoteRequired === false
+  const estimatedOrderTotal = (!isServiceRequest || isPricedServiceRequest) ? Number(result.total || 0) : 0
 
   useEffect(() => {
     if (fulfilment === 'cafe' && cafePoints.length && !cafePoints.some((point) => point.id === selectedPointId)) {
@@ -463,6 +469,11 @@ export default function GuidedOrder({
   }
   if (complete) {
     const total = Number(orderResponse?.totalAmount ?? estimatedOrderTotal)
+    // ENQUIRY responses never carry quoteRequired:false, so this stays
+    // "Quote after review" for that flow unchanged — a priced
+    // PHOTOGRAPHY_SESSION booking (every chosen option priced) shows
+    // its real, server-confirmed amount instead.
+    const isPricedResponse = isServiceRequest && orderResponse?.quoteRequired === false
     const orderNumber = orderResponse?.orderNumber || 'Order created'
     const confirmationPoint = fulfilment === 'delivery' ? null : selectedPoint
     const confirmationArea = confirmationPoint ? pointArea(confirmationPoint) : ''
@@ -482,10 +493,10 @@ export default function GuidedOrder({
         <div className="complete-mark"><Icon name="bag" size={28}/></div>
         <span className="eyebrow">{isServiceRequest ? 'Request received' : 'Order received'}</span>
         <h2>{orderNumber}</h2>
-        <p>{isServiceRequest ? 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.' : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
-        <div className="complete-summary"><strong>{product.name}</strong><span>{isServiceRequest ? 'Quote after review' : formatMoney(total)}</span></div>
+        <p>{isServiceRequest ? (isPricedResponse ? 'We saved your booking request at the price shown below. Quick Solution will confirm your schedule and arrange payment separately — nothing is charged yet.' : 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.') : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
+        <div className="complete-summary"><strong>{product.name}</strong><span>{isServiceRequest && !isPricedResponse ? 'Quote after review' : formatMoney(total)}</span></div>
 
-        {isServiceRequest && (
+        {isServiceRequest && config.shootLocation && (
           <div className="complete-fulfilment-card">
             <span className="complete-fulfilment-icon"><Icon name="camera" size={21}/></span>
             <div>
@@ -847,15 +858,15 @@ export default function GuidedOrder({
       </div>
 
       <aside className="guided-summary" aria-live="polite">
-        <span className="eyebrow inverse">{isServiceRequest ? 'Request type' : 'Estimated total'}</span>
-        <div className="guided-price">{isServiceRequest ? 'Quote' : formatMoney(estimatedOrderTotal)}</div>
-        <p>{isServiceRequest ? 'We will confirm pricing after reviewing the crew, location and scope.' : result.summary}</p>
+        <span className="eyebrow inverse">{isServiceRequest && !isPricedServiceRequest ? 'Request type' : 'Estimated total'}</span>
+        <div className="guided-price">{isServiceRequest && !isPricedServiceRequest ? 'Quote' : formatMoney(estimatedOrderTotal)}</div>
+        <p>{isServiceRequest && !isPricedServiceRequest ? 'We will confirm pricing after reviewing the crew, location and scope.' : result.summary}</p>
         <div className="price-lines compact-lines">
           {result.lines.map((line, index) => (
             <div key={`${line.label}-${index}`}><span>{line.label}</span><strong>{line.text ?? formatMoney(line.value)}</strong></div>
           ))}
         </div>
-        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.' : 'The backend recalculates the price before saving the order, so the browser cannot invent its own total.'}</span></div>
+        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? (isPricedServiceRequest ? 'This is the approved price for what you have chosen. Payment is not requested here — Quick Solution still confirms your booking before anything is charged.' : 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.') : 'The backend recalculates the price before saving the order, so the browser cannot invent its own total.'}</span></div>
         <a className="help-link" href="https://wa.me/27754534646" target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
       </aside>
     </div>

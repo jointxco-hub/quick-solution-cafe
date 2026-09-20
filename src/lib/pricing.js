@@ -133,6 +133,95 @@ function priceConfigurable(product, config) {
   }
 }
 
+// Client-side estimate only — the server (commerce.qs_calculate_price)
+// always recalculates from pricing_definition and is what's actually
+// charged; this exists purely for instant UI feedback. It reads
+// product.pricing.variants[id].price / accessories[id].price, which
+// are the CUSTOMER-SAFE, already-margin-applied selling prices the
+// public catalog exposes — never a raw referencePrice or marginRate
+// (those live only in the staff-only pricing_definition, which this
+// client never receives).
+function priceSupplierMargin(product, config) {
+  const variant = product.pricing.variants?.[config.variant]
+  const quantity = Math.max(Number(config.quantity || product.pricing.minQuantity || 1), product.pricing.minQuantity || 1)
+  const accessoryIds = Array.isArray(config.accessories) ? config.accessories : []
+  const artwork = config.artwork ? product.pricing.artwork?.[config.artwork] : null
+
+  const quoteRequired =
+    !variant || variant.price == null ||
+    accessoryIds.some((id) => !product.pricing.accessories?.[id] || product.pricing.accessories[id].price == null) ||
+    (config.artwork && (!artwork || artwork.fee == null))
+
+  if (quoteRequired) {
+    return {
+      total: 0,
+      summary: 'Quote required',
+      lines: [{ label: 'Pricing', text: 'One or more selected options need a quote' }],
+      metrics: { quoteRequired: true, quantity }
+    }
+  }
+
+  const variantTotal = Number(variant.price) * quantity
+  const accessoriesTotal = accessoryIds.reduce((sum, id) => sum + Number(product.pricing.accessories[id].price), 0)
+  const artworkFee = artwork ? Number(artwork.fee || 0) : 0
+  const total = variantTotal + accessoriesTotal + artworkFee
+
+  const lines = [{ label: variant.label, value: variantTotal }]
+  for (const id of accessoryIds) lines.push({ label: product.pricing.accessories[id].label, value: Number(product.pricing.accessories[id].price) })
+  if (artworkFee > 0) lines.push({ label: artwork.label, value: artworkFee })
+
+  return {
+    total,
+    summary: `${variant.label} × ${quantity}`,
+    lines,
+    metrics: { quantity, unitPrice: Number(variant.price), quoteRequired: false }
+  }
+}
+
+function pricePhotographySession(product, config) {
+  const sessionId = config.session || '30min-7edits'
+  const session = product.pricing.sessions?.[sessionId]
+  const extraEdits = Math.max(Number(config.extraEdits || 0), 0)
+  const deliverableIds = Array.isArray(config.deliverables) ? config.deliverables : []
+
+  const sessionUnpriced = !session || session.price == null
+  const extraEditsUnpriced = extraEdits > 0 && product.pricing.extraEditRate == null
+  const deliverablesUnpriced = deliverableIds.some((id) => {
+    const deliverable = product.pricing.deliverables?.[id]
+    return !deliverable || deliverable.price == null
+  })
+  const quoteRequired = sessionUnpriced || extraEditsUnpriced || deliverablesUnpriced
+
+  if (quoteRequired) {
+    return {
+      total: 0,
+      summary: 'Quote required',
+      lines: [{ label: 'Pricing', text: 'One or more selected options need a quote' }],
+      metrics: { quoteRequired: true, sessionId, extraEdits }
+    }
+  }
+
+  const lines = [{ label: session.label, value: Number(session.price) }]
+  let total = Number(session.price)
+  if (extraEdits > 0) {
+    const extraTotal = extraEdits * Number(product.pricing.extraEditRate)
+    total += extraTotal
+    lines.push({ label: `${extraEdits} extra edited photo${extraEdits === 1 ? '' : 's'}`, value: extraTotal })
+  }
+  for (const id of deliverableIds) {
+    const deliverable = product.pricing.deliverables[id]
+    total += Number(deliverable.price)
+    lines.push({ label: deliverable.label, value: Number(deliverable.price) })
+  }
+
+  return {
+    total,
+    summary: session.label,
+    lines,
+    metrics: { quoteRequired: false, sessionId, durationMinutes: session.durationMinutes, includedEdits: session.includedEdits, extraEdits }
+  }
+}
+
 function priceEnquiry(product, config) {
   return {
     total: 0,
@@ -156,6 +245,8 @@ export function calculateProductPrice(product, config) {
     case 'TIERED': calculation = priceTiered(product, config); break
     case 'CONFIGURABLE': calculation = priceConfigurable(product, config); break
     case 'ENQUIRY': calculation = priceEnquiry(product, config); break
+    case 'SUPPLIER_MARGIN': calculation = priceSupplierMargin(product, config); break
+    case 'PHOTOGRAPHY_SESSION': calculation = pricePhotographySession(product, config); break
     default: calculation = { total: 0, summary: 'Quote required', lines: [], metrics: {} }
   }
 
