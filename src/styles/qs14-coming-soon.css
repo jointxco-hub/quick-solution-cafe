@@ -1,0 +1,28 @@
+/* QS-14 · coming soon catalogue placeholders */
+
+.qs14-coming-soon-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.qs14-coming-soon-card{
+  position:relative;background:#faf9f7;border:1px solid rgba(17,17,15,.1);border-radius:22px;
+  padding:20px;display:grid;gap:10px;align-content:start
+}
+.qs14-coming-soon-icon{
+  width:44px;height:44px;border-radius:14px;background:var(--soft-green);color:var(--green);
+  display:grid;place-items:center
+}
+.qs14-coming-soon-copy strong{font-size:17px;letter-spacing:-.01em}
+.qs14-coming-soon-copy p{margin:4px 0 0;font-size:13px;line-height:1.55;color:#6d6a64}
+.qs14-coming-soon-badge{
+  justify-self:start;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+  color:#8a8780;background:#efeee9;border-radius:999px;padding:5px 10px
+}
+.qs14-coming-soon-link{
+  display:inline-flex;align-items:center;gap:8px;margin-top:20px;font-size:13px;font-weight:700;
+  color:var(--green)
+}
+
+@media(max-width:900px){
+  .qs14-coming-soon-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .qs14-coming-soon-grid{grid-template-columns:1fr}
+}

@@ -26,7 +26,7 @@ export const products = [
     guidedJourneyId: 'banner-guided',
     nextActionLabel: 'Continue to collection',
     pricingVersion: '2026-09-qsc-02',
-    pricing: { strategy: 'PER_AREA', baseRate: 145, minimumBillableArea: 1, unit: 'm²' },
+    pricing: { strategy: 'PER_AREA', baseRate: 350, minimumBillableArea: 1, unit: 'm²' },
     fields: [
       { id: 'width', type: 'number', label: 'How wide?', shortLabel: 'Width', suffix: 'metres', default: 2, min: 0.1, step: 0.1, required: true },
       { id: 'height', type: 'number', label: 'How high?', shortLabel: 'Height', suffix: 'metres', default: 1, min: 0.1, step: 0.1, required: true },
@@ -63,6 +63,55 @@ export const products = [
         ]
       },
       { id: 'file', type: 'file', label: 'Artwork file', help: 'Optional for now. PDF, JPG or PNG works best.' }
+    ]
+  },
+  {
+    id: 'vinyl-stickers',
+    name: 'Vinyl Stickers & Labels',
+    shortName: 'Stickers',
+    category: 'Labels & Packaging',
+    description: 'Custom vinyl stickers and labels for bottles, packaging, windows and product branding.',
+    plainDescription: 'Choose the print area, artwork help and whether you need print only or print + cut.',
+    keywords: ['vinyl sticker', 'stickers', 'labels', 'product labels', 'bottle labels', 'packaging', 'window sticker', 'branding'],
+    popular: true,
+    active: true,
+    channels: { ...customerChannels },
+    guidedJourneyId: 'sticker-guided',
+    nextActionLabel: 'Continue to collection',
+    pricingVersion: '2026-09-qsc-05',
+    pricing: { strategy: 'PER_AREA', baseRate: 350, minimumBillableArea: 1, unit: 'm²' },
+    fields: [
+      { id: 'width', type: 'number', label: 'How wide is the total print area?', shortLabel: 'Width', suffix: 'metres', default: 1, min: 0.1, step: 0.1, required: true },
+      { id: 'height', type: 'number', label: 'How high is the total print area?', shortLabel: 'Height', suffix: 'metres', default: 1, min: 0.1, step: 0.1, required: true },
+      {
+        id: 'material', type: 'select', label: 'Which vinyl should we use?', shortLabel: 'Vinyl', default: 'standard',
+        options: [
+          { id: 'standard', label: 'White adhesive vinyl', helper: 'A versatile everyday vinyl for bottles, packaging, windows and product branding.', multiplier: 1 }
+        ]
+      },
+      {
+        id: 'finishing', type: 'segmented', label: 'Do you need the stickers cut?', shortLabel: 'Cutting', default: 'print-only',
+        options: [
+          { id: 'print-only', label: 'Print only', helper: 'Supplied as printed vinyl for you to trim or use as a sheet.', fee: 0 },
+          { id: 'print-cut', label: 'Print + cut', helper: 'We print and cut the stickers for you. Adds R100.', fee: 100 }
+        ]
+      },
+      {
+        id: 'artwork', type: 'select', label: 'What is happening with the design?', shortLabel: 'Artwork', default: 'ready',
+        options: [
+          { id: 'ready', label: 'My artwork is ready', fee: 0 },
+          { id: 'check', label: 'Please check my artwork', fee: 75 },
+          { id: 'design', label: 'I need help with the design', fee: 250 }
+        ]
+      },
+      {
+        id: 'turnaround', type: 'select', label: 'When do you need it?', default: 'standard',
+        options: [
+          { id: 'standard', label: 'Standard turnaround', multiplier: 1 },
+          { id: 'express', label: 'Express — where available', multiplier: 1.2 }
+        ]
+      },
+      { id: 'file', type: 'file', label: 'Artwork file', help: 'Optional for now. PDF, PNG or high-resolution JPG works best.' }
     ]
   },
   {
@@ -504,6 +553,7 @@ export const categories = [
   'Quick Print',
   'Photo & Video',
   'Signs & Large Format',
+  'Labels & Packaging',
   'Clothing & Merch',
   'Business Essentials',
   'Brand & Digital',
