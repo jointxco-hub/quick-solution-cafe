@@ -12,6 +12,7 @@ import './styles/qs084.css'
 import './styles/qs085.css'
 import './styles/qs09.css'
 import './styles/qs10.css'
+import './styles/qs12-1.css'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -50,3 +51,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 )
 
+
+import './styles/qs13.css'
+import './styles/qs14-coming-soon.css'
+import './styles/qs15-mobile-polish.css'

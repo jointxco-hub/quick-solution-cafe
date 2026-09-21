@@ -1,0 +1,295 @@
+/* QS-13.1 · multi-item cart foundation */
+
+.qs-cart-floating{
+  position:fixed;right:22px;bottom:22px;z-index:70;border:0;border-radius:999px;
+  background:#11110f;color:#fff;display:flex;align-items:center;gap:14px;
+  padding:13px 17px;box-shadow:0 14px 40px rgba(17,17,15,.18);cursor:pointer
+}
+.qs-cart-floating span{display:grid;text-align:left;line-height:1.1}
+.qs-cart-floating small{opacity:.7;margin-top:3px}
+
+.qs-cart-backdrop{position:fixed;inset:0;background:rgba(17,17,15,.28);z-index:90;display:flex;justify-content:flex-end}
+.qs-cart-sheet{width:min(460px,100%);height:100%;background:#fff;padding:26px;display:flex;flex-direction:column;box-shadow:-18px 0 55px rgba(17,17,15,.16);overflow:auto}
+.qs-cart-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;padding-bottom:20px;border-bottom:1px solid rgba(17,17,15,.1)}
+.qs-cart-head h2{margin:5px 0 0;font-size:30px}
+.qs-cart-close{border:0;background:#f3f1ed;width:40px;height:40px;border-radius:50%;font-size:25px;cursor:pointer}
+.qs-cart-items{display:grid;gap:12px;padding:20px 0}
+.qs-cart-item{display:flex;justify-content:space-between;gap:18px;padding:17px;border:1px solid rgba(17,17,15,.1);border-radius:18px;background:#faf9f7}
+.qs-cart-item>div:first-child{display:grid;gap:5px;min-width:0}
+.qs-cart-item strong{font-size:15px}
+.qs-cart-item small{color:#6d6a64;overflow-wrap:anywhere}
+.qs-cart-item-side{display:flex;flex-direction:column;align-items:flex-end;gap:10px;white-space:nowrap}
+.qs-cart-item-side button{border:0;background:none;text-decoration:underline;color:#6d6a64;cursor:pointer}
+.qs-cart-total{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-top:1px solid rgba(17,17,15,.1);font-size:18px}
+.qs-cart-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:auto;padding-top:20px}
+.qs-cart-note{font-size:12px;color:#74716b;line-height:1.45;margin:12px 0 0}
+.qs-cart-review-actions{display:flex;gap:10px;flex-wrap:wrap;margin-left:auto}
+
+@media(max-width:720px){
+  body{padding-bottom:82px}
+  .qs-cart-floating{left:14px;right:14px;bottom:max(12px,env(safe-area-inset-bottom));justify-content:space-between;border-radius:18px;padding:13px 16px}
+  .qs-cart-sheet{width:100%;height:min(86dvh,760px);margin-top:auto;border-radius:24px 24px 0 0;padding:20px 16px max(20px,env(safe-area-inset-bottom))}
+  .qs-cart-backdrop{align-items:flex-end}
+  .qs-cart-actions{grid-template-columns:1fr}
+  .qs-cart-review-actions{width:100%;margin-left:0;display:grid}
+  .qs-cart-review-actions .button{width:100%}
+}
+
+
+/* QS-13.2 · shop first, checkout once */
+.qs-cart-toast{
+  position:fixed;right:24px;bottom:86px;z-index:95;display:flex;align-items:center;gap:9px;
+  background:#fff;border:1px solid rgba(17,17,15,.12);border-radius:999px;padding:11px 15px;
+  box-shadow:0 12px 36px rgba(17,17,15,.14);font-weight:700;font-size:13px
+}
+.qs-shopping-ready{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border-radius:16px;background:#f0f7f4;margin-top:16px}
+.qs-shopping-ready>div{display:grid;gap:4px}
+.qs-shopping-ready span{color:#5f655f;line-height:1.45}
+.qs-shop-first-note{font-size:12px;line-height:1.45;opacity:.72;margin:0}
+.qs-basket-checkout{display:grid;gap:18px;padding:18px 0 4px}
+.qs-checkout-back{justify-self:start}
+.qs-checkout-section{display:grid;gap:14px;padding:17px;border:1px solid rgba(17,17,15,.1);border-radius:18px;background:#faf9f7}
+.qs-checkout-section-head{display:grid;gap:4px}
+.qs-checkout-section-head h3{margin:0;font-size:20px}
+.qs-checkout-section-head p{margin:0;color:#6d6a64;font-size:13px}
+.qs-checkout-choice-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.qs-checkout-choice-grid>button{display:flex;align-items:flex-start;gap:9px;text-align:left;border:1px solid rgba(17,17,15,.12);background:#fff;border-radius:14px;padding:12px;cursor:pointer}
+.qs-checkout-choice-grid>button.selected{border-color:#008B72;box-shadow:0 0 0 1px #008B72 inset}
+.qs-checkout-choice-grid>button:disabled{opacity:.45;cursor:not-allowed}
+.qs-checkout-choice-grid span{display:grid;gap:2px}
+.qs-checkout-choice-grid small{color:#77736c}
+.qs-checkout-points{display:grid;gap:8px}
+.qs-checkout-points>button{display:flex;justify-content:space-between;align-items:center;text-align:left;border:1px solid rgba(17,17,15,.1);background:#fff;border-radius:13px;padding:12px 13px;cursor:pointer}
+.qs-checkout-points>button.selected{border-color:#008B72}
+.qs-checkout-points>button>span:first-child{display:grid;gap:3px}
+.qs-checkout-points small{color:#77736c}
+.qs-checkout-total{display:flex;justify-content:space-between;align-items:center;padding:16px 2px;border-top:1px solid rgba(17,17,15,.1)}
+.qs-checkout-total>div{display:grid;gap:3px}
+.qs-checkout-total small{color:#77736c}
+.qs-checkout-total strong{font-size:22px}
+.qs-place-order{width:100%}
+
+@media(max-width:720px){
+  .qs-cart-toast{left:14px;right:14px;bottom:82px;justify-content:center;border-radius:16px}
+  .qs-checkout-choice-grid{grid-template-columns:1fr}
+  .qs-checkout-section{padding:14px}
+  .qs-basket-checkout .checkout-two{grid-template-columns:1fr}
+}
+
+
+/* QS-13.2.1 · basket/mobile polish */
+.qs-cart-review-actions .added,
+.primary-light.added{
+  opacity:.72;
+  cursor:default;
+}
+.qs-cart-sheet .qs-checkout-choice-grid{
+  grid-template-columns:1fr;
+}
+.qs-cart-sheet .checkout-two{
+  grid-template-columns:1fr;
+}
+.qs-basket-checkout{
+  min-height:100%;
+}
+.qs-place-order{
+  position:sticky;
+  bottom:0;
+  z-index:4;
+  box-shadow:0 -10px 28px rgba(255,255,255,.92);
+}
+.qs-cart-sheet{
+  overscroll-behavior:contain;
+}
+
+@media(max-width:720px){
+  .qs-cart-head h2{font-size:27px}
+  .qs-cart-item{padding:14px}
+  .qs-checkout-section-head h3{font-size:19px}
+  .qs-cart-sheet .checkout-two{display:grid!important;grid-template-columns:1fr!important}
+  .qs-cart-sheet .qs-checkout-choice-grid{display:grid!important;grid-template-columns:1fr!important}
+}
+
+
+/* QS-13.3 · combined XOS order confirmation */
+.qs-cart-success{display:grid;gap:16px;padding:24px 0}
+.qs-cart-success h3{font-size:24px;margin:0}
+.qs-cart-success>p{margin:0;color:#65625d;line-height:1.5}
+.qs-upload-results{display:grid;gap:8px}
+.qs-upload-results>div{display:flex;gap:10px;align-items:flex-start;padding:12px 13px;border-radius:13px;background:#f5f4f1}
+.qs-upload-results>div.ok{background:#eff8f4}
+.qs-upload-results>div.error{background:#fff1ef}
+.qs-upload-results>div>div{display:grid;gap:2px}
+.qs-upload-results small{color:#706c65}
+.qs-cart-success-actions{display:grid;gap:10px}
+
+
+/* QS-13.4 · document batch uploads */
+.upload-field-multiple{display:grid;gap:10px}
+.upload-picker{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;cursor:pointer}
+.upload-file-list{display:grid;gap:7px;width:100%}
+.upload-file-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid rgba(17,17,15,.09);border-radius:12px;background:#fff}
+.upload-file-row>span{display:grid;gap:2px;min-width:0}
+.upload-file-row strong{font-size:13px;overflow-wrap:anywhere}
+.upload-file-row small{font-size:11px;color:#77736c}
+.upload-file-row button{border:0;background:none;color:#77736c;text-decoration:underline;cursor:pointer;font-size:12px}
+@media(max-width:720px){
+  .upload-picker{grid-template-columns:auto 1fr}
+  .upload-picker .upload-action{grid-column:1/-1;justify-self:stretch;text-align:center}
+}
+
+
+/* QS-13.4.1 · multi-file upload presentation polish */
+.upload-field-multiple{
+  border:1px dashed rgba(17,17,15,.18);
+  border-radius:18px;
+  background:#fbfaf8;
+  padding:14px;
+}
+.upload-field-multiple .upload-picker{
+  width:100%;
+  min-height:92px;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  gap:14px;
+  padding:14px 16px;
+  border-radius:14px;
+  background:#fff;
+}
+.upload-field-multiple .upload-icon{
+  align-self:center;
+}
+.upload-field-multiple .upload-copy{
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+.upload-field-multiple .upload-copy strong{
+  font-size:16px;
+  line-height:1.2;
+}
+.upload-field-multiple .upload-copy small{
+  max-width:560px;
+  line-height:1.4;
+  color:#6f6b64;
+}
+.upload-field-multiple .upload-action{
+  min-width:110px;
+  text-align:center;
+  padding:10px 14px;
+  border-radius:999px;
+  background:#11110f;
+  color:#fff;
+  font-weight:700;
+  white-space:nowrap;
+}
+.upload-file-summary{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  padding:2px 4px;
+  font-size:12px;
+  color:#6f6b64;
+}
+.upload-file-summary strong{
+  color:#11110f;
+  font-size:13px;
+}
+.upload-file-list{
+  max-height:260px;
+  overflow:auto;
+  padding-right:2px;
+}
+.upload-file-row{
+  background:#fff;
+}
+
+@media(max-width:720px){
+  .upload-field-multiple{
+    padding:10px;
+  }
+  .upload-field-multiple .upload-picker{
+    grid-template-columns:auto minmax(0,1fr);
+    align-items:start;
+    min-height:auto;
+    padding:12px;
+  }
+  .upload-field-multiple .upload-action{
+    grid-column:1/-1;
+    width:100%;
+    min-width:0;
+  }
+  .upload-file-row{
+    align-items:flex-start;
+  }
+  .upload-file-row>span{
+    max-width:calc(100% - 72px);
+  }
+  .upload-file-summary{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:2px;
+  }
+}
+
+
+/* QS-13.4.2 · progressive document print instructions */
+.doc-plan{display:grid;gap:16px}
+.doc-plan-intro{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.doc-plan-intro h3{margin:5px 0 5px;font-size:24px}
+.doc-plan-intro p{margin:0;color:#69655f;line-height:1.5;max-width:560px}
+.doc-plan-total{min-width:120px;padding:13px 15px;border-radius:16px;background:#f2f0ec;display:grid;text-align:right}
+.doc-plan-total strong{font-size:25px}
+.doc-plan-total span{font-size:11px;color:#6d6962}
+.doc-plan-total.ready{background:#edf8f4}
+.doc-plan-files{display:grid;gap:10px}
+.doc-plan-file{border:1px solid rgba(17,17,15,.1);border-radius:16px;background:#fff;overflow:hidden}
+.doc-plan-file.needs-info{border-color:rgba(204,51,0,.32)}
+.doc-plan-file-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 15px}
+.doc-plan-file-head>div{display:grid;gap:3px;min-width:0}
+.doc-plan-file-head strong{overflow-wrap:anywhere}
+.doc-plan-file-head small{color:#716d66}
+.doc-plan-change{border:0;background:none;color:#008B72;text-decoration:underline;font-weight:700;cursor:pointer;white-space:nowrap}
+.doc-plan-file-options{display:grid;gap:12px;padding:0 15px 15px;border-top:1px solid rgba(17,17,15,.08)}
+.doc-plan-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:12px}
+.doc-plan-choice button{display:grid;gap:3px;text-align:left;border:1px solid rgba(17,17,15,.11);background:#faf9f7;border-radius:13px;padding:12px;cursor:pointer}
+.doc-plan-choice button.selected{border-color:#008B72;box-shadow:0 0 0 1px #008B72 inset;background:#f3faf7}
+.doc-plan-choice small{color:#746f68;line-height:1.35}
+.doc-plan-input{margin:0}
+.doc-plan-copies{padding:14px 15px;border:1px solid rgba(17,17,15,.1);border-radius:16px;background:#faf9f7}
+.doc-plan-note{display:flex;gap:8px;align-items:flex-start;padding:13px 15px;border-radius:14px;background:#fff3ef}
+.doc-plan-note span{color:#6c6761}
+.doc-plan-note.ready{background:#edf8f4}
+.doc-plan-empty{display:grid;gap:4px;padding:18px;border-radius:16px;background:#fff3ef}
+.doc-plan-empty span{color:#6c6761}
+
+@media(max-width:720px){
+  .doc-plan-intro{display:grid}
+  .doc-plan-total{min-width:0;text-align:left}
+  .doc-plan-choice{grid-template-columns:1fr}
+  .doc-plan-file-head{align-items:flex-start}
+}
+
+
+/* QS-13.4.2a · document state + upload readability */
+.doc-plan-change:disabled{
+  color:#9b5c49;
+  text-decoration:none;
+  cursor:default;
+}
+.upload-field-multiple .upload-picker{
+  display:grid;
+}
+.upload-field-multiple .upload-copy{
+  overflow:hidden;
+}
+.upload-field-multiple .upload-copy strong,
+.upload-field-multiple .upload-copy small{
+  overflow-wrap:normal;
+  word-break:normal;
+}
+@media(min-width:721px){
+  .upload-field-multiple .upload-picker{
+    grid-template-columns:44px minmax(260px,1fr) auto;
+  }
+}

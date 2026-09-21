@@ -9,7 +9,10 @@ import TrackOrder from './components/TrackOrder.jsx'
 import QuickTaskCard from './components/QuickTaskCard.jsx'
 import SubtleStoryRail from './components/SubtleStoryRail.jsx'
 import ProofGallery from './components/ProofGallery.jsx'
+import ComingSoonRail from './components/ComingSoonRail.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
+import OrderBasket from './components/OrderBasket.jsx'
+import { loadCart, saveCart } from './lib/cartStore.js'
 import { categories, guidedJourneys, products as defaultProducts, quickTasks } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
@@ -23,6 +26,9 @@ export default function App() {
   const [guidedStartStep, setGuidedStartStep] = useState(null)
   const [guidedInitialFile, setGuidedInitialFile] = useState(null)
   const [query, setQuery] = useState('')
+  const [cart, setCart] = useState(() => loadCart())
+  const [cartOpen, setCartOpen] = useState(false)
+  const [cartNotice, setCartNotice] = useState('')
   const [orderMode, setOrderMode] = useState('guided')
   const [journeyId, setJourneyId] = useState('document-guided')
   const [taskContext, setTaskContext] = useState(null)
@@ -70,6 +76,41 @@ export default function App() {
   }, [query, customerProducts])
 
   const scrollToConfigure = () => window.setTimeout(() => configureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+
+  useEffect(() => {
+    saveCart(cart)
+  }, [cart])
+
+  const addToCart = ({ product, config, file, files, total = 0, summary = '', quoteRequired = false }) => {
+    const cartId = globalThis.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const normalizedFiles = Array.isArray(files)
+      ? files
+      : Array.isArray(file)
+        ? file
+        : file
+          ? [file]
+          : []
+    setCart((items) => [...items, {
+      cartId,
+      productId: product.id,
+      productName: product.name,
+      category: product.category,
+      config,
+      files: normalizedFiles,
+      file: normalizedFiles[0] || null,
+      total: Number(total || 0),
+      summary,
+      quoteRequired: Boolean(quoteRequired)
+    }])
+    setCartNotice(`${product.name} added to your order`)
+    window.setTimeout(() => setCartNotice(''), 2200)
+  }
+
+  const removeCartItem = (cartId) => setCart((items) => items.filter((item) => item.cartId !== cartId))
+  const continueShopping = () => {
+    setCartOpen(false)
+    window.setTimeout(() => document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+  }
 
   const openAdvanced = (product, nextPreset = {}) => {
     setSelectedId(product.id)
@@ -145,9 +186,9 @@ export default function App() {
       <main>
         <section className="hero shell">
           <div className="hero-copy">
-            <span className="eyebrow">Joint X Quick Solution CafÃ© Â· Location 001</span>
+            <span className="eyebrow">Joint X Quick Solution Café · Location 001</span>
             <h1>Printing, branding<br/>& <em>everyday solutions.</em></h1>
-            <p>From documents and stickers to apparel, signage and business essentials â€” quick, clean and local. Tell us what you are trying to make and we will guide the technical details.</p>
+            <p>From documents and stickers to apparel, signage, photo, video and business essentials — quick, clean and local. Tell us what you are trying to make and we will guide the technical details.</p>
 
             <form className="search-wrap" onSubmit={submitSearch}>
               <div className="search-box">
@@ -156,7 +197,7 @@ export default function App() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   aria-label="Tell Quick Solution what you need"
-                  placeholder="Try â€œprint my CVâ€, â€œhomeworkâ€, â€œbannerâ€..."
+                  placeholder="Try “print my CV”, “banner”, “headshot”, “video shoot”..."
                 />
                 <button type="submit">Guide me</button>
               </div>
@@ -164,7 +205,7 @@ export default function App() {
                 <div className="search-results">
                   {searchMatches.map((product) => (
                     <button type="button" key={product.id} onClick={() => product.channels?.guided !== false && product.guidedJourneyId ? openGuided(product, product.guidedJourneyId) : openAdvanced(product)}>
-                      <span><strong>{product.name}</strong><small>{product.category} Â· guided start</small></span>
+                      <span><strong>{product.name}</strong><small>{product.category} · guided start</small></span>
                       <Icon name="arrowRight" size={17}/>
                     </button>
                   ))}
@@ -183,17 +224,17 @@ export default function App() {
             <div className="brand-orbs"><span></span><span></span><span></span></div>
             <div className="workflow-card">
               <div className="workflow-icon"><Icon name="upload" size={22}/></div>
-              <span>1 Â· Tell us</span>
+              <span>1 · Tell us</span>
               <strong>Say what you need done.</strong>
             </div>
             <div className="workflow-card offset">
               <div className="workflow-icon"><Icon name="store" size={22}/></div>
-              <span>2 Â· We guide you</span>
+              <span>2 · We guide you</span>
               <strong>Only the questions that matter.</strong>
             </div>
             <div className="workflow-card">
               <div className="workflow-icon"><Icon name="pin" size={22}/></div>
-              <span>3 Â· Get it your way</span>
+              <span>3 · Get it your way</span>
               <strong>Collect nearby or deliver.</strong>
             </div>
             <small className="visual-caption">Simple for everyday jobs. Full control when you need it.</small>
@@ -208,7 +249,7 @@ export default function App() {
 
         <section id="start" className="shell section start-section">
           <div className="section-heading accessible-heading">
-            <div><span className="eyebrow">Guided ordering Â· recommended</span><h2>What do you need today?</h2></div>
+            <div><span className="eyebrow">Guided ordering · recommended</span><h2>What do you need today?</h2></div>
             <p>You do not need to know printing terms. Choose the outcome that sounds closest and we will only ask the questions that matter.</p>
           </div>
           <div className="task-grid six-tasks">{quickTasks.map((task) => <QuickTaskCard key={task.id} task={task} onSelect={selectTask}/>)}</div>
@@ -221,6 +262,8 @@ export default function App() {
           </div>
           <div className="product-grid">{customerProducts.map((product) => <ProductCard key={product.id} product={product} active={selectedProduct?.id === product.id} onConfigure={openPreferred}/>)}</div>
         </section>
+
+        <ComingSoonRail liveProductIds={customerProducts.map((product) => product.id)} />
 
         <ProofGallery />
 
@@ -247,7 +290,7 @@ export default function App() {
                     >{product.shortName}</button>
                   ))}
                 </div>
-                {selectedProduct.channels?.guided !== false && selectedProduct.guidedJourneyId && (
+                {selectedProduct.channels?.guided !== false && selectedProduct.guidedJourneyId && selectedProduct.channels?.advanced !== false && (
                   <div className="mode-choice">
                     <div className="mode-choice-copy">
                       <span>Order mode</span>
@@ -276,6 +319,7 @@ export default function App() {
                   initialStepId={guidedStartStep}
                   initialFile={guidedInitialFile}
                   onAdvanced={() => setOrderMode('advanced')}
+                  onAddToCart={addToCart}
                 />
               ) : (
                 <ProductConfigurator
@@ -284,6 +328,7 @@ export default function App() {
                   preset={preset}
                   onGuided={selectedJourney ? () => openGuided(selectedProduct, selectedJourney.id, preset) : null}
                   onContinue={({ config, file }) => continueFromAdvanced(selectedProduct, config, file)}
+                  onAddToCart={addToCart}
                 />
               )}
             </div>
@@ -304,21 +349,21 @@ export default function App() {
               <span>Powered by Easy Locate</span>
             </div>
             {(fulfilmentPoints.length ? fulfilmentPoints : [
-              { id: 'demo-cafe', name: 'Quick Solution CafÃ©', kind: 'cafe', services: ['Full service location'] },
+              { id: 'demo-cafe', name: 'Quick Solution Café', kind: 'cafe', services: ['Full service location'] },
               { id: 'demo-point', name: 'Partner Quick Point', kind: 'quick_point', services: ['Collection point'], demo: true }
             ]).slice(0, 4).map((point) => {
               const business = point.easyLocateLink?.business || {}
-              const area = [business.locationArea || point.address?.area || point.address?.city, business.locationExtension || point.address?.line1].filter(Boolean).join(' Â· ')
-              const categories = Array.isArray(business.categories) ? business.categories.slice(0, 2).join(' Â· ') : ''
+              const area = [business.locationArea || point.address?.area || point.address?.city, business.locationExtension || point.address?.line1].filter(Boolean).join(' · ')
+              const categories = Array.isArray(business.categories) ? business.categories.slice(0, 2).join(' · ') : ''
               const listingUrl = point.easyLocateLink?.canonicalUrl
               return (
                 <div className="location-row qs07-location-row" key={point.id}>
                   <div>
                     <strong>{point.name}</strong>
-                    <span>{[area, categories || (point.kind === 'cafe' ? 'Full service location' : 'Collection point')].filter(Boolean).join(' Â· ')}</span>
+                    <span>{[area, categories || (point.kind === 'cafe' ? 'Full service location' : 'Collection point')].filter(Boolean).join(' · ')}</span>
                   </div>
                   <div className="location-row-actions">
-                    <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Quick Solution cafÃ©' : point.easyLocateLink ? 'Easy Locate verified' : 'Quick Point'}</span>
+                    <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Quick Solution café' : point.easyLocateLink ? 'Easy Locate verified' : 'Quick Point'}</span>
                     {listingUrl ? <a href={listingUrl} target="_blank" rel="noreferrer">View listing <Icon name="external" size={13}/></a> : null}
                   </div>
                 </div>
@@ -330,12 +375,28 @@ export default function App() {
         <section className="promise-band">
           <div className="shell promise-grid">
             <div><Icon name="clock"/><strong>Order before you arrive</strong><span>Less waiting and fewer back-and-forth messages.</span></div>
-            <div><Icon name="truck"/><strong>Collect where it suits you</strong><span>CafÃ©, Quick Point, delivery or courier.</span></div>
+            <div><Icon name="truck"/><strong>Collect where it suits you</strong><span>Café, Quick Point, delivery or courier.</span></div>
             <div><Icon name="store"/><strong>One price source</strong><span>Website, POS, quote and invoice use the same rules.</span></div>
           </div>
         </section>
       </main>
-      <footer className="shell footer"><strong>Joint X Quick Solution CafÃ©</strong><span>Location 001 Â· Built on XOS Â· {catalogSource === 'supabase' ? 'Live staging catalogue' : 'Local fallback'} Â· <a href="#admin">Product Admin</a></span></footer>
+      <OrderBasket
+        items={cart}
+        open={cartOpen}
+        fulfilmentPoints={fulfilmentPoints}
+        onClose={() => setCartOpen(false)}
+        onRemove={removeCartItem}
+        onContinueShopping={continueShopping}
+        onOrderCreated={() => setCart([])}
+      />
+      {cartNotice ? <div className="qs-cart-toast" role="status"><Icon name="bag" size={16}/><span>{cartNotice}</span></div> : null}
+      {cart.length > 0 && !cartOpen ? (
+        <button className="qs-cart-floating" type="button" onClick={() => setCartOpen(true)}>
+          <span><strong>{cart.length} item{cart.length === 1 ? '' : 's'}</strong><small>View order</small></span>
+          <Icon name="bag" size={18}/>
+        </button>
+      ) : null}
+      <footer className="shell footer"><strong>Joint X Quick Solution Café</strong><span>Location 001 · Built on XOS · {catalogSource === 'supabase' ? 'Live staging catalogue' : 'Local fallback'} · <a href="#admin">Product Admin</a></span></footer>
     </div>
   )
 }

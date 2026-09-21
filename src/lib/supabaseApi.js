@@ -121,6 +121,35 @@ export async function loadQuickSolutionCatalog() {
   return rpc('get_quick_solution_catalog', { p_tenant_slug: TENANT_SLUG })
 }
 
+export async function createQuickSolutionCartOrder({
+  items,
+  customerName,
+  customerEmail,
+  customerPhone,
+  fulfilmentType,
+  fulfilmentPointId,
+  deliveryAddress,
+  customerNotes,
+  idempotencyKey
+}) {
+  return rpc('create_quick_solution_cart_order', {
+    p_tenant_slug: TENANT_SLUG,
+    p_items: (items || []).map((item) => ({
+      clientItemKey: item.clientItemKey,
+      productKey: item.productKey,
+      configuration: item.configuration || {}
+    })),
+    p_customer_name: customerName,
+    p_customer_email: customerEmail || null,
+    p_customer_phone: customerPhone || null,
+    p_fulfilment_type: fulfilmentType,
+    p_fulfilment_point_id: fulfilmentPointId || null,
+    p_delivery_address: deliveryAddress || null,
+    p_customer_notes: customerNotes || null,
+    p_idempotency_key: idempotencyKey
+  })
+}
+
 export async function createQuickSolutionOrder({
   productKey,
   configuration,
@@ -143,6 +172,29 @@ export async function createQuickSolutionOrder({
     p_fulfilment_type: fulfilmentType,
     p_fulfilment_point_id: fulfilmentPointId || null,
     p_delivery_address: deliveryAddress || null,
+    p_customer_notes: customerNotes || null,
+    p_idempotency_key: idempotencyKey
+  })
+}
+
+export async function createQuickSolutionServiceRequest({
+  productKey,
+  configuration,
+  customerName,
+  customerEmail,
+  customerPhone,
+  serviceLocation,
+  customerNotes,
+  idempotencyKey
+}) {
+  return rpc('create_quick_solution_service_request', {
+    p_tenant_slug: TENANT_SLUG,
+    p_product_key: productKey,
+    p_configuration: configuration,
+    p_customer_name: customerName,
+    p_customer_email: customerEmail || null,
+    p_customer_phone: customerPhone || null,
+    p_service_location: serviceLocation || null,
     p_customer_notes: customerNotes || null,
     p_idempotency_key: idempotencyKey
   })
@@ -211,6 +263,30 @@ export function buildPricingDefinition(product) {
       artwork: optionMap(product, 'artwork', 'fee')
     }
   }
+  if (strategy === 'ENQUIRY') {
+    return {
+      strategy,
+      quoteRequired: true,
+      serviceType: product?.serviceType || 'service'
+    }
+  }
+  if (strategy === 'SUPPLIER_MARGIN' || strategy === 'PHOTOGRAPHY_SESSION') {
+    // These two strategies split pricing into a customer-safe mirror
+    // (product.pricing — selling prices only) and a staff-only
+    // pricing_definition (product.pricingDefinition — reference
+    // prices/margin rate/session rates), unlike every other strategy
+    // above where both are effectively the same numbers. The generic
+    // admin PricingEditor only reads/edits product.pricing and
+    // product.fields[].options[], so it cannot safely edit reference
+    // prices or margin without a dedicated section (not built yet —
+    // see AdminProductManager.jsx). Passing pricingDefinition through
+    // unchanged still lets admins rename/activate-deactivate these
+    // products without corrupting their pricing.
+    if (!product.pricingDefinition) {
+      throw new Error('This product’s rates can only be edited via a database migration until a dedicated admin editor is built for this pricing strategy.')
+    }
+    return product.pricingDefinition
+  }
   throw new Error(`Unsupported pricing strategy: ${strategy || 'unknown'}`)
 }
 
@@ -253,8 +329,12 @@ export async function sendQuickSolutionOrderToOpps(serviceOrderId) {
   return rpc('admin_send_quick_solution_order_to_opps', { p_service_order_id: serviceOrderId }, { accessToken })
 }
 
-export function buildOppsAppUrl(orderId = '') {
-  return orderId ? `${OPPS_APP_URL}?orderId=${encodeURIComponent(orderId)}` : OPPS_APP_URL
+export function buildOppsAppUrl(orderId = '', tenantSlug = TENANT_SLUG) {
+  const params = new URLSearchParams()
+  if (tenantSlug) params.set('tenant', tenantSlug)
+  if (orderId) params.set('open', orderId)
+  const query = params.toString()
+  return `${OPPS_APP_URL}/Orders${query ? `?${query}` : ''}`
 }
 
 

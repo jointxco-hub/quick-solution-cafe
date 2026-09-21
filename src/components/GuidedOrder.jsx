@@ -2,9 +2,12 @@
 import Icon from './Icon.jsx'
 import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
 import FieldControl from './FieldControl.jsx'
+import SupplierVariantConfigurator from './SupplierVariantConfigurator.jsx'
+import PhotoDeliverablesField from './PhotoDeliverablesField.jsx'
+import DocumentPrintPlan from './DocumentPrintPlan.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
 import { fulfilmentOptions } from '../data/products.js'
-import { beginQuickSolutionPayment, createQuickSolutionOrder, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
+import { beginQuickSolutionPayment, createQuickSolutionOrder, createQuickSolutionServiceRequest, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
 import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from '../lib/trackingSession.js'
 
@@ -26,10 +29,47 @@ function pointCategory(point) {
   return Array.isArray(categories) && categories.length ? categories.slice(0, 2).join(' · ') : null
 }
 
-function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0 }) {
+function shootLocationLabel(shootLocation) {
+  if (shootLocation === 'cafe') return 'At Quick Solution Café'
+  if (shootLocation === 'onsite-team') return 'Photo / video team at your location'
+  return 'Photographer / videographer at your location'
+}
+
+function displayFileName(file) {
+  if (Array.isArray(file)) {
+    if (!file.length) return 'No files selected yet'
+    if (file.length === 1) return file[0]?.name || '1 file selected'
+    return `${file.length} files selected`
+  }
+  const raw = String(file?.originalName || file?.name || '').trim()
+  if (!raw) return 'No file selected yet'
+  const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(\.[a-z0-9]+)?$/i
+  if (!uuidLike.test(raw)) return raw
+  const ext = raw.includes('.') ? raw.split('.').pop().toUpperCase() : ''
+  return ext ? `Uploaded ${ext} file` : 'Uploaded file'
+}
+
+function LocationSummaryRow({ config }) {
+  return (
+    <div className="review-location-row">
+      <span>Shoot location</span>
+      <div className="review-location-value">
+        <strong>{shootLocationLabel(config.shootLocation)}</strong>
+        {config.shootLocation !== 'cafe' && config.shootAddress ? <small>{config.shootAddress}</small> : null}
+      </div>
+    </div>
+  )
+}
+
+function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0, showFulfilment = true, isServiceRequest = false }) {
   const rows = product.fields
     .filter((field) => field.type !== 'file')
-    .map((field) => ({ label: field.shortLabel || field.label, value: optionLabel(product, field.id, config[field.id]) }))
+    .filter((field) => !(isServiceRequest && field.id === 'shootAddress'))
+    .map((field) => (
+      isServiceRequest && field.id === 'shootLocation'
+        ? { id: field.id, special: true }
+        : { id: field.id, label: field.shortLabel || field.label, value: optionLabel(product, field.id, config[field.id]) }
+    ))
 
   const fulfilmentLabel = fulfilment === 'delivery'
     ? 'Delivery'
@@ -37,11 +77,19 @@ function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilme
 
   return (
     <div className="review-list">
-      {rows.map((row) => <div key={row.label}><span>{row.label}</span><strong>{row.value}</strong></div>)}
-      <div><span>File</span><strong>{file?.name || 'No file selected yet'}</strong></div>
-      <div><span>{fulfilment === 'delivery' ? 'Fulfilment' : 'Collection point'}</span><strong>{fulfilmentLabel}</strong></div>
-      {selectedPoint && pointArea(selectedPoint) ? <div><span>Area</span><strong>{pointArea(selectedPoint)}</strong></div> : null}
-      {selectedPoint ? <div><span>Collection fee</span><strong>{fulfilmentFee > 0 ? formatMoney(fulfilmentFee) : 'Free'}</strong></div> : null}
+      {rows.map((row) => (
+        row.special
+          ? <LocationSummaryRow key={row.id} config={config}/>
+          : <div key={row.id}><span>{row.label}</span><strong>{row.value}</strong></div>
+      ))}
+      <div><span>File</span><strong>{displayFileName(file)}</strong></div>
+      {showFulfilment ? (
+        <>
+          <div><span>{fulfilment === 'delivery' ? 'Fulfilment' : 'Collection point'}</span><strong>{fulfilmentLabel}</strong></div>
+          {selectedPoint && pointArea(selectedPoint) ? <div><span>Area</span><strong>{pointArea(selectedPoint)}</strong></div> : null}
+          {selectedPoint ? <div><span>Collection fee</span><strong>{fulfilmentFee > 0 ? formatMoney(fulfilmentFee) : 'Free'}</strong></div> : null}
+        </>
+      ) : null}
     </div>
   )
 }
@@ -87,7 +135,8 @@ export default function GuidedOrder({
   onAdvanced,
   fulfilmentPoints = [],
   initialStepId = null,
-  initialFile = null
+  initialFile = null,
+  onAddToCart
 }) {
   const [config, setConfig] = useState(() => getDefaultConfig(product, preset))
   const [file, setFile] = useState(initialFile)
@@ -114,6 +163,8 @@ export default function GuidedOrder({
   const [uploadError, setUploadError] = useState('')
   const [paymentState, setPaymentState] = useState('idle')
   const [paymentError, setPaymentError] = useState('')
+  const [locationError, setLocationError] = useState('')
+  const [itemAdded, setItemAdded] = useState(false)
 
   useEffect(() => {
     setConfig(getDefaultConfig(product, preset))
@@ -138,18 +189,89 @@ export default function GuidedOrder({
     setUploadError('')
     setPaymentState('idle')
     setPaymentError('')
+    setLocationError('')
+    setItemAdded(false)
   }, [product, journey, preset, initialStepId, initialFile])
 
+  useEffect(() => {
+    if (!complete) return
+
+    const timer = window.setTimeout(() => {
+      document.querySelector('.guided-complete')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }, 60)
+
+    return () => window.clearTimeout(timer)
+  }, [complete])
+
   const result = useMemo(() => calculateProductPrice(product, config), [product, config])
-  const step = journey.steps[stepIndex]
-  const progress = ((stepIndex + 1) / journey.steps.length) * 100
-  const update = (id, value) => setConfig((previous) => ({ ...previous, [id]: value }))
+  const isServiceRequest = product?.pricing?.strategy === 'ENQUIRY' || product?.serviceType === 'media'
+  const shoppingSteps = isServiceRequest
+    ? journey.steps
+    : journey.steps.filter((item) => item.type !== 'fulfilment')
+  const step = shoppingSteps[stepIndex]
+  const progress = ((stepIndex + 1) / shoppingSteps.length) * 100
+  const update = (id, value) => {
+    setItemAdded(false)
+    setConfig((previous) => ({ ...previous, [id]: value }))
+  }
+
+  const updateMany = (patch) => {
+    setItemAdded(false)
+    setConfig((previous) => ({ ...previous, ...patch }))
+  }
+
+  const addCurrentItemToCart = () => {
+    if (itemAdded) return
+    onAddToCart?.({
+      product,
+      config,
+      file,
+      files: Array.isArray(file) ? file : (file ? [file] : []),
+      total: estimatedOrderTotal,
+      summary: result.summary,
+      quoteRequired: false
+    })
+    setItemAdded(true)
+  }
+
+  const chooseShootLocation = (value) => {
+    setLocationError('')
+    setConfig((previous) => ({
+      ...previous,
+      shootLocation: value,
+      // The address belongs to client-location/onsite-team only. Switching
+      // back to cafe must not leave a stale address to be submitted as the
+      // service location (see submitOrder's serviceLocation.address build).
+      shootAddress: value === 'cafe' ? '' : previous.shootAddress
+    }))
+  }
+
+  const goNext = () => {
+    if (product.id === 'a4-print' && step.id === 'quantity' && !config.documentPlanValid) {
+      return
+    }
+    if (step.type === 'location' && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
+      setLocationError('Add the area or address where the shoot should happen.')
+      return
+    }
+    setLocationError('')
+    setStepIndex((value) => value + 1)
+  }
 
   const cafePoints = fulfilmentPoints.filter((point) => point.kind === 'cafe' && point.collectionEnabled !== false)
   const quickPoints = fulfilmentPoints.filter((point) => point.kind === 'quick_point' && point.collectionEnabled !== false)
   const selectedPoint = fulfilmentPoints.find((point) => point.id === selectedPointId)
-  const selectedFulfilmentFee = fulfilment === 'delivery' ? 0 : Number(selectedPoint?.feeAmount || 0)
-  const estimatedOrderTotal = Number(result.total || 0) + selectedFulfilmentFee
+  const selectedFulfilmentFee = isServiceRequest || fulfilment === 'delivery' ? 0 : Number(selectedPoint?.feeAmount || 0)
+  // ENQUIRY always reports metrics.quoteRequired:true, so this stays
+  // 0/"Quote" for it unchanged — PHOTOGRAPHY_SESSION can report a real,
+  // server-matching total once every chosen option (session/extra
+  // edits/deliverables) is priced, and the customer should see that
+  // live estimate instead of a blanket "Quote" for the whole flow.
+  const isPricedServiceRequest = isServiceRequest && result.metrics?.quoteRequired === false
+  const estimatedOrderTotal = (!isServiceRequest || isPricedServiceRequest) ? Number(result.total || 0) : 0
 
   useEffect(() => {
     if (fulfilment === 'cafe' && cafePoints.length && !cafePoints.some((point) => point.id === selectedPointId)) {
@@ -201,8 +323,18 @@ export default function GuidedOrder({
       return
     }
 
-    if (fulfilment === 'delivery' && deliveryAddress.trim().length < 5) {
+    if (!isServiceRequest && fulfilment === 'delivery' && deliveryAddress.trim().length < 5) {
       setSubmitError('Add the delivery address so we know where the order should go.')
+      return
+    }
+
+    if (isServiceRequest && !config.preferredDate) {
+      setSubmitError('Choose a preferred shoot date. We will confirm availability before the booking is final.')
+      return
+    }
+
+    if (isServiceRequest && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
+      setSubmitError('Add the area or address where the shoot should happen.')
       return
     }
 
@@ -215,24 +347,43 @@ export default function GuidedOrder({
 
     try {
       const backendFulfilment = fulfilment === 'quick-point' ? 'quick_point' : fulfilment
-      const response = await createQuickSolutionOrder({
-        productKey: product.id,
-        configuration: {
-          ...config,
-          fileName: file?.name || null,
-          clientEstimate: estimatedOrderTotal
-        },
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        customerEmail: customerEmail.trim(),
-        fulfilmentType: backendFulfilment,
-        fulfilmentPointId: fulfilment === 'delivery'
-          ? null
-          : (selectedPointId || cafePoints[0]?.id || null),
-        deliveryAddress: fulfilment === 'delivery' ? { address_line: deliveryAddress.trim() } : null,
-        customerNotes: customerNotes.trim(),
-        idempotencyKey
-      })
+      const requestConfiguration = {
+        ...config,
+        fileName: file?.name || null,
+        clientEstimate: estimatedOrderTotal,
+        serviceType: isServiceRequest ? (product.serviceType || 'service') : null
+      }
+
+      const response = isServiceRequest
+        ? await createQuickSolutionServiceRequest({
+            productKey: product.id,
+            configuration: requestConfiguration,
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim(),
+            customerEmail: customerEmail.trim(),
+            serviceLocation: {
+              type: config.shootLocation || 'cafe',
+              address: String(config.shootAddress || '').trim() || null,
+              preferredDate: config.preferredDate || null,
+              preferredTime: config.preferredTime || null
+            },
+            customerNotes: customerNotes.trim(),
+            idempotencyKey
+          })
+        : await createQuickSolutionOrder({
+            productKey: product.id,
+            configuration: requestConfiguration,
+            customerName: customerName.trim(),
+            customerPhone: customerPhone.trim(),
+            customerEmail: customerEmail.trim(),
+            fulfilmentType: backendFulfilment,
+            fulfilmentPointId: fulfilment === 'delivery'
+              ? null
+              : (selectedPointId || cafePoints[0]?.id || null),
+            deliveryAddress: fulfilment === 'delivery' ? { address_line: deliveryAddress.trim() } : null,
+            customerNotes: customerNotes.trim(),
+            idempotencyKey
+          })
 
       setOrderResponse(response)
       if (response?.orderId && response?.orderNumber && response?.trackingToken) {
@@ -320,6 +471,11 @@ export default function GuidedOrder({
   }
   if (complete) {
     const total = Number(orderResponse?.totalAmount ?? estimatedOrderTotal)
+    // ENQUIRY responses never carry quoteRequired:false, so this stays
+    // "Quote after review" for that flow unchanged — a priced
+    // PHOTOGRAPHY_SESSION booking (every chosen option priced) shows
+    // its real, server-confirmed amount instead.
+    const isPricedResponse = isServiceRequest && orderResponse?.quoteRequired === false
     const orderNumber = orderResponse?.orderNumber || 'Order created'
     const confirmationPoint = fulfilment === 'delivery' ? null : selectedPoint
     const confirmationArea = confirmationPoint ? pointArea(confirmationPoint) : ''
@@ -337,12 +493,24 @@ export default function GuidedOrder({
     return (
       <div className="guided-complete">
         <div className="complete-mark"><Icon name="bag" size={28}/></div>
-        <span className="eyebrow">Order received</span>
+        <span className="eyebrow">{isServiceRequest ? 'Request received' : 'Order received'}</span>
         <h2>{orderNumber}</h2>
-        <p>We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.</p>
-        <div className="complete-summary"><strong>{product.name}</strong><span>{formatMoney(total)}</span></div>
+        <p>{isServiceRequest ? (isPricedResponse ? 'We saved your booking request at the price shown below. Quick Solution will confirm your schedule and arrange payment separately — nothing is charged yet.' : 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.') : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
+        <div className="complete-summary"><strong>{product.name}</strong><span>{isServiceRequest && !isPricedResponse ? 'Quote after review' : formatMoney(total)}</span></div>
 
-        {fulfilment !== 'delivery' && confirmationPoint && (
+        {isServiceRequest && config.shootLocation && (
+          <div className="complete-fulfilment-card">
+            <span className="complete-fulfilment-icon"><Icon name="camera" size={21}/></span>
+            <div>
+              <span className="eyebrow">Media service request</span>
+              <strong>{shootLocationLabel(config.shootLocation)}</strong>
+              {config.shootLocation !== 'cafe' && config.shootAddress ? <small>{config.shootAddress}</small> : null}
+              <span>{[config.preferredDate, config.preferredTime].filter(Boolean).join(' · ') || 'Schedule to be confirmed'}</span>
+            </div>
+          </div>
+        )}
+
+        {!isServiceRequest && fulfilment !== 'delivery' && confirmationPoint && (
           <div className="complete-fulfilment-card">
             <span className="complete-fulfilment-icon"><Icon name={confirmationPoint.kind === 'cafe' ? 'store' : 'pin'} size={21}/></span>
             <div>
@@ -355,7 +523,7 @@ export default function GuidedOrder({
           </div>
         )}
 
-        {fulfilment === 'delivery' && (
+        {!isServiceRequest && fulfilment === 'delivery' && (
           <div className="complete-fulfilment-card">
             <span className="complete-fulfilment-icon"><Icon name="truck" size={21}/></span>
             <div>
@@ -366,7 +534,7 @@ export default function GuidedOrder({
           </div>
         )}
 
-        {orderResponse?.paymentToken && fulfilment !== 'delivery' && (
+        {!isServiceRequest && orderResponse?.paymentToken && fulfilment !== 'delivery' && (
           <div className={`qs-payment-card ${paymentState === 'paid' ? 'paid' : paymentState === 'waiting' ? 'pending' : ''}`}>
             <div className="qs-payment-card-head">
               <div>
@@ -394,7 +562,7 @@ export default function GuidedOrder({
           </div>
         )}
 
-        {orderResponse?.paymentToken && fulfilment === 'delivery' && (
+        {!isServiceRequest && orderResponse?.paymentToken && fulfilment === 'delivery' && (
           <div className="qs-payment-card pending">
             <div className="qs-payment-card-head">
               <div>
@@ -447,7 +615,12 @@ export default function GuidedOrder({
       <div className="guided-main">
         <div className="guided-topline">
           <button className="text-button" type="button" onClick={onAdvanced}>Switch to Full options</button>
-          <span>{stepIndex + 1} of {journey.steps.length}</span>
+          <div className="guided-topline-meta">
+            <span>{stepIndex + 1} of {shoppingSteps.length}</span>
+            <strong className="guided-mobile-total">
+              {result?.metrics?.quoteRequired ? 'Quote' : formatMoney(estimatedOrderTotal)}
+            </strong>
+          </div>
         </div>
         <div className="progress-track"><span style={{ width: `${progress}%` }}/></div>
 
@@ -457,7 +630,17 @@ export default function GuidedOrder({
           <p>{step.helper}</p>
         </div>
 
-        {step.fields && (
+        {product.id === 'a4-print' && step.id === 'quantity' ? (
+          <DocumentPrintPlan
+            files={Array.isArray(file) ? file : (file ? [file] : [])}
+            config={config}
+            onChange={updateMany}
+          />
+        ) : step.type === 'variant-builder' ? (
+          <SupplierVariantConfigurator product={product} config={config} onUpdateConfig={updateMany}/>
+        ) : step.type === 'photo-deliverables' ? (
+          <PhotoDeliverablesField product={product} config={config} onUpdateConfig={updateMany}/>
+        ) : step.fields && (
           <div className="guided-fields">
             {step.fields.map((fieldId) => {
               const field = product.fields.find((item) => item.id === fieldId)
@@ -469,13 +652,62 @@ export default function GuidedOrder({
                   value={config[field.id]}
                   onChange={(value) => update(field.id, value)}
                   file={file}
-                  onFileChange={setFile}
+                  onFileChange={(nextFile) => {
+                    setFile(nextFile)
+                    setItemAdded(false)
+                    if (product.id === 'a4-print') {
+                      setConfig((previous) => ({
+                        ...previous,
+                        pages: 0,
+                        documentPlanValid: false,
+                        documentInstructions: []
+                      }))
+                    }
+                  }}
                   guided
                 />
               )
             })}
           </div>
         )}
+
+        {step.type === 'location' && (() => {
+          const shootLocationField = product.fields.find((item) => item.id === 'shootLocation')
+          const isCafe = config.shootLocation === 'cafe'
+          return (
+            <div className="guided-fields">
+              {shootLocationField && (
+                <FieldControl
+                  field={shootLocationField}
+                  value={config.shootLocation}
+                  onChange={chooseShootLocation}
+                  guided
+                />
+              )}
+              {isCafe ? (
+                <div className="location-reassurance field-full">
+                  <Icon name="store" size={18}/>
+                  <span>We’ll use the Quick Solution Café location.</span>
+                </div>
+              ) : (
+                <label className="checkout-field field-full">
+                  <span>{config.shootLocation === 'onsite-team' ? 'Where should the team go?' : 'Where should we come?'}</span>
+                  <input
+                    type="text"
+                    value={config.shootAddress || ''}
+                    onChange={(event) => {
+                      update('shootAddress', event.target.value)
+                      if (locationError) setLocationError('')
+                    }}
+                    placeholder="Area, venue or full address"
+                  />
+                  <small>{config.shootLocation === 'onsite-team' ? 'This is where we will send the photo / video team.' : 'This is where your photographer or videographer will come to.'}</small>
+                  {locationError && <span className="field-inline-error" role="alert">{locationError}</span>}
+                </label>
+              )}
+            </div>
+          )
+        })()}
 
         {step.type === 'fulfilment' && (
           <>
@@ -504,7 +736,7 @@ export default function GuidedOrder({
             {fulfilment === 'cafe' && cafePoints.length > 0 && (
               <div className="collection-point-picker">
                 <div className="collection-point-picker-head">
-                  <div><span className="eyebrow">Collect from Quick Solution</span><strong>Choose the cafÃ© or branch.</strong></div>
+                  <div><span className="eyebrow">Collect from Quick Solution</span><strong>Choose the café or branch.</strong></div>
                   <small>{cafePoints.length} location{cafePoints.length === 1 ? '' : 's'} available</small>
                 </div>
                 <div className="collection-point-grid">
@@ -514,7 +746,7 @@ export default function GuidedOrder({
                       point={point}
                       selected={selectedPointId === point.id}
                       onSelect={() => setSelectedPointId(point.id)}
-                      typeLabel="Quick Solution cafÃ©"
+                      typeLabel="Quick Solution café"
                     />
                   ))}
                 </div>
@@ -553,64 +785,99 @@ export default function GuidedOrder({
 
         {step.type === 'review' && (
           <>
-            <ReviewRows product={product} config={config} fulfilment={fulfilment} file={file} selectedPoint={selectedPoint} fulfilmentFee={selectedFulfilmentFee}/>
-            <div className="guest-note"><Icon name="user" size={19}/><span><strong>No account required for a quick order.</strong> We only need a name and one reliable way to contact you.</span></div>
+            <ReviewRows
+              product={product}
+              config={config}
+              fulfilment={fulfilment}
+              file={file}
+              selectedPoint={selectedPoint}
+              fulfilmentFee={selectedFulfilmentFee}
+              showFulfilment={false}
+              isServiceRequest={isServiceRequest}
+            />
 
-            <div className="checkout-contact">
-              <div className="checkout-contact-heading">
-                <span className="eyebrow">Your details</span>
-                <h3>Who is this order for?</h3>
+            {isServiceRequest ? (
+              <>
+                <div className="guest-note"><Icon name="user" size={19}/><span><strong>No account required for a quick request.</strong> We only need a name and one reliable way to contact you.</span></div>
+                <div className="checkout-contact">
+                  <div className="checkout-contact-heading">
+                    <span className="eyebrow">Your details</span>
+                    <h3>Who is this request for?</h3>
+                  </div>
+                  <label className="checkout-field">
+                    <span>Name</span>
+                    <input autoComplete="name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Your name"/>
+                  </label>
+                  <div className="checkout-two">
+                    <label className="checkout-field">
+                      <span>WhatsApp / phone</span>
+                      <input autoComplete="tel" inputMode="tel" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder="e.g. 075 123 4567"/>
+                    </label>
+                    <label className="checkout-field">
+                      <span>Email <small>optional if phone is given</small></span>
+                      <input autoComplete="email" inputMode="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="name@example.com"/>
+                    </label>
+                  </div>
+                  <label className="checkout-field">
+                    <span>Anything we should know? <small>optional</small></span>
+                    <textarea value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} placeholder="Deadline, special instructions, or context"/>
+                  </label>
+                </div>
+                {submitError && <div className="checkout-error" role="alert">{submitError}</div>}
+              </>
+            ) : (
+              <div className="qs-shopping-ready">
+                <Icon name="bag" size={19}/>
+                <div>
+                  <strong>Ready for your basket.</strong>
+                  <span>Add this item and keep shopping. Collection, delivery and your contact details are handled once at checkout.</span>
+                </div>
               </div>
-              <label className="checkout-field">
-                <span>Name</span>
-                <input autoComplete="name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Your name"/>
-              </label>
-              <div className="checkout-two">
-                <label className="checkout-field">
-                  <span>WhatsApp / phone</span>
-                  <input autoComplete="tel" inputMode="tel" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder="e.g. 075 123 4567"/>
-                </label>
-                <label className="checkout-field">
-                  <span>Email <small>optional if phone is given</small></span>
-                  <input autoComplete="email" inputMode="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="name@example.com"/>
-                </label>
-              </div>
-              <label className="checkout-field">
-                <span>Anything we should know? <small>optional</small></span>
-                <textarea value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} placeholder="Deadline, special instructions, or context"/>
-              </label>
-              {file && <p className="file-stage-message secure"><strong>{file.name}</strong> will be uploaded to private Joint X storage after the order number is created. Maximum file size: 20MB.</p>}
-            </div>
-
-            {submitError && <div className="checkout-error" role="alert">{submitError}</div>}
+            )}
           </>
         )}
 
         <div className="guided-actions">
           <button className="button ghost" type="button" disabled={stepIndex === 0 || submitState === 'submitting' || submitState === 'uploading'} onClick={() => setStepIndex((value) => Math.max(0, value - 1))}>Back</button>
-          {stepIndex < journey.steps.length - 1 ? (
-            <button className="button primary-green" type="button" onClick={() => setStepIndex((value) => value + 1)}>Continue <Icon name="arrowRight" size={17}/></button>
-          ) : (
-            <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-              {submitState === 'submitting' ? 'Creating order…' : submitState === 'uploading' ? 'Uploading file securely…' : `Create order · ${formatMoney(estimatedOrderTotal)}`}
-              {submitState !== 'submitting' && submitState !== 'uploading' && <Icon name="arrowRight" size={17}/>}
+          {stepIndex < shoppingSteps.length - 1 ? (
+            <button
+              className="button primary-green"
+              type="button"
+              disabled={product.id === 'a4-print' && step.id === 'quantity' && !config.documentPlanValid}
+              onClick={goNext}
+            >
+              Continue <Icon name="arrowRight" size={17}/>
             </button>
+          ) : isServiceRequest ? (
+            <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
+              {submitState === 'submitting' ? 'Sending request…' : 'Send media request'}
+              {submitState !== 'submitting' && <Icon name="arrowRight" size={17}/>}
+            </button>
+          ) : (
+            <div className="qs-cart-review-actions">
+              <button
+                className={`button primary-green ${itemAdded ? 'added' : ''}`}
+                type="button"
+                disabled={itemAdded}
+                onClick={addCurrentItemToCart}
+              >
+                {itemAdded ? 'Added to order' : 'Add to order'} <Icon name={itemAdded ? 'check' : 'bag'} size={17}/>
+              </button>
+            </div>
           )}
         </div>
       </div>
 
       <aside className="guided-summary" aria-live="polite">
-        <span className="eyebrow inverse">Estimated total</span>
-        <div className="guided-price">{formatMoney(estimatedOrderTotal)}</div>
-        <p>{result.summary}</p>
+        <span className="eyebrow inverse">{isServiceRequest && !isPricedServiceRequest ? 'Request type' : 'Estimated total'}</span>
+        <div className="guided-price">{isServiceRequest && !isPricedServiceRequest ? 'Quote' : formatMoney(estimatedOrderTotal)}</div>
+        <p>{isServiceRequest && !isPricedServiceRequest ? 'We will confirm pricing after reviewing the crew, location and scope.' : result.summary}</p>
         <div className="price-lines compact-lines">
           {result.lines.map((line, index) => (
             <div key={`${line.label}-${index}`}><span>{line.label}</span><strong>{line.text ?? formatMoney(line.value)}</strong></div>
           ))}
-          {fulfilment !== 'delivery' && selectedPoint ? <div><span>{selectedPoint.name} collection</span><strong>{selectedFulfilmentFee > 0 ? formatMoney(selectedFulfilmentFee) : 'Free'}</strong></div> : null}
-          {fulfilment === 'delivery' ? <div><span>Delivery</span><strong>Confirmed before payment</strong></div> : null}
         </div>
-        <div className="summary-confidence"><span className="brand-dot green"/><span>The backend recalculates the price before saving the order, so the browser cannot invent its own total.</span></div>
+        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? (isPricedServiceRequest ? 'This is the approved price for what you have chosen. Payment is not requested here — Quick Solution still confirms your booking before anything is charged.' : 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.') : 'The backend recalculates the price before saving the order, so the browser cannot invent its own total.'}</span></div>
         <a className="help-link" href="https://wa.me/27754534646" target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
       </aside>
     </div>

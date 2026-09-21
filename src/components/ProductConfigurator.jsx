@@ -8,14 +8,17 @@ export default function ProductConfigurator({
   preset = {},
   onSnapshot,
   onGuided,
-  onContinue
+  onContinue,
+  onAddToCart
 }) {
   const [config, setConfig] = useState(() => getDefaultConfig(product, preset))
   const [file, setFile] = useState(null)
+  const [itemAdded, setItemAdded] = useState(false)
 
   useEffect(() => {
     setConfig(getDefaultConfig(product, preset))
     setFile(null)
+    setItemAdded(false)
   }, [product, preset])
 
   const result = useMemo(() => calculateProductPrice(product, config), [product, config])
@@ -24,7 +27,24 @@ export default function ProductConfigurator({
     onSnapshot?.(result.snapshot)
   }, [result.snapshot, onSnapshot])
 
-  const update = (id, value) => setConfig((previous) => ({ ...previous, [id]: value }))
+  const update = (id, value) => {
+    setItemAdded(false)
+    setConfig((previous) => ({ ...previous, [id]: value }))
+  }
+
+  const addCurrentItemToCart = () => {
+    if (itemAdded) return
+    onAddToCart?.({
+      product,
+      config,
+      file,
+      files: Array.isArray(file) ? file : (file ? [file] : []),
+      total: result.total,
+      summary: result.summary,
+      quoteRequired: product?.pricing?.strategy === 'ENQUIRY'
+    })
+    setItemAdded(true)
+  }
 
   return (
     <div className="configurator-grid">
@@ -52,7 +72,7 @@ export default function ProductConfigurator({
               value={config[field.id]}
               onChange={(value) => update(field.id, value)}
               file={file}
-              onFileChange={setFile}
+              onFileChange={(nextFile) => { setFile(nextFile); setItemAdded(false) }}
             />
           ))}
         </div>
@@ -78,12 +98,14 @@ export default function ProductConfigurator({
         </div>
 
         <button
-          className="primary-light"
+          className={`primary-light ${itemAdded ? 'added' : ''}`}
           type="button"
-          onClick={() => onContinue?.({ config, file })}
+          disabled={itemAdded}
+          onClick={addCurrentItemToCart}
         >
-          {product.nextActionLabel || 'Review order'}
+          {itemAdded ? 'Added to order' : 'Add to order'}
         </button>
+        <p className="qs-shop-first-note">Add this item to your order. You will choose collection or delivery and enter your details once at checkout.</p>
         <button
           className="secondary-dark"
           type="button"

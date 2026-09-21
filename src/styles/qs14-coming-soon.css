@@ -1,0 +1,74 @@
+/* QS-14 · coming soon catalogue placeholders */
+
+.qs14-coming-soon-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.qs14-coming-soon-card{
+  position:relative;background:#faf9f7;border:1px solid rgba(17,17,15,.1);border-radius:22px;
+  padding:20px;display:grid;gap:10px;align-content:start
+}
+.qs14-coming-soon-icon{
+  width:44px;height:44px;border-radius:14px;background:var(--soft-green);color:var(--green);
+  display:grid;place-items:center
+}
+.qs14-coming-soon-copy strong{font-size:17px;letter-spacing:-.01em}
+.qs14-coming-soon-copy p{margin:4px 0 0;font-size:13px;line-height:1.55;color:#6d6a64}
+.qs14-coming-soon-badge{
+  justify-self:start;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+  color:#8a8780;background:#efeee9;border-radius:999px;padding:5px 10px
+}
+.qs14-coming-soon-link{
+  display:inline-flex;align-items:center;gap:8px;margin-top:20px;font-size:13px;font-weight:700;
+  color:var(--green)
+}
+
+@media(max-width:900px){
+  .qs14-coming-soon-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:620px){
+  .qs14-coming-soon-grid{grid-template-columns:1fr}
+}
+
+/* QS-14 follow-up · decomposed supplier-margin configurator (Flags, Gazebos) */
+.qs14-variant-unavailable{
+  background:#fdf3ec;border:1px solid rgba(204,51,0,.18);border-radius:14px;padding:12px 14px;color:#7a3c1e
+}
+.qs14-empty-note{font-size:13px;color:#77776f;margin:0}
+.qs14-accessories legend{font-size:13px;font-weight:800;color:#3a3a35;padding:0 0 8px}
+.qs14-accessory-grid{display:grid;gap:8px;grid-template-columns:1fr 1fr}
+.qs14-accessory-option{
+  display:flex;align-items:center;gap:9px;border:1px solid rgba(17,17,15,.1);border-radius:12px;
+  padding:10px 12px;font-size:13px;cursor:pointer;background:#fff
+}
+.qs14-accessory-option input{width:16px;height:16px;accent-color:var(--green)}
+
+@media(max-width:620px){
+  .qs14-accessory-grid{grid-template-columns:1fr}
+}
+
+/* QS-14 follow-up · admin supplier-margin / photography pricing editors */
+.admin-subsection{border-top:1px solid #ecece6;padding-top:15px;display:grid;gap:10px}
+.admin-subsection>strong{font-size:13px;color:#3a3a35}
+.admin-subsection-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.admin-subsection-head strong{font-size:13px;color:#3a3a35}
+.qs14-admin-deliverable-row{grid-template-columns:1fr 140px auto}
+.qs14-admin-remove-button{
+  border:1px solid rgba(204,51,0,.25);background:#fff;color:var(--orange);
+  border-radius:9px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap
+}
+.qs14-admin-remove-button:hover{background:#fdf3ec}
+.admin-empty-note{font-size:12px;color:#83837c;margin:0}
+.qs14-admin-rate-list{display:grid;gap:8px;max-height:420px;overflow:auto;padding-right:4px}
+.qs14-admin-rate-row{
+  display:grid;grid-template-columns:1fr 160px auto;gap:12px;align-items:center;
+  border:1px solid #ecece6;border-radius:12px;padding:9px 12px;background:#fafaf7
+}
+.qs14-admin-session-row{grid-template-columns:1fr 110px 110px 130px}
+.qs14-admin-rate-label{font-size:12px;color:#4a4a45;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qs14-admin-rate-row label{display:grid;gap:3px}
+.qs14-admin-rate-row small{font-size:9px;color:#83837c;text-transform:uppercase}
+.qs14-admin-rate-row input{width:100%;border:1px solid #d8d8d0;background:#fff;border-radius:9px;padding:7px 8px;font-size:13px}
+.qs14-admin-rate-selling{font-size:11px;font-weight:700;color:var(--green);white-space:nowrap;justify-self:end}
+
+@media(max-width:900px){
+  .qs14-admin-rate-row,.qs14-admin-session-row{grid-template-columns:1fr;justify-items:stretch}
+  .qs14-admin-rate-selling{justify-self:start}
+}
