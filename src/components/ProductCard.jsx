@@ -8,7 +8,12 @@ const productImages = {
   'a4-print': '/qs11/product-document-printing-clean.webp',
   'business-cards': '/qs11/product-business-cards-clean.webp',
   'printed-tshirt': '/qs11/product-tshirt-clean.webp',
-  'media-services': '/qs12/product-photography-video.webp'
+  'media-services': '/qs12/product-photography-video.webp',
+  // Flags has no dedicated product photography yet — falls back to the
+  // existing generic ProductScene illustration rather than reusing an
+  // unrelated image.
+  gazebos: '/qs11/event-gazebo.webp',
+  'photo-session': '/qs12/product-photography-video.webp'
 }
 
 export default function ProductCard({ product, active = false, onConfigure }) {

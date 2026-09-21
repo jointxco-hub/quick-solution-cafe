@@ -133,6 +133,161 @@ function priceConfigurable(product, config) {
   }
 }
 
+// Client-side estimate only — the server (commerce.qs_calculate_price)
+// always recalculates from pricing_definition and is what's actually
+// charged; this exists purely for instant UI feedback. It reads
+// product.pricing.variants[id].price / accessories[id].price, which
+// are the CUSTOMER-SAFE, already-margin-applied selling prices the
+// public catalog exposes — never a raw referencePrice or marginRate
+// (those live only in the staff-only pricing_definition, which this
+// client never receives).
+// Per-variant minQuantity/quantityStep (falling back to the product
+// default) — e.g. single-sided flags: minimum 2, step 2 ("must be
+// bought in pairs of 2"). Exported so the guided configurator can size
+// its quantity control correctly the moment a variant is chosen,
+// without duplicating this fallback logic.
+export function getVariantQuantityRule(product, variantId) {
+  const variant = product?.pricing?.variants?.[variantId]
+  const minQuantity = Math.max(Number(variant?.minQuantity ?? product?.pricing?.minQuantity ?? 1), 1)
+  const quantityStep = Math.max(Number(variant?.quantityStep ?? 1), 1)
+  return { minQuantity, quantityStep }
+}
+
+function isQuantityValid(quantity, minQuantity, quantityStep) {
+  if (quantity < minQuantity) return false
+  if (quantityStep > 1 && (quantity - minQuantity) % quantityStep !== 0) return false
+  return true
+}
+
+// An accessory with no compatibleVariants (or an empty one) is
+// universal — same convention as the server. Exported so
+// SupplierVariantConfigurator can use the exact same rule to drop a
+// now-incompatible accessory the moment the variant changes, instead
+// of leaving a hidden, uncheckable-but-still-selected accessory in the
+// config that only the server would catch at checkout.
+export function accessoryCompatible(accessory, variantId) {
+  if (!Array.isArray(accessory?.compatibleVariants) || accessory.compatibleVariants.length === 0) return true
+  return accessory.compatibleVariants.includes(variantId)
+}
+
+// Drops any accessory id no longer compatible with the given variant.
+// Used by SupplierVariantConfigurator every time the variant changes
+// (a size/frame/sides switch can invalidate a previously-selected
+// accessory, e.g. a 2x2 gazebo wall after switching to 3x3) so a now-
+// incompatible selection can never sit silently in the submitted
+// configuration — the server would reject it anyway, but only at
+// checkout, which is a worse place for the customer to find out.
+export function filterCompatibleAccessories(product, accessoryIds, variantId) {
+  return (accessoryIds || []).filter((id) => {
+    const accessory = product?.pricing?.accessories?.[id]
+    return Boolean(accessory) && accessoryCompatible(accessory, variantId)
+  })
+}
+
+function priceSupplierMargin(product, config) {
+  const variant = product.pricing.variants?.[config.variant]
+  const { minQuantity, quantityStep } = getVariantQuantityRule(product, config.variant)
+  // Deliberately NOT clamped up to minQuantity here (unlike most other
+  // strategies' quantity handling) — silently rounding an invalid
+  // quantity up would hide a real validation failure instead of
+  // reporting it, and would disagree with the server, which rejects an
+  // out-of-range/wrong-step quantity outright rather than correcting it.
+  const quantity = config.quantity == null || config.quantity === '' ? minQuantity : Number(config.quantity)
+  const accessoryIds = Array.isArray(config.accessories) ? config.accessories : []
+  const artwork = config.artwork ? product.pricing.artwork?.[config.artwork] : null
+
+  const invalidQuantity = !isQuantityValid(quantity, minQuantity, quantityStep)
+  const incompatibleAccessory = accessoryIds.some((id) => {
+    const accessory = product.pricing.accessories?.[id]
+    return !accessory || !accessoryCompatible(accessory, config.variant)
+  })
+
+  const quoteRequired =
+    !variant || variant.price == null ||
+    accessoryIds.some((id) => !product.pricing.accessories?.[id] || product.pricing.accessories[id].price == null) ||
+    (config.artwork && (!artwork || artwork.fee == null))
+
+  if (invalidQuantity || incompatibleAccessory) {
+    return {
+      total: 0,
+      summary: invalidQuantity
+        ? (quantityStep > 1 ? `Order in multiples of ${quantityStep} (minimum ${minQuantity})` : `Minimum quantity is ${minQuantity}`)
+        : 'One or more accessories are not available for this option',
+      lines: [],
+      metrics: { quoteRequired: false, invalid: true, quantity, minQuantity, quantityStep }
+    }
+  }
+
+  if (quoteRequired) {
+    return {
+      total: 0,
+      summary: 'Quote required',
+      lines: [{ label: 'Pricing', text: 'One or more selected options need a quote' }],
+      metrics: { quoteRequired: true, quantity, minQuantity, quantityStep }
+    }
+  }
+
+  const variantTotal = Number(variant.price) * quantity
+  const accessoriesTotal = accessoryIds.reduce((sum, id) => sum + Number(product.pricing.accessories[id].price), 0)
+  const artworkFee = artwork ? Number(artwork.fee || 0) : 0
+  const total = variantTotal + accessoriesTotal + artworkFee
+
+  const lines = [{ label: variant.label, value: variantTotal }]
+  for (const id of accessoryIds) lines.push({ label: product.pricing.accessories[id].label, value: Number(product.pricing.accessories[id].price) })
+  if (artworkFee > 0) lines.push({ label: artwork.label, value: artworkFee })
+
+  return {
+    total,
+    summary: `${variant.label} × ${quantity}`,
+    lines,
+    metrics: { quantity, minQuantity, quantityStep, unitPrice: Number(variant.price), quoteRequired: false }
+  }
+}
+
+function pricePhotographySession(product, config) {
+  const sessionId = config.session || '30min-7edits'
+  const session = product.pricing.sessions?.[sessionId]
+  const extraEdits = Math.max(Number(config.extraEdits || 0), 0)
+  const deliverableIds = Array.isArray(config.deliverables) ? config.deliverables : []
+
+  const sessionUnpriced = !session || session.price == null
+  const extraEditsUnpriced = extraEdits > 0 && product.pricing.extraEditRate == null
+  const deliverablesUnpriced = deliverableIds.some((id) => {
+    const deliverable = product.pricing.deliverables?.[id]
+    return !deliverable || deliverable.price == null
+  })
+  const quoteRequired = sessionUnpriced || extraEditsUnpriced || deliverablesUnpriced
+
+  if (quoteRequired) {
+    return {
+      total: 0,
+      summary: 'Quote required',
+      lines: [{ label: 'Pricing', text: 'One or more selected options need a quote' }],
+      metrics: { quoteRequired: true, sessionId, extraEdits }
+    }
+  }
+
+  const lines = [{ label: session.label, value: Number(session.price) }]
+  let total = Number(session.price)
+  if (extraEdits > 0) {
+    const extraTotal = extraEdits * Number(product.pricing.extraEditRate)
+    total += extraTotal
+    lines.push({ label: `${extraEdits} extra edited photo${extraEdits === 1 ? '' : 's'}`, value: extraTotal })
+  }
+  for (const id of deliverableIds) {
+    const deliverable = product.pricing.deliverables[id]
+    total += Number(deliverable.price)
+    lines.push({ label: deliverable.label, value: Number(deliverable.price) })
+  }
+
+  return {
+    total,
+    summary: session.label,
+    lines,
+    metrics: { quoteRequired: false, sessionId, durationMinutes: session.durationMinutes, includedEdits: session.includedEdits, extraEdits }
+  }
+}
+
 function priceEnquiry(product, config) {
   return {
     total: 0,
@@ -156,6 +311,8 @@ export function calculateProductPrice(product, config) {
     case 'TIERED': calculation = priceTiered(product, config); break
     case 'CONFIGURABLE': calculation = priceConfigurable(product, config); break
     case 'ENQUIRY': calculation = priceEnquiry(product, config); break
+    case 'SUPPLIER_MARGIN': calculation = priceSupplierMargin(product, config); break
+    case 'PHOTOGRAPHY_SESSION': calculation = pricePhotographySession(product, config); break
     default: calculation = { total: 0, summary: 'Quote required', lines: [], metrics: {} }
   }
 

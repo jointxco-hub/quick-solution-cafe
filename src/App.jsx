@@ -9,6 +9,7 @@ import TrackOrder from './components/TrackOrder.jsx'
 import QuickTaskCard from './components/QuickTaskCard.jsx'
 import SubtleStoryRail from './components/SubtleStoryRail.jsx'
 import ProofGallery from './components/ProofGallery.jsx'
+import ComingSoonRail from './components/ComingSoonRail.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
 import OrderBasket from './components/OrderBasket.jsx'
 import { loadCart, saveCart } from './lib/cartStore.js'
@@ -261,6 +262,8 @@ export default function App() {
           </div>
           <div className="product-grid">{customerProducts.map((product) => <ProductCard key={product.id} product={product} active={selectedProduct?.id === product.id} onConfigure={openPreferred}/>)}</div>
         </section>
+
+        <ComingSoonRail liveProductIds={customerProducts.map((product) => product.id)} />
 
         <ProofGallery />
 
