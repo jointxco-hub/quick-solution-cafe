@@ -263,7 +263,7 @@ export default function App() {
           <div className="product-grid">{customerProducts.map((product) => <ProductCard key={product.id} product={product} active={selectedProduct?.id === product.id} onConfigure={openPreferred}/>)}</div>
         </section>
 
-        <ComingSoonRail />
+        <ComingSoonRail liveProductIds={customerProducts.map((product) => product.id)} />
 
         <ProofGallery />
 

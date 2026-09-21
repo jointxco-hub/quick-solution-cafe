@@ -412,7 +412,12 @@ export const products = [
     "outdoor flag"
   ],
   "popular": false,
-  "active": true,
+  // Not yet published live in commerce.service_product_configs — kept
+  // inactive in this fallback so it can never flash as orderable
+  // before the live catalogue fetch resolves (or if that fetch fails).
+  // ComingSoonRail is the only place this shows up until it's live.
+  // Flip to true once the QS-14 migration is applied to Supabase.
+  "active": false,
   "channels": {
     "storefront": true,
     "guided": true,
@@ -425,6 +430,27 @@ export const products = [
   "pricing": {
     "strategy": "SUPPLIER_MARGIN",
     "minQuantity": 1,
+    "variantAxes": [
+      { "id": "style", "label": "Style", "options": [
+        { "id": "telescopic", "label": "Telescopic" },
+        { "id": "sharkfin", "label": "Shark Fin" },
+        { "id": "curved", "label": "Curved" }
+      ] },
+      { "id": "size", "label": "Size", "options": [
+        { "id": "2m", "label": "2.0m" },
+        { "id": "3m", "label": "3.0m" },
+        { "id": "4m", "label": "4.0m" }
+      ] },
+      { "id": "sides", "label": "Sides", "options": [
+        { "id": "ss", "label": "Single-sided (must be ordered in pairs of 2)" },
+        { "id": "ds", "label": "Double-sided" }
+      ] },
+      { "id": "kit", "label": "Kit", "options": [
+        { "id": "full", "label": "Full kit (print + system + ground spike + carry bag)" },
+        { "id": "reprint", "label": "Replacement print only" }
+      ] }
+    ],
+    "variantTemplate": "{style}-{size}-{sides}-{kit}",
     "variants": {
       "telescopic-2m-ss-full": {
         "label": "Telescopic flag — 2.0m — single-sided — full kit (print + system + ground spike + carry bag)",
@@ -816,7 +842,9 @@ export const products = [
     "event branding"
   ],
   "popular": false,
-  "active": true,
+  // See the matching comment on the 'flags' entry above — not yet
+  // published live, kept inactive so it never flashes as orderable.
+  "active": false,
   "channels": {
     "storefront": true,
     "guided": true,
@@ -829,6 +857,24 @@ export const products = [
   "pricing": {
     "strategy": "SUPPLIER_MARGIN",
     "minQuantity": 1,
+    "variantAxes": [
+      { "id": "frame", "label": "Frame", "options": [
+        { "id": "steel", "label": "Steel" },
+        { "id": "aluminium", "label": "Aluminium" }
+      ] },
+      { "id": "size", "label": "Size", "options": [
+        { "id": "2x2", "label": "2m × 2m" },
+        { "id": "3x3-standard", "label": "3m × 3m standard" },
+        { "id": "3x3-deluxe", "label": "3m × 3m deluxe" },
+        { "id": "3x4.5-deluxe", "label": "3m × 4.5m deluxe", "availableWhen": { "frame": ["aluminium"] } },
+        { "id": "3x6-deluxe", "label": "3m × 6m deluxe", "availableWhen": { "frame": ["aluminium"] } }
+      ] },
+      { "id": "kit", "label": "Kit", "options": [
+        { "id": "full", "label": "Full kit (print + system + carry bag + toolkit)" },
+        { "id": "reprint", "label": "Replacement canopy print only" }
+      ] }
+    ],
+    "variantTemplate": "{frame}-{size}-{kit}",
     "variants": {
       "steel-2x2-full": {
         "label": "Steel gazebo — 2m × 2m — full kit (print + system + carry bag + toolkit)",
@@ -1091,7 +1137,9 @@ export const products = [
     "photography special"
   ],
   "popular": true,
-  "active": true,
+  // See the matching comment on the 'flags' entry above — not yet
+  // published live, kept inactive so it never flashes as orderable.
+  "active": false,
   "serviceType": "media",
   "channels": {
     "storefront": true,
@@ -1325,7 +1373,7 @@ export const guidedJourneys = [
     title: 'Order a flag',
     intro: 'Choose the flag, how many you need and what is happening with the artwork.',
     steps: [
-      { id: 'flag', eyebrow: 'Step 1', title: 'Which flag would you like?', helper: 'Telescopic, Shark Fin and Curved are shown with every size, sides and kit option.', fields: ['variant', 'quantity'] },
+      { id: 'flag', eyebrow: 'Step 1', title: 'Which flag would you like?', helper: 'Choose the style, size, sides and kit — single-sided flags are ordered in pairs of 2.', type: 'variant-builder' },
       { id: 'artwork', eyebrow: 'Step 2', title: 'What about the artwork?', helper: 'Upload ready artwork or ask Joint X to check or help with the design.', fields: ['artwork', 'file'] },
       { id: 'fulfilment', eyebrow: 'Step 3', title: 'How do you want to receive it?', helper: 'Collect from Quick Solution, use a Quick Point, or arrange delivery.', type: 'fulfilment' },
       { id: 'review', eyebrow: 'Final step', title: 'Check your flag order', helper: 'Review the flag, quantity, artwork and collection details.', type: 'review' }
@@ -1337,7 +1385,7 @@ export const guidedJourneys = [
     title: 'Order a gazebo',
     intro: 'Choose the frame, size and kit, then tell us about the artwork.',
     steps: [
-      { id: 'gazebo', eyebrow: 'Step 1', title: 'Which gazebo would you like?', helper: 'Steel and Aluminium frames are shown with every size and kit option.', fields: ['variant', 'quantity'] },
+      { id: 'gazebo', eyebrow: 'Step 1', title: 'Which gazebo would you like?', helper: 'Choose the frame, size and kit, then add any walls or accessories that fit.', type: 'variant-builder' },
       { id: 'artwork', eyebrow: 'Step 2', title: 'What about the artwork?', helper: 'Upload ready artwork or ask Joint X to check or help with the design.', fields: ['artwork', 'file'] },
       { id: 'fulfilment', eyebrow: 'Step 3', title: 'How do you want to receive it?', helper: 'Collect from Quick Solution, use a Quick Point, or arrange delivery.', type: 'fulfilment' },
       { id: 'review', eyebrow: 'Final step', title: 'Check your gazebo order', helper: 'Review the gazebo, quantity, artwork and collection details.', type: 'review' }

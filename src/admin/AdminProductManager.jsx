@@ -72,6 +72,191 @@ function PricingEditor({ product, onChange }) {
   )
 }
 
+// Dedicated editors for SUPPLIER_MARGIN / PHOTOGRAPHY_SESSION.
+//
+// Unlike the generic PricingEditor above, these edit
+// product.pricingDefinition directly (the full staff-only definition
+// admin_get_quick_solution_catalog returns alongside customer_definition
+// — referencePrice/marginRate/session rates live ONLY here, never in
+// product.pricing). product.pricing (the customer-safe selling-price
+// mirror) is intentionally left untouched by this screen: the server
+// regenerates it from pricing_definition on every save
+// (admin_update_quick_solution_product), so hand-editing it here would
+// just be overwritten anyway — and trying to keep it in sync client-side
+// is exactly the drift risk that server-side regeneration exists to
+// remove.
+function money(value) {
+  const n = Number(value)
+  return Number.isFinite(n) ? `R${n.toFixed(2)}` : '—'
+}
+
+function SupplierMarginPricingEditor({ product, onChange }) {
+  const pricingDefinition = product.pricingDefinition || {}
+  const margin = Number(pricingDefinition.marginRate ?? 0.5)
+
+  const updateDefinition = (patch) => {
+    onChange({ ...product, pricingDefinition: { ...pricingDefinition, ...patch } })
+  }
+
+  const updateEntry = (group, id, key, value) => {
+    const current = pricingDefinition[group] || {}
+    updateDefinition({
+      [group]: { ...current, [id]: { ...current[id], [key]: value } }
+    })
+  }
+
+  const renderEntryRows = (group, label) => {
+    const entries = Object.entries(pricingDefinition[group] || {})
+    if (!entries.length) return <p className="admin-empty-note">No {label.toLowerCase()} configured.</p>
+    return (
+      <div className="qs14-admin-rate-list">
+        {entries.map(([id, entry]) => {
+          const reference = entry.referencePrice
+          const selling = reference == null || reference === '' ? null : Number(reference) / (1 - margin)
+          return (
+            <div className="qs14-admin-rate-row" key={id}>
+              <span className="qs14-admin-rate-label" title={entry.label}>{entry.label || id}</span>
+              <label>
+                <small>Reference price (Excl. VAT)</small>
+                <input
+                  type="number" min="0" step="0.01"
+                  value={reference ?? ''}
+                  placeholder="Not yet priced"
+                  onChange={(event) => updateEntry(group, id, 'referencePrice', event.target.value === '' ? null : Number(event.target.value))}
+                />
+              </label>
+              <span className="qs14-admin-rate-selling">{selling == null ? 'Quote required' : `${money(selling)} selling`}</span>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return (
+    <div className="admin-section-block">
+      <div className="admin-section-title">
+        <div><span className="eyebrow">Supplier pricing · staff only</span><h3>Gross margin & reference prices</h3></div>
+        <span className="schema-tag">Pricing version · {product.pricingVersion}</span>
+      </div>
+      <p className="admin-empty-note">
+        Selling price = reference price ÷ (1 − margin). Customers only ever see the computed selling price below — never these reference prices or the margin itself.
+      </p>
+
+      <div className="admin-two-col">
+        <label className="admin-field">
+          <span>Gross margin</span>
+          <div className="input-with-suffix">
+            <input
+              type="number" min="0" max="99" step="1"
+              value={Math.round(margin * 100)}
+              onChange={(event) => updateDefinition({ marginRate: Math.min(99, Math.max(0, Number(event.target.value))) / 100 })}
+            />
+            <small>%</small>
+          </div>
+        </label>
+        <label className="admin-field">
+          <span>Minimum quantity (product default)</span>
+          <input
+            type="number" min="1" step="1"
+            value={pricingDefinition.minQuantity ?? 1}
+            onChange={(event) => updateDefinition({ minQuantity: Math.max(1, Number(event.target.value)) })}
+          />
+        </label>
+      </div>
+
+      <div className="admin-two-col">
+        <label className="admin-field"><span>Source</span><input value={pricingDefinition.sourceName || ''} onChange={(event) => updateDefinition({ sourceName: event.target.value })}/></label>
+        <label className="admin-field"><span>VAT basis of reference prices</span><input value={pricingDefinition.vatBasis || ''} placeholder="e.g. excl_vat" onChange={(event) => updateDefinition({ vatBasis: event.target.value })}/></label>
+      </div>
+      <div className="admin-two-col">
+        <label className="admin-field"><span>Source URL</span><input value={pricingDefinition.sourceUrl || ''} onChange={(event) => updateDefinition({ sourceUrl: event.target.value })}/></label>
+        <label className="admin-field"><span>Source date</span><input value={pricingDefinition.sourceDate || ''} placeholder="YYYY-MM-DD" onChange={(event) => updateDefinition({ sourceDate: event.target.value })}/></label>
+      </div>
+
+      <div className="admin-subsection">
+        <strong>Variants</strong>
+        {renderEntryRows('variants', 'variants')}
+      </div>
+      <div className="admin-subsection">
+        <strong>Accessories</strong>
+        {renderEntryRows('accessories', 'accessories')}
+      </div>
+    </div>
+  )
+}
+
+function PhotographySessionPricingEditor({ product, onChange }) {
+  const pricingDefinition = product.pricingDefinition || {}
+  const extraEditRate = pricingDefinition.extraEditRate
+
+  const updateDefinition = (patch) => {
+    onChange({ ...product, pricingDefinition: { ...pricingDefinition, ...patch } })
+  }
+
+  const updateSession = (id, key, value) => {
+    const current = pricingDefinition.sessions || {}
+    updateDefinition({ sessions: { ...current, [id]: { ...current[id], [key]: value } } })
+  }
+
+  const sessions = Object.entries(pricingDefinition.sessions || {})
+  const deliverables = Object.entries(pricingDefinition.deliverables || {})
+
+  return (
+    <div className="admin-section-block">
+      <div className="admin-section-title">
+        <div><span className="eyebrow">Photography pricing · staff only</span><h3>Sessions, extra edits & deliverables</h3></div>
+        <span className="schema-tag">Pricing version · {product.pricingVersion}</span>
+      </div>
+      <p className="admin-empty-note">Leave a price blank to mark it "Quote required" — never defaults to free.</p>
+
+      <div className="admin-subsection">
+        <strong>Sessions</strong>
+        <div className="qs14-admin-rate-list">
+          {sessions.map(([id, session]) => (
+            <div className="qs14-admin-rate-row qs14-admin-session-row" key={id}>
+              <span className="qs14-admin-rate-label">{session.label || id}</span>
+              <label><small>Duration (min)</small><input type="number" min="0" step="1" value={session.durationMinutes ?? ''} placeholder="—" onChange={(event) => updateSession(id, 'durationMinutes', event.target.value === '' ? null : Number(event.target.value))}/></label>
+              <label><small>Included edits</small><input type="number" min="0" step="1" value={session.includedEdits ?? ''} placeholder="—" onChange={(event) => updateSession(id, 'includedEdits', event.target.value === '' ? null : Number(event.target.value))}/></label>
+              <label><small>Price</small><input type="number" min="0" step="0.01" value={session.price ?? ''} placeholder="Quote required" onChange={(event) => updateSession(id, 'price', event.target.value === '' ? null : Number(event.target.value))}/></label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="admin-subsection">
+        <strong>Extra edited photos</strong>
+        <label className="admin-field">
+          <span>Rate per extra edit</span>
+          <input
+            type="number" min="0" step="0.01"
+            value={extraEditRate ?? ''}
+            placeholder="Not approved — quote required"
+            onChange={(event) => updateDefinition({ extraEditRate: event.target.value === '' ? null : Number(event.target.value) })}
+          />
+        </label>
+      </div>
+
+      <div className="admin-subsection">
+        <strong>Deliverables</strong>
+        {deliverables.length ? (
+          <div className="qs14-admin-rate-list">
+            {deliverables.map(([id, deliverable]) => (
+              <div className="qs14-admin-rate-row" key={id}>
+                <span className="qs14-admin-rate-label">{deliverable.label || id}</span>
+                <label><small>Price</small><input type="number" min="0" step="0.01" value={deliverable.price ?? ''} placeholder="Quote required" onChange={(event) => {
+                  const current = pricingDefinition.deliverables || {}
+                  updateDefinition({ deliverables: { ...current, [id]: { ...current[id], price: event.target.value === '' ? null : Number(event.target.value) } } })
+                }}/></label>
+              </div>
+            ))}
+          </div>
+        ) : <p className="admin-empty-note">No deliverables configured yet.</p>}
+      </div>
+    </div>
+  )
+}
+
 function AdminSignIn({ onSignedIn }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -335,7 +520,13 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
                     </div>
                   </div>
 
-                  <PricingEditor product={product} onChange={replaceSelected}/>
+                  {product.pricing?.strategy === 'SUPPLIER_MARGIN' ? (
+                    <SupplierMarginPricingEditor product={product} onChange={replaceSelected}/>
+                  ) : product.pricing?.strategy === 'PHOTOGRAPHY_SESSION' ? (
+                    <PhotographySessionPricingEditor product={product} onChange={replaceSelected}/>
+                  ) : (
+                    <PricingEditor product={product} onChange={replaceSelected}/>
+                  )}
 
                   <div className="admin-save-bar">
                     <div>

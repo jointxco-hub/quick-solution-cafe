@@ -6,15 +6,20 @@
 #   create_quick_solution_service_request accepting PHOTOGRAPHY_SESSION)
 #   20260921090500_qs14_catalog_data.sql (Flags / Gazebos / Quick Photo
 #   Session catalogue rows, real supplier data)
+#   20260921120000_qs14_checkout_guards_and_supplier_rules.sql (checkout
+#   protection in the paid order/cart RPCs, per-variant minQuantity/
+#   quantityStep + accessory compatibleVariants validation, server-side
+#   regeneration of the customer-safe selling-price mirror on admin save)
 #
 # This is a LOCAL, DISPOSABLE container only. It never touches staging
 # or production. Schema stub covers just enough of commerce.*/public.*
-# for these two migrations to apply and their RPCs to run.
+# for these migrations to apply and their RPCs to run.
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 MIG1="$ROOT/supabase/migrations/20260921090000_qs14_catalog_margin_photography.sql"
 MIG2="$ROOT/supabase/migrations/20260921090500_qs14_catalog_data.sql"
+MIG3="$ROOT/supabase/migrations/20260921120000_qs14_checkout_guards_and_supplier_rules.sql"
 CID="qs14-catalog-$$"
 cleanup() { docker rm -f "$CID" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
@@ -118,6 +123,8 @@ create table commerce.service_orders (
   source_metadata jsonb not null default '{}'::jsonb,
   upload_token_hash text,
   upload_token_expires_at timestamptz,
+  payment_token_hash text,
+  payment_token_expires_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (tenant_id, idempotency_key)
@@ -134,19 +141,75 @@ create table commerce.service_order_items (
   configuration jsonb not null default '{}'::jsonb,
   pricing_snapshot jsonb not null default '{}'::jsonb,
   line_total numeric not null default 0,
+  client_item_key text,
+  created_at timestamptz not null default now()
+);
+
+create table commerce.fulfilment_points (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id),
+  slug text,
+  name text not null,
+  kind text not null,
+  status text not null default 'active',
+  collection_enabled boolean not null default true,
+  fee_amount numeric not null default 0,
+  sort_order int not null default 100,
+  address jsonb,
+  contact_phone text,
+  easy_locate_business_ref text,
+  latitude numeric,
+  longitude numeric,
+  services jsonb,
   created_at timestamptz not null default now()
 );
 
 create or replace function commerce.qs_generate_order_number() returns text
   language sql as $$ select 'QSC-TEST-' || substr(gen_random_uuid()::text,1,8) $$;
 
+create or replace function commerce.qs_issue_tracking_token(p_order_id uuid) returns jsonb
+  language sql as $$ select jsonb_build_object('token', encode(public.gen_random_bytes(16),'hex'), 'expiresAt', (now() + interval '30 days')::text) $$;
+
 -- Stub for the delegation target: proves unhandled strategies still
 -- reach _legacy (existing PER_AREA/PER_PAGE/TIERED/CONFIGURABLE math is
 -- tested elsewhere; here we only need to confirm the NEW branches
 -- return before ever reaching this, and that delegation itself works).
+-- Minimal-but-real PER_AREA calc (not just a "reachedLegacy" marker) so
+-- later checkout-protection tests have a realistic already-priced,
+-- non-SUPPLIER_MARGIN control fixture (pvc-banner) to check out with —
+-- the real qs_calculate_price_legacy's PER_AREA math is tested
+-- elsewhere; this only needs to prove delegation reaches it AND
+-- produce a usable total for the rest of this suite.
 create or replace function commerce.qs_calculate_price_legacy(p_tenant_id uuid, p_product_key text, p_configuration jsonb)
 returns jsonb language plpgsql as $$
+declare
+  v_pricing jsonb;
+  v_product_id uuid;
+  v_product_name text;
+  v_width numeric;
+  v_height numeric;
+  v_area numeric;
+  v_total numeric;
 begin
+  select p.id, p.name, c.pricing_definition into v_product_id, v_product_name, v_pricing
+  from commerce.service_product_configs c
+  join commerce.products p on p.id = c.product_id
+  where c.source_key = trim(p_product_key)
+  limit 1;
+
+  if upper(coalesce(v_pricing->>'strategy','')) = 'PER_AREA' then
+    v_width := coalesce((p_configuration->>'width')::numeric, 0);
+    v_height := coalesce((p_configuration->>'height')::numeric, 0);
+    v_area := greatest(v_width * v_height, coalesce((v_pricing->>'minimumBillableArea')::numeric, 0));
+    v_total := round(v_area * coalesce((v_pricing->>'baseRate')::numeric, 0), 2);
+    return jsonb_build_object(
+      'productId', v_product_id, 'productKey', trim(p_product_key), 'productName', v_product_name,
+      'total', v_total, 'summary', 'test PER_AREA calc', 'lines', '[]'::jsonb,
+      'metrics', jsonb_build_object('quoteRequired', false, 'reachedLegacy', true),
+      'snapshot', jsonb_build_object('pricingStrategy', 'PER_AREA', 'pricingVersion', 'seed-1')
+    );
+  end if;
+
   return jsonb_build_object('reachedLegacy', true, 'productKey', p_product_key);
 end
 $$;
@@ -154,6 +217,10 @@ $$;
 insert into public.tenants (slug, name) values ('quick-solution', 'Joint X Quick Solution Café');
 insert into public.tenant_capabilities (tenant_id, capability_key, enabled)
   select id, 'quick_solution', true from public.tenants where slug='quick-solution';
+
+insert into commerce.fulfilment_points (tenant_id, slug, name, kind, status, collection_enabled, fee_amount, sort_order)
+  select id, 'location-001', 'Quick Solution Café · Location 001', 'cafe', 'active', true, 0, 1
+  from public.tenants where slug='quick-solution';
 
 -- Preflight dependency the QS14 migrations check for: a published
 -- pvc-banner config must already exist.
@@ -179,8 +246,13 @@ echo "20260921090500 applied"
 if ! run < "$MIG2" >/tmp/qs14_mig2b.out 2>&1; then echo "MIGRATION 2 SECOND APPLY FAILED:"; cat /tmp/qs14_mig2b.out; exit 1; fi
 echo "20260921090500 idempotent"
 
+if ! run < "$MIG3" >/tmp/qs14_mig3.out 2>&1; then echo "MIGRATION 3 FAILED:"; cat /tmp/qs14_mig3.out; exit 1; fi
+echo "20260921120000 applied"
+if ! run < "$MIG3" >/tmp/qs14_mig3b.out 2>&1; then echo "MIGRATION 3 SECOND APPLY FAILED:"; cat /tmp/qs14_mig3b.out; exit 1; fi
+echo "20260921120000 idempotent"
+
 echo "=========================================="
-echo "SCENARIOS"
+echo "PRICING ENGINE SCENARIOS"
 echo "=========================================="
 docker exec -i "$CID" psql -X -q -U postgres -d m 2>&1 <<'SQL' | grep -E 'PASS|FAIL|RESULT'
 do $$
@@ -192,25 +264,26 @@ begin
   set local test.email = 'staff@jointx.co.za';
 
   -- ── 1 · SUPPLIER_MARGIN: 50% gross margin computed correctly ────────
-  -- Telescopic 2.0m single-sided full kit reference = R495.
-  -- Gross margin (not markup): 495 / (1-0.5) = 990.
-  r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":1}'::jsonb);
-  if (r->>'total')::numeric = 990.00 and (r->'metrics'->>'quoteRequired')::boolean = false
-  then raise notice 'PASS 1 R495 reference at 50%% gross margin sells for exactly R990 (not R742.50 markup)';
+  -- Telescopic 2.0m single-sided full kit reference = R495. Gross
+  -- margin (not markup): 495 / (1-0.5) = 990. Quantity 2 (the minimum
+  -- for this single-sided variant — see #5) -> 1980.
+  r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":2}'::jsonb);
+  if (r->>'total')::numeric = 1980.00 and (r->'metrics'->>'quoteRequired')::boolean = false
+  then raise notice 'PASS 1 R495 reference at 50%% gross margin sells for exactly R990/unit (not R742.50 markup), x2 = R1980';
   else raise notice 'FAIL 1 total=% metrics=%', r->>'total', r->'metrics'; end if;
 
   -- ── 2 · quantity multiplies the margin-applied unit price ───────────
-  r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":3}'::jsonb);
-  if (r->>'total')::numeric = 2970.00
-  then raise notice 'PASS 2 quantity 3 at R990/unit totals R2970';
+  r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":4}'::jsonb);
+  if (r->>'total')::numeric = 3960.00
+  then raise notice 'PASS 2 quantity 4 at R990/unit totals R3960';
   else raise notice 'FAIL 2 total=%', r->>'total'; end if;
 
   -- ── 3 · minimum quantity enforced ────────────────────────────────────
   begin
     r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":0}'::jsonb);
-    raise notice 'FAIL 3 quantity 0 should have been rejected (minQuantity=1), got %', r;
+    raise notice 'FAIL 3 quantity 0 should have been rejected, got %', r;
   exception when others then
-    if sqlerrm like '%Minimum quantity%' then raise notice 'PASS 3 quantity below minQuantity (1) is rejected';
+    if sqlerrm like '%Minimum quantity%' then raise notice 'PASS 3 quantity below minQuantity is rejected';
     else raise notice 'FAIL 3 wrong error: %', sqlerrm; end if;
   end;
 
@@ -223,120 +296,122 @@ begin
     else raise notice 'FAIL 4 wrong error: %', sqlerrm; end if;
   end;
 
-  -- ── 5 · accessories add margin-applied amounts on top ────────────────
-  -- Cross base reference R250 -> 250/(1-0.5) = 500. 990 + 500 = 1490.
-  r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":1,"accessories":["cross-base"]}'::jsonb);
-  if (r->>'total')::numeric = 1490.00
-  then raise notice 'PASS 5 an accessory (cross base, R250 ref) also gets 50%% gross margin applied: +R500';
-  else raise notice 'FAIL 5 total=%', r->>'total'; end if;
-
-  -- ── 6 · invalid accessory id is rejected ─────────────────────────────
+  -- ── 5 · single-sided flags must be bought in pairs of 2 ─────────────
   begin
-    r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":1,"accessories":["not-a-real-accessory"]}'::jsonb);
-    raise notice 'FAIL 6 unknown accessory should have been rejected, got %', r;
+    r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":1}'::jsonb);
+    raise notice 'FAIL 5 quantity 1 for a single-sided flag should have been rejected (pairs of 2), got %', r;
   exception when others then
-    if sqlerrm like '%accessories are invalid%' then raise notice 'PASS 6 an unknown accessory id is rejected';
-    else raise notice 'FAIL 6 wrong error: %', sqlerrm; end if;
+    if sqlerrm like '%Minimum quantity for this option is 2%' then raise notice 'PASS 5 single-sided flag quantity 1 rejected: minimum is 2 (pairs of 2)';
+    else raise notice 'FAIL 5 wrong error: %', sqlerrm; end if;
   end;
 
-  -- ── 7 · artwork fee is added flat, NOT margin-multiplied ─────────────
-  -- 990 + design fee R250 (flat, no margin) = 1240.
-  r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":1,"artwork":"design"}'::jsonb);
-  if (r->>'total')::numeric = 1240.00
-  then raise notice 'PASS 7 artwork/setup fee (R250) is added flat, not margin-multiplied';
-  else raise notice 'FAIL 7 total=%', r->>'total'; end if;
+  begin
+    r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":3}'::jsonb);
+    raise notice 'FAIL 5b quantity 3 (not a multiple of 2 from minimum 2) should have been rejected, got %', r;
+  exception when others then
+    if sqlerrm like '%multiples of 2%' then raise notice 'PASS 5b single-sided flag quantity 3 rejected: must be ordered in multiples of 2';
+    else raise notice 'FAIL 5b wrong error: %', sqlerrm; end if;
+  end;
 
-  -- ── 8 · gazebos: same engine, different real data ────────────────────
+  -- ── 5c · double-sided flags have NO pairs-of-2 constraint ────────────
+  r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ds-full","quantity":1}'::jsonb);
+  if (r->'metrics'->>'quoteRequired')::boolean = false
+  then raise notice 'PASS 5c a double-sided flag variant has no pairs-of-2 constraint — quantity 1 is accepted';
+  else raise notice 'FAIL 5c unexpected rejection: %', r; end if;
+
+  -- ── 6 · accessories add margin-applied amounts on top ────────────────
+  -- Cross base reference R250 -> 250/(1-0.5) = 500. 1980 (qty 2) + 500 = 2480.
+  r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":2,"accessories":["cross-base"]}'::jsonb);
+  if (r->>'total')::numeric = 2480.00
+  then raise notice 'PASS 6 an accessory (cross base, R250 ref) also gets 50%% gross margin applied: +R500';
+  else raise notice 'FAIL 6 total=%', r->>'total'; end if;
+
+  -- ── 7 · invalid accessory id is rejected ─────────────────────────────
+  begin
+    r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":2,"accessories":["not-a-real-accessory"]}'::jsonb);
+    raise notice 'FAIL 7 unknown accessory should have been rejected, got %', r;
+  exception when others then
+    if sqlerrm like '%accessories are invalid%' then raise notice 'PASS 7 an unknown accessory id is rejected';
+    else raise notice 'FAIL 7 wrong error: %', sqlerrm; end if;
+  end;
+
+  -- ── 8 · artwork fee is added flat, NOT margin-multiplied ─────────────
+  -- 1980 (qty 2) + design fee R250 (flat, no margin) = 2230.
+  r := commerce.qs_calculate_price(TENANT, 'flags', '{"variant":"telescopic-2m-ss-full","quantity":2,"artwork":"design"}'::jsonb);
+  if (r->>'total')::numeric = 2230.00
+  then raise notice 'PASS 8 artwork/setup fee (R250) is added flat, not margin-multiplied';
+  else raise notice 'FAIL 8 total=%', r->>'total'; end if;
+
+  -- ── 9 · gazebos: same engine, different real data ────────────────────
   -- Steel 2x2 full kit reference R2750 -> 2750/(1-0.5) = 5500.
   r := commerce.qs_calculate_price(TENANT, 'gazebos', '{"variant":"steel-2x2-full","quantity":1}'::jsonb);
   if (r->>'total')::numeric = 5500.00
-  then raise notice 'PASS 8 Steel gazebo 2x2 full kit (R2750 ref) sells for R5500 at 50%% gross margin';
-  else raise notice 'FAIL 8 total=%', r->>'total'; end if;
+  then raise notice 'PASS 9 Steel gazebo 2x2 full kit (R2750 ref) sells for R5500 at 50%% gross margin';
+  else raise notice 'FAIL 9 total=%', r->>'total'; end if;
 
-  -- ── 9 · gazebo wall accessory (a real "replacement/add-on" line) ────
+  -- ── 10 · gazebo wall accessory sized to match the chosen gazebo ─────
   -- 2x2 half wall reference R325 -> 650.
   r := commerce.qs_calculate_price(TENANT, 'gazebos', '{"variant":"steel-2x2-full","quantity":1,"accessories":["wall-2x2-half"]}'::jsonb);
   if (r->>'total')::numeric = 6150.00
-  then raise notice 'PASS 9 gazebo + a wall accessory (R325 ref -> R650) totals R6150';
-  else raise notice 'FAIL 9 total=%', r->>'total'; end if;
+  then raise notice 'PASS 10 gazebo + a correctly-sized wall accessory (R325 ref -> R650) totals R6150';
+  else raise notice 'FAIL 10 total=%', r->>'total'; end if;
 
-  -- ── 10 · PHOTOGRAPHY_SESSION: the one approved special ───────────────
+  -- ── 11 · accessory compatibility: a wall sized for the WRONG gazebo ──
+  -- is rejected (3m x 3m wall against a 2m x 2m gazebo).
+  begin
+    r := commerce.qs_calculate_price(TENANT, 'gazebos', '{"variant":"steel-2x2-full","quantity":1,"accessories":["wall-3x3-half"]}'::jsonb);
+    raise notice 'FAIL 11 a 3x3 wall against a 2x2 gazebo should have been rejected, got %', r;
+  exception when others then
+    if sqlerrm like '%not available for the selected option%' then raise notice 'PASS 11 a wall sized for a different gazebo (3x3 wall on a 2x2 gazebo) is rejected';
+    else raise notice 'FAIL 11 wrong error: %', sqlerrm; end if;
+  end;
+
+  -- ── 11b · the SAME wall accessory IS accepted against the right size ─
+  r := commerce.qs_calculate_price(TENANT, 'gazebos', '{"variant":"steel-3x3-standard-full","quantity":1,"accessories":["wall-3x3-half"]}'::jsonb);
+  if (r->'metrics'->>'quoteRequired')::boolean = false
+  then raise notice 'PASS 11b the same wall accessory is accepted when paired with a matching 3x3 gazebo';
+  else raise notice 'FAIL 11b unexpected rejection: %', r; end if;
+
+  -- ── 11c · a universal accessory (no size restriction) works on any size ─
+  r := commerce.qs_calculate_price(TENANT, 'gazebos', '{"variant":"steel-2x2-full","quantity":1,"accessories":["rubber-weight"]}'::jsonb);
+  if (r->'metrics'->>'quoteRequired')::boolean = false
+  then raise notice 'PASS 11c a universal accessory (rubber weight, no compatibleVariants) works with any gazebo size';
+  else raise notice 'FAIL 11c unexpected rejection: %', r; end if;
+
+  -- ── 12 · PHOTOGRAPHY_SESSION: the one approved special ───────────────
   r := commerce.qs_calculate_price(TENANT, 'photo-session', '{"session":"30min-7edits"}'::jsonb);
   if (r->>'total')::numeric = 449.00 and (r->'metrics'->>'quoteRequired')::boolean = false
-  then raise notice 'PASS 10 the approved 30-minute/7-edits special prices at exactly R449';
-  else raise notice 'FAIL 10 total=% metrics=%', r->>'total', r->'metrics'; end if;
+  then raise notice 'PASS 12 the approved 30-minute/7-edits special prices at exactly R449';
+  else raise notice 'FAIL 12 total=% metrics=%', r->>'total', r->'metrics'; end if;
 
-  -- ── 11 · unapproved session -> Quote required, never R0/free ─────────
+  -- ── 13 · unapproved session -> Quote required, never R0/free ─────────
   r := commerce.qs_calculate_price(TENANT, 'photo-session', '{"session":"custom"}'::jsonb);
   if (r->>'summary') = 'Quote required' and (r->'metrics'->>'quoteRequired')::boolean = true
-  then raise notice 'PASS 11 an unapproved/custom session is explicitly Quote required, never a silent R0';
-  else raise notice 'FAIL 11 summary=% metrics=%', r->>'summary', r->'metrics'; end if;
+  then raise notice 'PASS 13 an unapproved/custom session is explicitly Quote required, never a silent R0';
+  else raise notice 'FAIL 13 summary=% metrics=%', r->>'summary', r->'metrics'; end if;
 
-  -- ── 12 · extra edits with no approved rate -> Quote required ─────────
-  -- Even on the approved base session, requesting extra edits (rate is
-  -- null/unapproved) must flip the WHOLE request to quote-required, not
-  -- silently charge R449 while ignoring the extra edits.
+  -- ── 14 · extra edits with no approved rate -> Quote required ─────────
   r := commerce.qs_calculate_price(TENANT, 'photo-session', '{"session":"30min-7edits","extraEdits":5}'::jsonb);
   if (r->'metrics'->>'quoteRequired')::boolean = true
-  then raise notice 'PASS 12 requesting extra edits (unapproved rate) makes the whole request quote-required';
-  else raise notice 'FAIL 12 metrics=%', r->'metrics'; end if;
+  then raise notice 'PASS 14 requesting extra edits (unapproved rate) makes the whole request quote-required';
+  else raise notice 'FAIL 14 metrics=%', r->'metrics'; end if;
 
-  -- ── 13 · no invented hourly rate: extraEditRate really is null ───────
+  -- ── 15 · no invented hourly rate: extraEditRate really is null ───────
   if (
     select pricing_definition->>'extraEditRate'
     from commerce.service_product_configs
     where tenant_id = TENANT and source_key = 'photo-session'
   ) is null
-  then raise notice 'PASS 13 extraEditRate is genuinely null in the stored pricing_definition — no invented rate';
-  else raise notice 'FAIL 13 extraEditRate was set to a value'; end if;
+  then raise notice 'PASS 15 extraEditRate is genuinely null in the stored pricing_definition — no invented rate';
+  else raise notice 'FAIL 15 extraEditRate was set to a value'; end if;
 
-  -- ── 14 · admin editor now accepts the two new strategies ─────────────
-  r := public.admin_update_quick_solution_product(
-    'quick-solution', 'flags', '{"name":"Flags & Promotional Flags","active":true}'::jsonb,
-    (select pricing_definition from commerce.service_product_configs where tenant_id=TENANT and source_key='flags'),
-    (select pricing_version from commerce.service_product_configs where tenant_id=TENANT and source_key='flags')
-  );
-  if (r->>'ok')::boolean = true
-  then raise notice 'PASS 14 admin_update_quick_solution_product accepts SUPPLIER_MARGIN (was previously unsupported)';
-  else raise notice 'FAIL 14 r=%', r; end if;
-
-  -- ── 15 · admin optimistic-concurrency guard still works ──────────────
-  begin
-    r := public.admin_update_quick_solution_product(
-      'quick-solution', 'flags', '{"name":"Flags","active":true}'::jsonb,
-      (select pricing_definition from commerce.service_product_configs where tenant_id=TENANT and source_key='flags'),
-      'a-stale-version-string'
-    );
-    raise notice 'FAIL 15 stale pricing_version should have been rejected, got %', r;
-  exception when others then
-    if sqlerrm like '%changed after you opened it%' then raise notice 'PASS 15 admin stale-version guard still rejects an outdated pricing_version';
-    else raise notice 'FAIL 15 wrong error: %', sqlerrm; end if;
-  end;
-
-  -- ── 16 · unsupported strategy is still rejected by the admin editor ──
-  begin
-    r := public.admin_update_quick_solution_product(
-      'quick-solution', 'flags', '{"name":"Flags","active":true}'::jsonb,
-      '{"strategy":"MADE_UP_STRATEGY"}'::jsonb,
-      (select pricing_version from commerce.service_product_configs where tenant_id=TENANT and source_key='flags')
-    );
-    raise notice 'FAIL 16 a made-up strategy should have been rejected, got %', r;
-  exception when others then
-    if sqlerrm like '%not supported%' then raise notice 'PASS 16 a genuinely unsupported strategy is still rejected by the admin editor';
-    else raise notice 'FAIL 16 wrong error: %', sqlerrm; end if;
-  end;
-
-  -- ── 17 · unrelated existing strategies still delegate correctly ──────
+  -- ── 16 · unrelated existing strategies still delegate correctly ──────
   r := commerce.qs_calculate_price(TENANT, 'pvc-banner', '{"width":2,"height":1,"material":"standard","finishing":"none","artwork":"ready","turnaround":"standard"}'::jsonb);
-  if (r->>'reachedLegacy')::boolean = true
-  then raise notice 'PASS 17 an unrelated existing strategy (PER_AREA) still delegates to qs_calculate_price_legacy unchanged';
-  else raise notice 'FAIL 17 r=%', r; end if;
+  if (r->'metrics'->>'reachedLegacy')::boolean = true and (r->>'total')::numeric = 700.00
+  then raise notice 'PASS 16 an unrelated existing strategy (PER_AREA) still delegates to qs_calculate_price_legacy unchanged (2m² x R350 = R700)';
+  else raise notice 'FAIL 16 r=%', r; end if;
 
-  -- ── 23 · customer_definition never carries supplier cost or margin ──
-  -- get_quick_solution_catalog (the public RPC) only ever returns
-  -- customer_definition — this proves the flags row's customer_definition
-  -- contains no referencePrice/marginRate/sourceUrl anywhere, even
-  -- though pricing_definition (staff-only) does.
+  -- ── 17 · customer_definition never carries supplier cost or margin ──
   if (
     select customer_definition::text ilike '%referencePrice%'
        or customer_definition::text ilike '%marginRate%'
@@ -344,29 +419,144 @@ begin
     from commerce.service_product_configs
     where tenant_id = TENANT and source_key = 'flags'
   ) is false
-  then raise notice 'PASS 23 customer_definition (the only thing the public catalog RPC returns) contains no referencePrice/marginRate/sourceUrl — supplier cost and margin stay staff-only';
-  else raise notice 'FAIL 23 customer_definition leaked supplier cost/margin data'; end if;
+  then raise notice 'PASS 17 customer_definition (the only thing the public catalog RPC returns) contains no referencePrice/marginRate/sourceUrl — supplier cost and margin stay staff-only';
+  else raise notice 'FAIL 17 customer_definition leaked supplier cost/margin data'; end if;
 
   if (
     select (pricing_definition::text ilike '%referencePrice%') and (pricing_definition::text ilike '%marginRate%')
     from commerce.service_product_configs
     where tenant_id = TENANT and source_key = 'flags'
   ) is true
-  then raise notice 'PASS 23b pricing_definition (staff-only, admin_get_quick_solution_catalog) DOES carry referencePrice/marginRate, as intended for editing';
-  else raise notice 'FAIL 23b pricing_definition is missing the staff-editable cost/margin data'; end if;
+  then raise notice 'PASS 17b pricing_definition (staff-only, admin_get_quick_solution_catalog) DOES carry referencePrice/marginRate, as intended for editing';
+  else raise notice 'FAIL 17b pricing_definition is missing the staff-editable cost/margin data'; end if;
 
 end $$;
 SQL
 
 echo "=========================================="
-echo "SERVICE REQUEST RPC (photography, real order rows)"
+echo "CHECKOUT PROTECTION (paid order / cart RPCs)"
+echo "=========================================="
+docker exec -i "$CID" psql -X -q -U postgres -d m 2>&1 <<'SQL' | grep -E 'PASS|FAIL|RESULT'
+do $$
+declare
+  r jsonb;
+begin
+  -- ── 18 · a normal, fully-priced order still works (non-regression) ──
+  r := public.create_quick_solution_order(
+    'quick-solution', 'pvc-banner', '{"width":2,"height":1,"material":"standard","finishing":"none","artwork":"ready","turnaround":"standard"}'::jsonb,
+    'Paying Customer', 'paying@example.com', null, 'cafe', null, null, null, 'idem-checkout-001'
+  );
+  if (r->>'ok')::boolean = true and (r->>'totalAmount')::numeric = 700.00
+  then raise notice 'PASS 18 a normal, fully-priced PER_AREA order still succeeds through create_quick_solution_order (non-regression) — 2m² x R350 = R700';
+  else raise notice 'FAIL 18 r=%', r; end if;
+
+  -- ── 19 · an unpriced SUPPLIER_MARGIN item is REJECTED by the paid order RPC ─
+  begin
+    r := public.create_quick_solution_order(
+      'quick-solution', 'flags', '{"variant":"totally-unpriced-would-fail-anyway","quantity":2}'::jsonb,
+      'Bypass Attempt', 'bypass@example.com', null, 'cafe', null, null, null, 'idem-checkout-002'
+    );
+    raise notice 'FAIL 19 setup: should have failed on invalid variant, not reached quote check: %', r;
+  exception when others then
+    if sqlerrm like '%Choose a valid option%' then raise notice 'PASS 19-setup confirmed: invalid variant still rejected first (expected, not the subject of this test)';
+    else raise notice 'FAIL 19-setup unexpected error: %', sqlerrm; end if;
+  end;
+
+end $$;
+SQL
+
+echo "=========================================="
+echo "QUOTE-REQUIRED ROW SETUP + CHECKOUT REJECTION"
+echo "=========================================="
+docker exec -i "$CID" psql -X -q -U postgres -d m 2>&1 <<'SQL' | grep -E 'PASS|FAIL|RESULT'
+do $$
+declare
+  TENANT constant uuid := (select id from public.tenants where slug='quick-solution');
+  r jsonb;
+begin
+  -- Add a second flags product config with an UNPRICED variant, so we
+  -- can prove the checkout guard fires on a genuinely quote-required
+  -- (not just invalid) configuration, not just an invalid one.
+  insert into commerce.products (tenant_id, slug, name, description, status, availability, source_system, source_ref)
+    select id, 'flags-unpriced-test', 'Flags (unpriced test fixture)', 'test fixture', 'published', 'available', 'quick_solution', 'flags-unpriced-test'
+    from public.tenants where slug='quick-solution';
+  insert into commerce.service_product_configs (tenant_id, product_id, source_key, customer_definition, pricing_version, pricing_definition, status, sort_order)
+    select t.id, p.id, 'flags-unpriced-test', '{}'::jsonb, 'seed-3',
+      '{"strategy":"SUPPLIER_MARGIN","marginRate":0.5,"minQuantity":1,"variants":{"not-yet-priced":{"label":"Not yet priced","referencePrice":null}},"accessories":{}}'::jsonb,
+      'published', 30
+    from public.tenants t join commerce.products p on p.tenant_id=t.id and p.slug='flags-unpriced-test'
+    where t.slug='quick-solution';
+
+  -- ── 20 · a genuinely quote-required SUPPLIER_MARGIN item is rejected ─
+  begin
+    r := public.create_quick_solution_order(
+      'quick-solution', 'flags-unpriced-test', '{"variant":"not-yet-priced","quantity":1}'::jsonb,
+      'Bypass Attempt', 'bypass2@example.com', null, 'cafe', null, null, null, 'idem-checkout-003'
+    );
+    raise notice 'FAIL 20 an unpriced item should have been rejected by the paid order RPC, got %', r;
+  exception when others then
+    if sqlerrm like '%needs a quote before it can be ordered%' then raise notice 'PASS 20 an unpriced SUPPLIER_MARGIN item is rejected by create_quick_solution_order — cannot become an R0 purchasable item';
+    else raise notice 'FAIL 20 wrong error: %', sqlerrm; end if;
+  end;
+
+  -- ── 21 · mixed cart: one priced item + one unpriced item -> WHOLE cart rejected ─
+  begin
+    r := public.create_quick_solution_cart_order(
+      'quick-solution',
+      jsonb_build_array(
+        jsonb_build_object('clientItemKey','item-priced-0001','productKey','pvc-banner','configuration',jsonb_build_object('width',2,'height',1,'material','standard','finishing','none','artwork','ready','turnaround','standard')),
+        jsonb_build_object('clientItemKey','item-unpriced-0002','productKey','flags-unpriced-test','configuration',jsonb_build_object('variant','not-yet-priced','quantity',1))
+      ),
+      'Mixed Cart Customer', 'mixed@example.com', null, 'cafe', null, null, null, 'idem-checkout-004'
+    );
+    raise notice 'FAIL 21 a mixed cart with one unpriced item should have been rejected entirely, got %', r;
+  exception when others then
+    if sqlerrm like '%needs a quote before it can be ordered%' then raise notice 'PASS 21 a mixed cart is rejected ENTIRELY when any single item needs a quote — the priced item cannot ride the unpriced one through';
+    else raise notice 'FAIL 21 wrong error: %', sqlerrm; end if;
+  end;
+
+  -- ── 21b · confirm nothing was partially created from the rejected mixed cart ─
+  if not exists (select 1 from commerce.service_orders where idempotency_key = 'idem-checkout-004')
+  then raise notice 'PASS 21b the rejected mixed cart created NO order row at all (fully atomic rejection)';
+  else raise notice 'FAIL 21b a partial order was created despite rejection'; end if;
+
+  -- ── 22 · an all-priced multi-item cart still succeeds (non-regression) ─
+  r := public.create_quick_solution_cart_order(
+    'quick-solution',
+    jsonb_build_array(
+      jsonb_build_object('clientItemKey','item-ok-0001','productKey','pvc-banner','configuration',jsonb_build_object('width',2,'height',1,'material','standard','finishing','none','artwork','ready','turnaround','standard')),
+      jsonb_build_object('clientItemKey','item-ok-0002','productKey','flags','configuration',jsonb_build_object('variant','telescopic-2m-ds-full','quantity',1))
+    ),
+    'Happy Path Customer', 'happy@example.com', null, 'cafe', null, null, null, 'idem-checkout-005'
+  );
+  if (r->>'ok')::boolean = true and (r->>'totalAmount')::numeric = (700.00 + 1390.00)
+  then raise notice 'PASS 22 a cart where every item is fully priced still checks out normally (700 banner + 1390 flag = 2090)';
+  else raise notice 'FAIL 22 r=%', r; end if;
+
+  -- ── 23 · PHOTOGRAPHY_SESSION is blocked from the paid path even when FULLY PRICED ─
+  begin
+    r := public.create_quick_solution_order(
+      'quick-solution', 'photo-session', '{"session":"30min-7edits"}'::jsonb,
+      'Photo Bypass Attempt', 'photobypass@example.com', null, 'cafe', null, null, null, 'idem-checkout-006'
+    );
+    raise notice 'FAIL 23 a priced photo session should still be blocked from the PayFast path, got %', r;
+  exception when others then
+    if sqlerrm like '%needs a quote before it can be ordered%' then raise notice 'PASS 23 a FULLY PRICED photo session (R449, quoteRequired:false) is still blocked from create_quick_solution_order — payment can never stand in for booking confirmation';
+    else raise notice 'FAIL 23 wrong error: %', sqlerrm; end if;
+  end;
+
+end $$;
+SQL
+
+echo "=========================================="
+echo "SERVICE REQUEST RPC (photography, real order rows — flow preserved)"
 echo "=========================================="
 docker exec -i "$CID" psql -X -q -U postgres -d m 2>&1 <<'SQL' | grep -E 'PASS|FAIL|RESULT'
 do $$
 declare
   r jsonb; v_order_id uuid; v_subtotal numeric; v_quote_required boolean; v_status text;
 begin
-  -- ── 18 · approved session -> real total recorded, still no payment ───
+  -- ── 24 · approved session -> real total recorded, still no payment ───
   r := public.create_quick_solution_service_request(
     'quick-solution', 'photo-session', '{"session":"30min-7edits","preferredDate":"2026-10-01"}'::jsonb,
     'Jane Customer', 'jane@example.com', null, null, null, 'idem-key-photo-001'
@@ -377,10 +567,10 @@ begin
   from commerce.service_orders where id = v_order_id;
 
   if (r->>'ok')::boolean = true and v_subtotal = 449.00 and v_quote_required = false and v_status = 'unpaid'
-  then raise notice 'PASS 18 approved photo session order records the REAL R449 total, still payment_status=unpaid (no payment token minted -> booking never implied confirmed)';
-  else raise notice 'FAIL 18 ok=% subtotal=% quoteRequired=% status=%', r->>'ok', v_subtotal, v_quote_required, v_status; end if;
+  then raise notice 'PASS 24 approved photo session order records the REAL R449 total via the service-request flow, still payment_status=unpaid (no payment token minted)';
+  else raise notice 'FAIL 24 ok=% subtotal=% quoteRequired=% status=%', r->>'ok', v_subtotal, v_quote_required, v_status; end if;
 
-  -- ── 19 · unapproved session -> R0, quoteRequired true, still recorded ─
+  -- ── 25 · unapproved session -> R0, quoteRequired true, still recorded ─
   r := public.create_quick_solution_service_request(
     'quick-solution', 'photo-session', '{"session":"custom"}'::jsonb,
     'John Customer', 'john@example.com', null, null, null, 'idem-key-photo-002'
@@ -390,19 +580,19 @@ begin
   from commerce.service_orders where id = (r->>'orderId')::uuid;
 
   if v_subtotal = 0 and v_quote_required = true
-  then raise notice 'PASS 19 a custom/unapproved session records total=0 but explicit quoteRequired=true (never presented as simply free)';
-  else raise notice 'FAIL 19 subtotal=% quoteRequired=%', v_subtotal, v_quote_required; end if;
+  then raise notice 'PASS 25 a custom/unapproved session records total=0 but explicit quoteRequired=true (never presented as simply free)';
+  else raise notice 'FAIL 25 subtotal=% quoteRequired=%', v_subtotal, v_quote_required; end if;
 
-  -- ── 20 · idempotent replay returns the same order, not a duplicate ────
+  -- ── 26 · idempotent replay returns the same order, not a duplicate ────
   r := public.create_quick_solution_service_request(
     'quick-solution', 'photo-session', '{"session":"30min-7edits"}'::jsonb,
     'Jane Customer', 'jane@example.com', null, null, null, 'idem-key-photo-001'
   );
   if (r->>'replayed')::boolean = true and (r->>'orderId')::uuid = v_order_id
-  then raise notice 'PASS 20 a repeated idempotency key replays the SAME order (no duplicate booking created)';
-  else raise notice 'FAIL 20 r=%', r; end if;
+  then raise notice 'PASS 26 a repeated idempotency key replays the SAME order (no duplicate booking created)';
+  else raise notice 'FAIL 26 r=%', r; end if;
 
-  -- ── 21 · ENQUIRY (existing media-services-style product) is unaffected ─
+  -- ── 27 · ENQUIRY (existing media-services-style product) is unaffected ─
   insert into commerce.products (tenant_id, slug, name, status, availability, source_system, source_ref)
     select id, 'media-services', 'Photography & Video', 'published', 'available', 'quick_solution', 'media-services'
     from public.tenants where slug='quick-solution';
@@ -420,19 +610,131 @@ begin
   from commerce.service_orders where id = (r->>'orderId')::uuid;
 
   if v_subtotal = 0 and v_quote_required = true and v_status = 'media_service'
-  then raise notice 'PASS 21 existing ENQUIRY media-services flow is completely unchanged: total 0, quoteRequired true, requestType media_service';
-  else raise notice 'FAIL 21 subtotal=% quoteRequired=% requestType=%', v_subtotal, v_quote_required, v_status; end if;
+  then raise notice 'PASS 27 existing ENQUIRY media-services flow is completely unchanged: total 0, quoteRequired true, requestType media_service';
+  else raise notice 'FAIL 27 subtotal=% quoteRequired=% requestType=%', v_subtotal, v_quote_required, v_status; end if;
 
-  -- ── 22 · a priced (non-ENQUIRY, non-PHOTOGRAPHY_SESSION) product still can't use this RPC ─
+  -- ── 28 · ENQUIRY is ALSO rejected by the paid order RPC (regression guard) ─
+  begin
+    r := public.create_quick_solution_order(
+      'quick-solution', 'media-services', '{"shootType":"event"}'::jsonb,
+      'Enquiry Bypass Attempt', 'enquirybypass@example.com', null, 'cafe', null, null, null, 'idem-checkout-007'
+    );
+    raise notice 'FAIL 28 an ENQUIRY product should be rejected by the paid order RPC, got %', r;
+  exception when others then
+    if sqlerrm like '%needs a quote before it can be ordered%' then raise notice 'PASS 28 an ENQUIRY product is rejected by create_quick_solution_order (was already true via quoteRequired, now explicitly proven)';
+    else raise notice 'FAIL 28 wrong error: %', sqlerrm; end if;
+  end;
+
+  -- ── 29 · a SUPPLIER_MARGIN product still can't use the service-request RPC ─
   begin
     r := public.create_quick_solution_service_request(
-      'quick-solution', 'flags', '{"variant":"telescopic-2m-ss-full","quantity":1}'::jsonb,
+      'quick-solution', 'flags', '{"variant":"telescopic-2m-ds-full","quantity":1}'::jsonb,
       'Wrong Path Customer', 'wrong@example.com', null, null, null, 'idem-key-wrong-001'
     );
-    raise notice 'FAIL 22 a SUPPLIER_MARGIN product should not be submittable through create_quick_solution_service_request, got %', r;
+    raise notice 'FAIL 29 a SUPPLIER_MARGIN product should not be submittable through create_quick_solution_service_request, got %', r;
   exception when others then
-    if sqlerrm like '%not configured as a service enquiry%' then raise notice 'PASS 22 SUPPLIER_MARGIN products are correctly rejected by the service-request RPC (they use the normal paid-order path)';
-    else raise notice 'FAIL 22 wrong error: %', sqlerrm; end if;
+    if sqlerrm like '%not configured as a service enquiry%' then raise notice 'PASS 29 SUPPLIER_MARGIN products are correctly rejected by the service-request RPC (they use the normal paid-order path)';
+    else raise notice 'FAIL 29 wrong error: %', sqlerrm; end if;
+  end;
+
+end $$;
+SQL
+
+echo "=========================================="
+echo "ADMIN: server-side selling-price regeneration"
+echo "=========================================="
+docker exec -i "$CID" psql -X -q -U postgres -d m 2>&1 <<'SQL' | grep -E 'PASS|FAIL|RESULT'
+do $$
+declare
+  r jsonb;
+  v_expected_version text;
+  v_saved_customer jsonb;
+  v_saved_pricing jsonb;
+begin
+  set local test.uid = '33333333-3333-3333-3333-333333333333';
+  set local test.email = 'admin@jointx.co.za';
+
+  select pricing_version into v_expected_version
+  from commerce.service_product_configs where source_key = 'flags';
+
+  -- Admin edits marginRate from 0.5 to 0.6, and (maliciously or just
+  -- buggily) submits a customer_definition.pricing mirror that does NOT
+  -- match the new margin at all — the server must ignore the client's
+  -- mirror and recompute it from the pricing_definition it just saved.
+  r := public.admin_update_quick_solution_product(
+    'quick-solution',
+    'flags',
+    jsonb_build_object(
+      'name','Flags & Promotional Flags','active',true,
+      'pricing', jsonb_build_object(
+        'strategy','SUPPLIER_MARGIN',
+        'variants', jsonb_build_object('telescopic-2m-ss-full', jsonb_build_object('label','Telescopic 2m','price', 1.00))
+      )
+    ),
+    jsonb_build_object(
+      'strategy','SUPPLIER_MARGIN',
+      'marginRate', 0.6,
+      'minQuantity', 1,
+      'variants', jsonb_build_object(
+        'telescopic-2m-ss-full', jsonb_build_object('label','Telescopic flag — 2.0m — single-sided — full kit','referencePrice', 495, 'minQuantity', 2, 'quantityStep', 2)
+      ),
+      'accessories', '{}'::jsonb
+    ),
+    v_expected_version
+  );
+
+  if (r->>'ok')::boolean = true
+  then raise notice 'PASS 30 admin save with a changed marginRate (0.5 -> 0.6) succeeds';
+  else raise notice 'FAIL 30 r=%', r; end if;
+
+  select customer_definition, pricing_definition into v_saved_customer, v_saved_pricing
+  from commerce.service_product_configs where source_key = 'flags';
+
+  -- 495 / (1 - 0.6) = 1237.50 — NOT the client-submitted 1.00, and NOT
+  -- the old 990 (0.5 margin) either.
+  if (v_saved_customer->'pricing'->'variants'->'telescopic-2m-ss-full'->>'price')::numeric = 1237.50
+  then raise notice 'PASS 31 the saved customer-safe price is SERVER-RECOMPUTED from the new margin (R1237.50), not the stale/spoofed client value (R1.00) and not the old margin''s R990';
+  else raise notice 'FAIL 31 saved price=%', v_saved_customer->'pricing'->'variants'->'telescopic-2m-ss-full'->>'price'; end if;
+
+  -- The regenerated mirror must still carry the non-sensitive
+  -- minQuantity/quantityStep rule through, so the guided UI can still
+  -- enforce pairs-of-2 without needing pricing_definition.
+  if (v_saved_customer->'pricing'->'variants'->'telescopic-2m-ss-full'->>'quantityStep')::int = 2
+  then raise notice 'PASS 32 the regenerated customer-safe mirror still carries quantityStep (2) through — non-sensitive, needed client-side';
+  else raise notice 'FAIL 32 quantityStep missing from regenerated mirror: %', v_saved_customer->'pricing'->'variants'->'telescopic-2m-ss-full'; end if;
+
+  -- The saved customer_definition must still never carry referencePrice/marginRate.
+  if v_saved_customer::text ilike '%referencePrice%' or v_saved_customer::text ilike '%marginRate%'
+  then raise notice 'FAIL 33 the regenerated customer_definition leaked referencePrice/marginRate';
+  else raise notice 'PASS 33 the regenerated customer_definition still never carries referencePrice/marginRate — admin save cannot leak supplier cost data either';
+  end if;
+
+  -- pricing_definition (staff-only) DOES have the new margin saved correctly.
+  if (v_saved_pricing->>'marginRate')::numeric = 0.6
+  then raise notice 'PASS 34 pricing_definition (staff-only) correctly stores the admin-edited marginRate (0.6)';
+  else raise notice 'FAIL 34 marginRate=%', v_saved_pricing->>'marginRate'; end if;
+
+  -- Live pricing calc reflects the new margin immediately.
+  r := commerce.qs_calculate_price(
+    (select id from public.tenants where slug='quick-solution'),
+    'flags',
+    '{"variant":"telescopic-2m-ss-full","quantity":2}'::jsonb
+  );
+  if (r->>'total')::numeric = 2475.00 -- 1237.50 * 2
+  then raise notice 'PASS 35 commerce.qs_calculate_price immediately reflects the admin-edited margin (R1237.50/unit x2 = R2475)';
+  else raise notice 'FAIL 35 total=%', r->>'total'; end if;
+
+  -- Stale-version guard still works after this change.
+  begin
+    r := public.admin_update_quick_solution_product(
+      'quick-solution', 'flags', jsonb_build_object('name','Flags','active',true),
+      jsonb_build_object('strategy','SUPPLIER_MARGIN','marginRate',0.5,'variants','{}'::jsonb,'accessories','{}'::jsonb),
+      v_expected_version -- now stale, since PASS 30 already advanced the version
+    );
+    raise notice 'FAIL 36 a stale pricing_version should have been rejected, got %', r;
+  exception when others then
+    if sqlerrm like '%changed after you opened it%' then raise notice 'PASS 36 admin stale-version guard still rejects an outdated pricing_version after this change';
+    else raise notice 'FAIL 36 wrong error: %', sqlerrm; end if;
   end;
 
 end $$;

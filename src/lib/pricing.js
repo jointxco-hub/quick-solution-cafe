@@ -141,23 +141,71 @@ function priceConfigurable(product, config) {
 // public catalog exposes — never a raw referencePrice or marginRate
 // (those live only in the staff-only pricing_definition, which this
 // client never receives).
+// Per-variant minQuantity/quantityStep (falling back to the product
+// default) — e.g. single-sided flags: minimum 2, step 2 ("must be
+// bought in pairs of 2"). Exported so the guided configurator can size
+// its quantity control correctly the moment a variant is chosen,
+// without duplicating this fallback logic.
+export function getVariantQuantityRule(product, variantId) {
+  const variant = product?.pricing?.variants?.[variantId]
+  const minQuantity = Math.max(Number(variant?.minQuantity ?? product?.pricing?.minQuantity ?? 1), 1)
+  const quantityStep = Math.max(Number(variant?.quantityStep ?? 1), 1)
+  return { minQuantity, quantityStep }
+}
+
+function isQuantityValid(quantity, minQuantity, quantityStep) {
+  if (quantity < minQuantity) return false
+  if (quantityStep > 1 && (quantity - minQuantity) % quantityStep !== 0) return false
+  return true
+}
+
+// An accessory with no compatibleVariants (or an empty one) is
+// universal — same convention as the server.
+function accessoryCompatible(accessory, variantId) {
+  if (!Array.isArray(accessory?.compatibleVariants) || accessory.compatibleVariants.length === 0) return true
+  return accessory.compatibleVariants.includes(variantId)
+}
+
 function priceSupplierMargin(product, config) {
   const variant = product.pricing.variants?.[config.variant]
-  const quantity = Math.max(Number(config.quantity || product.pricing.minQuantity || 1), product.pricing.minQuantity || 1)
+  const { minQuantity, quantityStep } = getVariantQuantityRule(product, config.variant)
+  // Deliberately NOT clamped up to minQuantity here (unlike most other
+  // strategies' quantity handling) — silently rounding an invalid
+  // quantity up would hide a real validation failure instead of
+  // reporting it, and would disagree with the server, which rejects an
+  // out-of-range/wrong-step quantity outright rather than correcting it.
+  const quantity = config.quantity == null || config.quantity === '' ? minQuantity : Number(config.quantity)
   const accessoryIds = Array.isArray(config.accessories) ? config.accessories : []
   const artwork = config.artwork ? product.pricing.artwork?.[config.artwork] : null
+
+  const invalidQuantity = !isQuantityValid(quantity, minQuantity, quantityStep)
+  const incompatibleAccessory = accessoryIds.some((id) => {
+    const accessory = product.pricing.accessories?.[id]
+    return !accessory || !accessoryCompatible(accessory, config.variant)
+  })
 
   const quoteRequired =
     !variant || variant.price == null ||
     accessoryIds.some((id) => !product.pricing.accessories?.[id] || product.pricing.accessories[id].price == null) ||
     (config.artwork && (!artwork || artwork.fee == null))
 
+  if (invalidQuantity || incompatibleAccessory) {
+    return {
+      total: 0,
+      summary: invalidQuantity
+        ? (quantityStep > 1 ? `Order in multiples of ${quantityStep} (minimum ${minQuantity})` : `Minimum quantity is ${minQuantity}`)
+        : 'One or more accessories are not available for this option',
+      lines: [],
+      metrics: { quoteRequired: false, invalid: true, quantity, minQuantity, quantityStep }
+    }
+  }
+
   if (quoteRequired) {
     return {
       total: 0,
       summary: 'Quote required',
       lines: [{ label: 'Pricing', text: 'One or more selected options need a quote' }],
-      metrics: { quoteRequired: true, quantity }
+      metrics: { quoteRequired: true, quantity, minQuantity, quantityStep }
     }
   }
 
@@ -174,7 +222,7 @@ function priceSupplierMargin(product, config) {
     total,
     summary: `${variant.label} × ${quantity}`,
     lines,
-    metrics: { quantity, unitPrice: Number(variant.price), quoteRequired: false }
+    metrics: { quantity, minQuantity, quantityStep, unitPrice: Number(variant.price), quoteRequired: false }
   }
 }
 
