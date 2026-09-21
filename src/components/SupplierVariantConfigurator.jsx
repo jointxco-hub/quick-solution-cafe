@@ -1,5 +1,5 @@
 import React from 'react'
-import { getVariantQuantityRule } from '../lib/pricing.js'
+import { getVariantQuantityRule, accessoryCompatible, filterCompatibleAccessories } from '../lib/pricing.js'
 
 // Decomposed style/size/sides/kit configurator for SUPPLIER_MARGIN
 // products (Flags, Gazebos) instead of one long combined dropdown.
@@ -66,16 +66,25 @@ export default function SupplierVariantConfigurator({ product, config, onUpdateC
       const { minQuantity } = getVariantQuantityRule(product, patch.variant)
       patch.quantity = minQuantity
     }
+    // Drop any currently-selected accessory that's no longer compatible
+    // with the new variant (e.g. a 2x2 wall selected, then the size
+    // changed to 3x3) — the accessory list below already hides it, but
+    // without this it would stay silently selected in config, invisible
+    // to the customer, and only get caught (correctly, but as a late
+    // surprise) by the server's own compatibility check at checkout.
+    const currentAccessories = Array.isArray(config.accessories) ? config.accessories : []
+    if (currentAccessories.length) {
+      patch.accessories = filterCompatibleAccessories(product, currentAccessories, patch.variant)
+    }
     onUpdateConfig(patch)
   }
 
   const quantityRule = variantId ? getVariantQuantityRule(product, variantId) : { minQuantity: 1, quantityStep: 1 }
   const quantity = Math.max(Number(config.quantity || quantityRule.minQuantity), quantityRule.minQuantity)
 
-  const accessories = Object.entries(product.pricing?.accessories || {}).filter(([, accessory]) => {
-    if (!Array.isArray(accessory.compatibleVariants) || accessory.compatibleVariants.length === 0) return true
-    return variantId ? accessory.compatibleVariants.includes(variantId) : false
-  })
+  const accessories = Object.entries(product.pricing?.accessories || {}).filter(([, accessory]) =>
+    variantId ? accessoryCompatible(accessory, variantId) : false
+  )
   const selectedAccessories = Array.isArray(config.accessories) ? config.accessories : []
 
   const toggleAccessory = (accessoryId) => {

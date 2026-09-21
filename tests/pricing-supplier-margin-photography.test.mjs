@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { calculateProductPrice, getVariantQuantityRule } from '../src/lib/pricing.js'
+import { calculateProductPrice, getVariantQuantityRule, filterCompatibleAccessories } from '../src/lib/pricing.js'
 
 // Fixtures mirror the real customer_definition.pricing shape stored in
 // commerce.service_product_configs (customer-safe: pre-computed selling
@@ -188,6 +188,54 @@ test('SUPPLIER_MARGIN: an accessory with no compatibleVariants is universal', ()
   })
   assert.equal(result.metrics.quoteRequired, false)
   assert.equal(result.total, 1390 + 690)
+})
+
+// ── Auto-removing an accessory when the variant it depended on changes
+// (SupplierVariantConfigurator calls this on every axis change) ──────
+const gazeboLike = {
+  id: 'gazebos',
+  pricing: {
+    strategy: 'SUPPLIER_MARGIN',
+    minQuantity: 1,
+    variants: {
+      'steel-2x2-full': { label: 'Steel 2x2', price: 5500 },
+      'steel-3x3-full': { label: 'Steel 3x3', price: 6700 }
+    },
+    accessories: {
+      'wall-2x2': { label: '2x2 wall', price: 650, compatibleVariants: ['steel-2x2-full'] },
+      'wall-3x3': { label: '3x3 wall', price: 850, compatibleVariants: ['steel-3x3-full'] },
+      'universal-weight': { label: 'Universal weight', price: 690 }
+    },
+    artwork: {}
+  }
+}
+
+test('filterCompatibleAccessories: drops an accessory that no longer matches the new variant', () => {
+  const kept = filterCompatibleAccessories(gazeboLike, ['wall-2x2', 'universal-weight'], 'steel-3x3-full')
+  assert.deepEqual(kept, ['universal-weight'])
+})
+
+test('filterCompatibleAccessories: keeps an accessory that still matches the new variant', () => {
+  const kept = filterCompatibleAccessories(gazeboLike, ['wall-2x2', 'universal-weight'], 'steel-2x2-full')
+  assert.deepEqual(kept, ['wall-2x2', 'universal-weight'])
+})
+
+test('filterCompatibleAccessories: drops an id that no longer exists at all (e.g. removed by an admin)', () => {
+  const kept = filterCompatibleAccessories(gazeboLike, ['removed-accessory', 'universal-weight'], 'steel-2x2-full')
+  assert.deepEqual(kept, ['universal-weight'])
+})
+
+test('checkout safety: a hidden incompatible accessory, if it somehow survived, is flagged invalid rather than silently priced', () => {
+  // filterCompatibleAccessories is what SupplierVariantConfigurator uses
+  // to prevent this state existing at all — this proves the pricing
+  // engine is a second line of defence too: an (hypothetically) still-
+  // submitted incompatible accessory never contributes to `total` and
+  // is never silently ignored. The SQL suite (scenario 11) proves the
+  // server goes further and hard-rejects this with its own exception,
+  // rather than returning a priced result at all.
+  const result = calculateProductPrice(gazeboLike, { variant: 'steel-3x3-full', quantity: 1, accessories: ['wall-2x2'] })
+  assert.equal(result.metrics.invalid, true)
+  assert.equal(result.total, 0)
 })
 
 // ── Privacy: the client-side estimator never needs/receives reference

@@ -675,6 +675,8 @@ begin
       'strategy','SUPPLIER_MARGIN',
       'marginRate', 0.6,
       'minQuantity', 1,
+      'variantAxes', jsonb_build_array(jsonb_build_object('id','style','label','Style','options',jsonb_build_array(jsonb_build_object('id','telescopic','label','Telescopic')))),
+      'variantTemplate', '{style}-{size}-{sides}-{kit}',
       'variants', jsonb_build_object(
         'telescopic-2m-ss-full', jsonb_build_object('label','Telescopic flag — 2.0m — single-sided — full kit','referencePrice', 495, 'minQuantity', 2, 'quantityStep', 2)
       ),
@@ -702,6 +704,15 @@ begin
   if (v_saved_customer->'pricing'->'variants'->'telescopic-2m-ss-full'->>'quantityStep')::int = 2
   then raise notice 'PASS 32 the regenerated customer-safe mirror still carries quantityStep (2) through — non-sensitive, needed client-side';
   else raise notice 'FAIL 32 quantityStep missing from regenerated mirror: %', v_saved_customer->'pricing'->'variants'->'telescopic-2m-ss-full'; end if;
+
+  -- Regression: admin save previously stripped variantAxes/variantTemplate
+  -- from customer_definition entirely, silently breaking the decomposed
+  -- style/size/sides/kit guided configurator on the very next page load.
+  if jsonb_array_length(v_saved_customer->'pricing'->'variantAxes') = 1
+     and v_saved_customer->'pricing'->'variantAxes'->0->>'id' = 'style'
+     and v_saved_customer->'pricing'->>'variantTemplate' = '{style}-{size}-{sides}-{kit}'
+  then raise notice 'PASS 32b admin save PRESERVES variantAxes/variantTemplate in the regenerated customer-safe mirror (guided configurator keeps working after a save)';
+  else raise notice 'FAIL 32b variantAxes/variantTemplate missing or wrong after save: axes=% template=%', v_saved_customer->'pricing'->'variantAxes', v_saved_customer->'pricing'->>'variantTemplate'; end if;
 
   -- The saved customer_definition must still never carry referencePrice/marginRate.
   if v_saved_customer::text ilike '%referencePrice%' or v_saved_customer::text ilike '%marginRate%'
@@ -735,6 +746,102 @@ begin
   exception when others then
     if sqlerrm like '%changed after you opened it%' then raise notice 'PASS 36 admin stale-version guard still rejects an outdated pricing_version after this change';
     else raise notice 'FAIL 36 wrong error: %', sqlerrm; end if;
+  end;
+
+end $$;
+SQL
+
+echo "=========================================="
+echo "ADMIN: photography deliverable add / edit / remove"
+echo "=========================================="
+docker exec -i "$CID" psql -X -q -U postgres -d m 2>&1 <<'SQL' | grep -E 'PASS|FAIL|RESULT'
+do $$
+declare
+  TENANT constant uuid := (select id from public.tenants where slug='quick-solution');
+  r jsonb;
+  v_version text;
+  v_saved_customer jsonb;
+begin
+  set local test.uid = '33333333-3333-3333-3333-333333333333';
+  set local test.email = 'admin@jointx.co.za';
+
+  select pricing_version into v_version from commerce.service_product_configs where source_key = 'photo-session';
+
+  -- ── 37 · admin adds a brand-new deliverable (starts unpriced) ───────
+  -- The seeded catalogue ships with deliverables: {} — admin-only
+  -- editing of existing entries is not enough, since there ARE none;
+  -- this proves a new one can actually be created.
+  r := public.admin_update_quick_solution_product(
+    'quick-solution', 'photo-session',
+    jsonb_build_object('name','Quick Photo Session','active',true),
+    jsonb_build_object(
+      'strategy','PHOTOGRAPHY_SESSION',
+      'sessions', jsonb_build_object('30min-7edits', jsonb_build_object('label','30-minute session — 7 edited photos included','durationMinutes',30,'includedEdits',7,'price',449)),
+      'extraEditRate', null,
+      'deliverables', jsonb_build_object('video-highlight', jsonb_build_object('label','Video highlight reel','price', null))
+    ),
+    v_version
+  );
+  if (r->>'ok')::boolean = true
+  then raise notice 'PASS 37 admin can add a brand-new deliverable (starts unpriced/quote-required, not invented)';
+  else raise notice 'FAIL 37 r=%', r; end if;
+
+  select pricing_version into v_version from commerce.service_product_configs where source_key = 'photo-session';
+  select customer_definition into v_saved_customer from commerce.service_product_configs where source_key = 'photo-session';
+
+  if (v_saved_customer->'pricing'->'deliverables'->'video-highlight'->>'label') = 'Video highlight reel'
+     and (v_saved_customer->'pricing'->'deliverables'->'video-highlight'->'price') = 'null'::jsonb
+  then raise notice 'PASS 38 the new deliverable appears in the customer-safe mirror, unpriced (never a silently invented rate)';
+  else raise notice 'FAIL 38 saved deliverable=%', v_saved_customer->'pricing'->'deliverables'->'video-highlight'; end if;
+
+  -- ── 39 · selecting the new deliverable before it's priced -> quote-required ─
+  r := commerce.qs_calculate_price(TENANT, 'photo-session', '{"session":"30min-7edits","deliverables":["video-highlight"]}'::jsonb);
+  if (r->'metrics'->>'quoteRequired')::boolean = true
+  then raise notice 'PASS 39 selecting the new (still unpriced) deliverable makes the request quote-required, never free';
+  else raise notice 'FAIL 39 metrics=%', r->'metrics'; end if;
+
+  -- ── 40 · admin sets a real price on it -> becomes orderable ──────────
+  r := public.admin_update_quick_solution_product(
+    'quick-solution', 'photo-session',
+    jsonb_build_object('name','Quick Photo Session','active',true),
+    jsonb_build_object(
+      'strategy','PHOTOGRAPHY_SESSION',
+      'sessions', jsonb_build_object('30min-7edits', jsonb_build_object('label','30-minute session — 7 edited photos included','durationMinutes',30,'includedEdits',7,'price',449)),
+      'extraEditRate', null,
+      'deliverables', jsonb_build_object('video-highlight', jsonb_build_object('label','Video highlight reel','price', 250))
+    ),
+    v_version
+  );
+  select pricing_version into v_version from commerce.service_product_configs where source_key = 'photo-session';
+
+  r := commerce.qs_calculate_price(TENANT, 'photo-session', '{"session":"30min-7edits","deliverables":["video-highlight"]}'::jsonb);
+  if (r->>'total')::numeric = 699.00 -- 449 + 250
+  then raise notice 'PASS 40 once priced by an admin, the deliverable prices correctly (R449 + R250 = R699)';
+  else raise notice 'FAIL 40 total=%', r->>'total'; end if;
+
+  -- ── 41 · admin removes the deliverable entirely ──────────────────────
+  r := public.admin_update_quick_solution_product(
+    'quick-solution', 'photo-session',
+    jsonb_build_object('name','Quick Photo Session','active',true),
+    jsonb_build_object(
+      'strategy','PHOTOGRAPHY_SESSION',
+      'sessions', jsonb_build_object('30min-7edits', jsonb_build_object('label','30-minute session — 7 edited photos included','durationMinutes',30,'includedEdits',7,'price',449)),
+      'extraEditRate', null,
+      'deliverables', '{}'::jsonb
+    ),
+    v_version
+  );
+  if (r->>'ok')::boolean = true
+  then raise notice 'PASS 41 admin can remove a deliverable entirely';
+  else raise notice 'FAIL 41 r=%', r; end if;
+
+  -- ── 42 · a removed deliverable is rejected if still submitted ────────
+  begin
+    r := commerce.qs_calculate_price(TENANT, 'photo-session', '{"session":"30min-7edits","deliverables":["video-highlight"]}'::jsonb);
+    raise notice 'FAIL 42 a removed deliverable should have been rejected, got %', r;
+  exception when others then
+    if sqlerrm like '%deliverables are invalid%' then raise notice 'PASS 42 a removed deliverable id is rejected if a stale client still submits it';
+    else raise notice 'FAIL 42 wrong error: %', sqlerrm; end if;
   end;
 
 end $$;

@@ -3,6 +3,7 @@ import Icon from './Icon.jsx'
 import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
 import FieldControl from './FieldControl.jsx'
 import SupplierVariantConfigurator from './SupplierVariantConfigurator.jsx'
+import PhotoDeliverablesField from './PhotoDeliverablesField.jsx'
 import DocumentPrintPlan from './DocumentPrintPlan.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
 import { fulfilmentOptions } from '../data/products.js'
@@ -632,6 +633,8 @@ export default function GuidedOrder({
           />
         ) : step.type === 'variant-builder' ? (
           <SupplierVariantConfigurator product={product} config={config} onUpdateConfig={updateMany}/>
+        ) : step.type === 'photo-deliverables' ? (
+          <PhotoDeliverablesField product={product} config={config} onUpdateConfig={updateMany}/>
         ) : step.fields && (
           <div className="guided-fields">
             {step.fields.map((fieldId) => {

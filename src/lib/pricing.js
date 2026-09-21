@@ -160,10 +160,28 @@ function isQuantityValid(quantity, minQuantity, quantityStep) {
 }
 
 // An accessory with no compatibleVariants (or an empty one) is
-// universal — same convention as the server.
-function accessoryCompatible(accessory, variantId) {
+// universal — same convention as the server. Exported so
+// SupplierVariantConfigurator can use the exact same rule to drop a
+// now-incompatible accessory the moment the variant changes, instead
+// of leaving a hidden, uncheckable-but-still-selected accessory in the
+// config that only the server would catch at checkout.
+export function accessoryCompatible(accessory, variantId) {
   if (!Array.isArray(accessory?.compatibleVariants) || accessory.compatibleVariants.length === 0) return true
   return accessory.compatibleVariants.includes(variantId)
+}
+
+// Drops any accessory id no longer compatible with the given variant.
+// Used by SupplierVariantConfigurator every time the variant changes
+// (a size/frame/sides switch can invalidate a previously-selected
+// accessory, e.g. a 2x2 gazebo wall after switching to 3x3) so a now-
+// incompatible selection can never sit silently in the submitted
+// configuration — the server would reject it anyway, but only at
+// checkout, which is a worse place for the customer to find out.
+export function filterCompatibleAccessories(product, accessoryIds, variantId) {
+  return (accessoryIds || []).filter((id) => {
+    const accessory = product?.pricing?.accessories?.[id]
+    return Boolean(accessory) && accessoryCompatible(accessory, variantId)
+  })
 }
 
 function priceSupplierMargin(product, config) {

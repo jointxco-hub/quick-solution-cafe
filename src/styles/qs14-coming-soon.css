@@ -31,6 +31,7 @@
 .qs14-variant-unavailable{
   background:#fdf3ec;border:1px solid rgba(204,51,0,.18);border-radius:14px;padding:12px 14px;color:#7a3c1e
 }
+.qs14-empty-note{font-size:13px;color:#77776f;margin:0}
 .qs14-accessories legend{font-size:13px;font-weight:800;color:#3a3a35;padding:0 0 8px}
 .qs14-accessory-grid{display:grid;gap:8px;grid-template-columns:1fr 1fr}
 .qs14-accessory-option{
@@ -46,6 +47,14 @@
 /* QS-14 follow-up · admin supplier-margin / photography pricing editors */
 .admin-subsection{border-top:1px solid #ecece6;padding-top:15px;display:grid;gap:10px}
 .admin-subsection>strong{font-size:13px;color:#3a3a35}
+.admin-subsection-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.admin-subsection-head strong{font-size:13px;color:#3a3a35}
+.qs14-admin-deliverable-row{grid-template-columns:1fr 140px auto}
+.qs14-admin-remove-button{
+  border:1px solid rgba(204,51,0,.25);background:#fff;color:var(--orange);
+  border-radius:9px;padding:7px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap
+}
+.qs14-admin-remove-button:hover{background:#fdf3ec}
 .admin-empty-note{font-size:12px;color:#83837c;margin:0}
 .qs14-admin-rate-list{display:grid;gap:8px;max-height:420px;overflow:auto;padding-right:4px}
 .qs14-admin-rate-row{

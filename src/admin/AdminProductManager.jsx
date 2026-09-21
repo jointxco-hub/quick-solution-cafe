@@ -199,6 +199,32 @@ function PhotographySessionPricingEditor({ product, onChange }) {
     updateDefinition({ sessions: { ...current, [id]: { ...current[id], [key]: value } } })
   }
 
+  const updateDeliverable = (id, key, value) => {
+    const current = pricingDefinition.deliverables || {}
+    updateDefinition({ deliverables: { ...current, [id]: { ...current[id], [key]: value } } })
+  }
+
+  const addDeliverable = () => {
+    const label = window.prompt('Deliverable name (e.g. "Video highlight reel")')
+    if (!label || !label.trim()) return
+    const current = pricingDefinition.deliverables || {}
+    const slug = label.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '')
+    let id = slug || `deliverable-${Date.now()}`
+    let suffix = 2
+    while (current[id]) { id = `${slug || 'deliverable'}-${suffix}`; suffix += 1 }
+    // Price starts unset (quote required) — never inventing a rate for
+    // a brand-new deliverable.
+    updateDefinition({ deliverables: { ...current, [id]: { label: label.trim(), price: null } } })
+  }
+
+  const removeDeliverable = (id) => {
+    const label = pricingDefinition.deliverables?.[id]?.label || id
+    if (!window.confirm(`Remove "${label}"? This takes effect once you save, and can't be undone.`)) return
+    const current = { ...(pricingDefinition.deliverables || {}) }
+    delete current[id]
+    updateDefinition({ deliverables: current })
+  }
+
   const sessions = Object.entries(pricingDefinition.sessions || {})
   const deliverables = Object.entries(pricingDefinition.deliverables || {})
 
@@ -238,20 +264,21 @@ function PhotographySessionPricingEditor({ product, onChange }) {
       </div>
 
       <div className="admin-subsection">
-        <strong>Deliverables</strong>
+        <div className="admin-subsection-head">
+          <strong>Deliverables</strong>
+          <button type="button" className="text-button" onClick={addDeliverable}>+ Add deliverable</button>
+        </div>
         {deliverables.length ? (
           <div className="qs14-admin-rate-list">
             {deliverables.map(([id, deliverable]) => (
-              <div className="qs14-admin-rate-row" key={id}>
-                <span className="qs14-admin-rate-label">{deliverable.label || id}</span>
-                <label><small>Price</small><input type="number" min="0" step="0.01" value={deliverable.price ?? ''} placeholder="Quote required" onChange={(event) => {
-                  const current = pricingDefinition.deliverables || {}
-                  updateDefinition({ deliverables: { ...current, [id]: { ...current[id], price: event.target.value === '' ? null : Number(event.target.value) } } })
-                }}/></label>
+              <div className="qs14-admin-rate-row qs14-admin-deliverable-row" key={id}>
+                <label><small>Name</small><input value={deliverable.label || ''} onChange={(event) => updateDeliverable(id, 'label', event.target.value)}/></label>
+                <label><small>Price</small><input type="number" min="0" step="0.01" value={deliverable.price ?? ''} placeholder="Quote required" onChange={(event) => updateDeliverable(id, 'price', event.target.value === '' ? null : Number(event.target.value))}/></label>
+                <button type="button" className="qs14-admin-remove-button" onClick={() => removeDeliverable(id)} aria-label={`Remove ${deliverable.label || id}`}>Remove</button>
               </div>
             ))}
           </div>
-        ) : <p className="admin-empty-note">No deliverables configured yet.</p>}
+        ) : <p className="admin-empty-note">No deliverables configured yet — add one above. Customers only see a deliverable once it's saved here; a blank price shows as "Quote required" to them.</p>}
       </div>
     </div>
   )

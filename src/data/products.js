@@ -1398,8 +1398,9 @@ export const guidedJourneys = [
     intro: 'Choose the session, add any extra edited photos, and pick a date and time.',
     steps: [
       { id: 'session', eyebrow: 'Step 1', title: 'Which session would you like?', helper: 'The 30-minute session with 7 edited photos is our approved special. Anything else is quoted before you book.', fields: ['session', 'extraEdits'] },
-      { id: 'schedule', eyebrow: 'Step 2', title: 'When should we plan for?', helper: 'Give us your preferred date and time. We will confirm availability before the booking is final.', fields: ['preferredDate', 'preferredTime'] },
-      { id: 'brief', eyebrow: 'Step 3', title: 'Anything we should see first?', helper: 'A reference photo is optional.', fields: ['file'] },
+      { id: 'deliverables', eyebrow: 'Step 2', title: 'Anything extra to deliver?', helper: 'Optional — choose any extra deliverables Quick Solution has priced.', type: 'photo-deliverables' },
+      { id: 'schedule', eyebrow: 'Step 3', title: 'When should we plan for?', helper: 'Give us your preferred date and time. We will confirm availability before the booking is final.', fields: ['preferredDate', 'preferredTime'] },
+      { id: 'brief', eyebrow: 'Step 4', title: 'Anything we should see first?', helper: 'A reference photo is optional.', fields: ['file'] },
       { id: 'review', eyebrow: 'Final step', title: 'Check your session request', helper: 'We will confirm the price and schedule before anything is booked.', type: 'review' }
     ]
   }

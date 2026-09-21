@@ -1069,6 +1069,14 @@ begin
     return jsonb_build_object(
       'strategy', 'SUPPLIER_MARGIN',
       'minQuantity', coalesce(p_pricing_definition->'minQuantity', '1'::jsonb),
+      -- variantAxes/variantTemplate carry no cost or margin data (just
+      -- axis labels and the id-composition template the guided
+      -- configurator uses) - safe to mirror straight through, and
+      -- REQUIRED: without this, every admin save silently dropped them
+      -- from customer_definition, breaking the decomposed
+      -- style/size/sides/kit configurator on the very next page load.
+      'variantAxes', coalesce(p_pricing_definition->'variantAxes', '[]'::jsonb),
+      'variantTemplate', p_pricing_definition->'variantTemplate',
       'variants', v_variants,
       'accessories', v_accessories,
       'artwork', coalesce(p_pricing_definition->'artwork', '{}'::jsonb)
