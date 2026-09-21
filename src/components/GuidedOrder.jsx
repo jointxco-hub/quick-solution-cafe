@@ -615,7 +615,12 @@ export default function GuidedOrder({
       <div className="guided-main">
         <div className="guided-topline">
           <button className="text-button" type="button" onClick={onAdvanced}>Switch to Full options</button>
-          <span>{stepIndex + 1} of {shoppingSteps.length}</span>
+          <div className="guided-topline-meta">
+            <span>{stepIndex + 1} of {shoppingSteps.length}</span>
+            <strong className="guided-mobile-total">
+              {result?.metrics?.quoteRequired ? 'Quote' : formatMoney(estimatedOrderTotal)}
+            </strong>
+          </div>
         </div>
         <div className="progress-track"><span style={{ width: `${progress}%` }}/></div>
 
