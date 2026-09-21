@@ -93,39 +93,145 @@ function money(value) {
 function SupplierMarginPricingEditor({ product, onChange }) {
   const pricingDefinition = product.pricingDefinition || {}
   const margin = Number(pricingDefinition.marginRate ?? 0.5)
+  const vatRate = Number(pricingDefinition.vatRate ?? 0.15)
+  const vatBasis = String(pricingDefinition.vatBasis || 'excl_vat').toLowerCase()
 
-  const updateDefinition = (patch) => {
-    onChange({ ...product, pricingDefinition: { ...pricingDefinition, ...patch } })
+  const internalCost = (supplierCost, nextVatRate = vatRate, nextVatBasis = vatBasis) => {
+    if (supplierCost == null || supplierCost === '' || !Number.isFinite(Number(supplierCost))) return null
+    const base = Number(supplierCost)
+    return nextVatBasis === 'excl_vat' ? base * (1 + nextVatRate) : base
   }
 
-  const updateEntry = (group, id, key, value) => {
+  // QS-14.1 deliberately keeps referencePrice as an INTERNAL pricing-engine
+  // basis, not as the raw supplier cost:
+  // fixed       -> fixed retail price stays fixed even if supplierCost changes
+  // cost_margin -> engine basis is VAT-adjusted internal supplier cost
+  // quote       -> null, so the existing server quote-required guard applies
+  const engineReference = (entry, nextMargin = margin, nextVatRate = vatRate, nextVatBasis = vatBasis) => {
+    const mode = entry.pricingMode || pricingDefinition.defaultPricingMode || 'fixed'
+    if (mode === 'quote') return null
+
+    if (mode === 'fixed') {
+      const fixed = Number(entry.fixedPrice)
+      if (!Number.isFinite(fixed) || fixed <= 0 || nextMargin >= 1) return null
+      return Number((fixed * (1 - nextMargin)).toFixed(2))
+    }
+
+    const cost = internalCost(entry.supplierCost, nextVatRate, nextVatBasis)
+    if (cost == null || cost <= 0) return null
+    return Number(cost.toFixed(2))
+  }
+
+  const withRebuiltEntries = (definition, nextMargin = margin, nextVatRate = vatRate, nextVatBasis = vatBasis) => {
+    const rebuildGroup = (group) => Object.fromEntries(
+      Object.entries(definition[group] || {}).map(([id, entry]) => [
+        id,
+        { ...entry, referencePrice: engineReference(entry, nextMargin, nextVatRate, nextVatBasis) }
+      ])
+    )
+    return {
+      ...definition,
+      variants: rebuildGroup('variants'),
+      accessories: rebuildGroup('accessories')
+    }
+  }
+
+  const updateDefinition = (patch, options = {}) => {
+    const nextMargin = options.margin ?? Number(patch.marginRate ?? margin)
+    const nextVatRate = options.vatRate ?? Number(patch.vatRate ?? vatRate)
+    const nextVatBasis = options.vatBasis ?? String(patch.vatBasis ?? vatBasis).toLowerCase()
+    const merged = { ...pricingDefinition, ...patch }
+    onChange({ ...product, pricingDefinition: withRebuiltEntries(merged, nextMargin, nextVatRate, nextVatBasis) })
+  }
+
+  const updateEntry = (group, id, patch) => {
     const current = pricingDefinition[group] || {}
-    updateDefinition({
-      [group]: { ...current, [id]: { ...current[id], [key]: value } }
-    })
+    const previous = current[id] || {}
+    const nextEntry = { ...previous, ...patch }
+
+    if (patch.pricingMode === 'fixed' && nextEntry.fixedPrice == null) {
+      const currentSelling = previous.referencePrice == null || margin >= 1
+        ? null
+        : Number(previous.referencePrice) / (1 - margin)
+      if (Number.isFinite(currentSelling) && currentSelling > 0) nextEntry.fixedPrice = Number(currentSelling.toFixed(2))
+    }
+
+    const nextGroup = {
+      ...current,
+      [id]: { ...nextEntry, referencePrice: engineReference(nextEntry) }
+    }
+    onChange({ ...product, pricingDefinition: { ...pricingDefinition, [group]: nextGroup } })
+  }
+
+  const sellingFor = (entry) => {
+    const mode = entry.pricingMode || pricingDefinition.defaultPricingMode || 'fixed'
+    if (mode === 'quote') return null
+    if (mode === 'fixed') {
+      const fixed = Number(entry.fixedPrice)
+      return Number.isFinite(fixed) && fixed > 0 ? fixed : null
+    }
+    const cost = internalCost(entry.supplierCost)
+    return cost == null || cost <= 0 || margin >= 1 ? null : cost / (1 - margin)
   }
 
   const renderEntryRows = (group, label) => {
     const entries = Object.entries(pricingDefinition[group] || {})
     if (!entries.length) return <p className="admin-empty-note">No {label.toLowerCase()} configured.</p>
+
     return (
       <div className="qs14-admin-rate-list">
         {entries.map(([id, entry]) => {
-          const reference = entry.referencePrice
-          const selling = reference == null || reference === '' ? null : Number(reference) / (1 - margin)
+          const mode = entry.pricingMode || pricingDefinition.defaultPricingMode || 'fixed'
+          const cost = internalCost(entry.supplierCost)
+          const selling = sellingFor(entry)
+          const achievedMargin = selling && cost != null ? ((selling - cost) / selling) * 100 : null
+
           return (
             <div className="qs14-admin-rate-row" key={id}>
               <span className="qs14-admin-rate-label" title={entry.label}>{entry.label || id}</span>
+
               <label>
-                <small>Reference price (Excl. VAT)</small>
+                <small>Pricing method</small>
+                <select value={mode} onChange={(event) => updateEntry(group, id, { pricingMode: event.target.value })}>
+                  <option value="fixed">Fixed selling price</option>
+                  <option value="cost_margin">Supplier cost + margin</option>
+                  <option value="quote">Quote required</option>
+                </select>
+              </label>
+
+              <label>
+                <small>Supplier cost ({vatBasis === 'excl_vat' ? 'Excl. VAT' : 'VAT inclusive'})</small>
                 <input
                   type="number" min="0" step="0.01"
-                  value={reference ?? ''}
-                  placeholder="Not yet priced"
-                  onChange={(event) => updateEntry(group, id, 'referencePrice', event.target.value === '' ? null : Number(event.target.value))}
+                  value={entry.supplierCost ?? ''}
+                  placeholder="Optional internal cost"
+                  onChange={(event) => updateEntry(group, id, {
+                    supplierCost: event.target.value === '' ? null : Number(event.target.value)
+                  })}
                 />
               </label>
-              <span className="qs14-admin-rate-selling">{selling == null ? 'Quote required' : `${money(selling)} selling`}</span>
+
+              {mode === 'fixed' ? (
+                <label>
+                  <small>Fixed customer price</small>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={entry.fixedPrice ?? ''}
+                    placeholder="Set retail price"
+                    onChange={(event) => updateEntry(group, id, {
+                      fixedPrice: event.target.value === '' ? null : Number(event.target.value)
+                    })}
+                  />
+                </label>
+              ) : null}
+
+              <span className="qs14-admin-rate-selling">
+                {mode === 'quote' || selling == null
+                  ? 'Quote required'
+                  : mode === 'fixed'
+                    ? `${money(selling)} fixed · internal cost ${cost == null ? '—' : money(cost)}${achievedMargin == null ? '' : ` · ${achievedMargin.toFixed(1)}% margin`}`
+                    : `${money(selling)} calculated · internal cost ${money(cost)}`}
+              </span>
             </div>
           )
         })}
@@ -136,25 +242,59 @@ function SupplierMarginPricingEditor({ product, onChange }) {
   return (
     <div className="admin-section-block">
       <div className="admin-section-title">
-        <div><span className="eyebrow">Supplier pricing · staff only</span><h3>Gross margin & reference prices</h3></div>
+        <div><span className="eyebrow">Supplier pricing · staff only</span><h3>Retail price controls & supplier costs</h3></div>
         <span className="schema-tag">Pricing version · {product.pricingVersion}</span>
       </div>
+
       <p className="admin-empty-note">
-        Selling price = reference price ÷ (1 − margin). Customers only ever see the computed selling price below — never these reference prices or the margin itself.
+        Fixed price is recommended: supplier changes do not move the customer price. Cost + margin includes supplier VAT in our internal cost before applying the target margin. Customers do not get a separate VAT addition at checkout.
       </p>
 
       <div className="admin-two-col">
         <label className="admin-field">
-          <span>Gross margin</span>
+          <span>Target gross margin (Cost + margin mode)</span>
           <div className="input-with-suffix">
             <input
               type="number" min="0" max="99" step="1"
               value={Math.round(margin * 100)}
-              onChange={(event) => updateDefinition({ marginRate: Math.min(99, Math.max(0, Number(event.target.value))) / 100 })}
+              onChange={(event) => {
+                const next = Math.min(99, Math.max(0, Number(event.target.value))) / 100
+                updateDefinition({ marginRate: next }, { margin: next })
+              }}
             />
             <small>%</small>
           </div>
         </label>
+
+        <label className="admin-field">
+          <span>Internal VAT rate</span>
+          <div className="input-with-suffix">
+            <input
+              type="number" min="0" max="100" step="0.1"
+              value={Number((vatRate * 100).toFixed(2))}
+              onChange={(event) => {
+                const next = Math.min(100, Math.max(0, Number(event.target.value))) / 100
+                updateDefinition({ vatRate: next }, { vatRate: next })
+              }}
+            />
+            <small>%</small>
+          </div>
+        </label>
+      </div>
+
+      <div className="admin-two-col">
+        <label className="admin-field">
+          <span>Default pricing method</span>
+          <select
+            value={pricingDefinition.defaultPricingMode || 'fixed'}
+            onChange={(event) => updateDefinition({ defaultPricingMode: event.target.value })}
+          >
+            <option value="fixed">Fixed selling price</option>
+            <option value="cost_margin">Supplier cost + margin</option>
+            <option value="quote">Quote required</option>
+          </select>
+        </label>
+
         <label className="admin-field">
           <span>Minimum quantity (product default)</span>
           <input
@@ -166,9 +306,23 @@ function SupplierMarginPricingEditor({ product, onChange }) {
       </div>
 
       <div className="admin-two-col">
-        <label className="admin-field"><span>Source</span><input value={pricingDefinition.sourceName || ''} onChange={(event) => updateDefinition({ sourceName: event.target.value })}/></label>
-        <label className="admin-field"><span>VAT basis of reference prices</span><input value={pricingDefinition.vatBasis || ''} placeholder="e.g. excl_vat" onChange={(event) => updateDefinition({ vatBasis: event.target.value })}/></label>
+        <label className="admin-field">
+          <span>Supplier / source</span>
+          <input value={pricingDefinition.sourceName || ''} onChange={(event) => updateDefinition({ sourceName: event.target.value })}/>
+        </label>
+
+        <label className="admin-field">
+          <span>Supplier VAT basis</span>
+          <select
+            value={vatBasis}
+            onChange={(event) => updateDefinition({ vatBasis: event.target.value }, { vatBasis: event.target.value })}
+          >
+            <option value="excl_vat">Supplier price excludes VAT</option>
+            <option value="incl_vat">Supplier price includes VAT</option>
+          </select>
+        </label>
       </div>
+
       <div className="admin-two-col">
         <label className="admin-field"><span>Source URL</span><input value={pricingDefinition.sourceUrl || ''} onChange={(event) => updateDefinition({ sourceUrl: event.target.value })}/></label>
         <label className="admin-field"><span>Source date</span><input value={pricingDefinition.sourceDate || ''} placeholder="YYYY-MM-DD" onChange={(event) => updateDefinition({ sourceDate: event.target.value })}/></label>
@@ -178,6 +332,7 @@ function SupplierMarginPricingEditor({ product, onChange }) {
         <strong>Variants</strong>
         {renderEntryRows('variants', 'variants')}
       </div>
+
       <div className="admin-subsection">
         <strong>Accessories</strong>
         {renderEntryRows('accessories', 'accessories')}
