@@ -245,6 +245,140 @@
 @keyframes qs21FadeIn { from { opacity: 0; } }
 @keyframes qs21SheetIn { from { opacity: 0; transform: translateY(12px); } }
 
+/* ── QS-21.1: Related-product disclosure (section 3) ──────────────────
+   The row toggles a local preview in place - never navigates on first
+   click. Desktop reads as a compact card growing open below its row;
+   mobile is the same DOM, same behaviour (an accordion IS a stack of
+   disclosure rows), just full-width. */
+.product-hub-related-row.expanded .product-hub-related-toggle {
+  border-color: rgba(0, 139, 114, .35);
+  background: rgba(0, 139, 114, .05);
+}
+.product-hub-related-preview {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 12px;
+  border: 1px solid rgba(17, 17, 15, .07);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .82);
+  backdrop-filter: blur(8px);
+  animation: qs21RelatedPreviewIn .2s ease both;
+}
+.product-hub-related-preview-media {
+  width: 76px;
+  height: 76px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f3f3ef;
+}
+.product-hub-related-preview-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.product-hub-related-preview-copy { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.product-hub-related-preview-copy p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted, #676761); }
+.product-hub-related-preview-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.product-hub-related-preview-actions .button { padding: 8px 13px; font-size: 12px; min-height: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .product-hub-related-preview { animation-duration: .2s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .product-hub-related-preview { animation: none; }
+}
+@keyframes qs21RelatedPreviewIn { from { opacity: 0; transform: translateY(-4px); } }
+
+@media (max-width: 620px) {
+  .product-hub-related-preview { grid-template-columns: 64px 1fr; }
+  .product-hub-related-preview-media { width: 64px; height: 64px; }
+}
+
+/* ── QS-21.1 section 4: desktop sticky/floating Configure affordance ──
+   Restrained glass (translucent white, modest blur, soft border/shadow) -
+   a small pill anchored to the viewport, never a full-width bar, so it
+   never competes with or obscures page content. Hidden on mobile/tablet
+   (<=960px) - ProductHub's own .product-hub-sticky-cta already covers
+   that viewport range. */
+.qs21-sticky-configure {
+  display: none;
+}
+@media (min-width: 961px) {
+  .qs21-sticky-configure {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 24;
+    padding: 12px 16px 12px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 17, 15, .09);
+    background: rgba(255, 255, 255, .86);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 10px 30px rgba(17, 17, 15, .14), 0 0 0 1px rgba(0, 139, 114, .05);
+    cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease;
+    animation: qs21FadeIn .2s ease both;
+  }
+  .qs21-sticky-configure:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px rgba(17, 17, 15, .18), 0 0 0 1px rgba(0, 139, 114, .1);
+  }
+}
+.qs21-sticky-configure-copy {
+  display: grid;
+  gap: 1px;
+  text-align: left;
+}
+.qs21-sticky-configure-copy small {
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #81817a;
+}
+.qs21-sticky-configure-copy strong {
+  font-size: 14px;
+  letter-spacing: -.01em;
+  white-space: nowrap;
+}
+.qs21-sticky-configure-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 780;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qs21-sticky-configure { animation: none; transition: none; }
+}
+
+/* ── QS-21.1 section 7: compact hero trust row ────────────────────────
+   One line, small, no cards/borders - a light echo of the full
+   .qs21-trust-strip lower down, not a duplicate of it. */
+.product-hub-trust-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.product-hub-trust-compact li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #6c6c67;
+}
+.product-hub-trust-compact svg { color: var(--green); flex: 0 0 auto; }
+
 /* ── Restrained glass, section 6/9: Simple/Pro toggle + outcome panel ──
    Only the ACTIVE/selected state gets the translucent-glass treatment -
    every other surface here keeps qs18/qs19's existing plain styling.

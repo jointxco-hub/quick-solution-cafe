@@ -1002,14 +1002,21 @@ export const products = [
       "help": "PDF or high-resolution PNG/JPG works best."
     }
   ],
-  // No dedicated flag photography exists yet (documented decision,
-  // already made pre-QS-17 - see the "Flags has no dedicated product
-  // photography" comment on LEGACY_IMAGE_FALLBACK in
-  // src/lib/productContent.js). Deliberately left without a `hero` here
-  // rather than reusing an unrelated photo - resolveProductMedia() falls
-  // through to ProductScene, exactly as it already does today.
+  // QS-21.1: real branded flag photography added (visually inspected and
+  // classified from a supplied photo batch - see the QS-21.1 media
+  // mapping report). Replaces the earlier documented "no dedicated flag
+  // photography exists yet" placeholder gap. hero is the single-flag
+  // shot (clearest at ProductCard thumbnail size); gallery adds the
+  // size-lineup and Shark Fin pair so the real style/size range the
+  // configurator actually offers is visible, plus an alternate angle of
+  // the hero subject.
   "media": {
-    "gallery": []
+    "hero": "/qs21/flags-hero-single.webp",
+    "gallery": [
+      "/qs21/flags-lineup-sizes.webp",
+      "/qs21/flags-shark-fin-pair.webp",
+      "/qs21/flags-hero-single-alt.webp"
+    ]
   },
   "productPage": {
     "headline": "Telescopic, Shark Fin and Curved flags for shopfronts, stands and events",
@@ -1387,17 +1394,21 @@ export const products = [
       "help": "PDF or high-resolution PNG/JPG works best."
     }
   ],
-  // Found while visually QA-ing the built page: event-gazebo.webp and
-  // work-gazebo.webp are the exact same photo (not a crop/resolution
-  // variant like the other three products' near-duplicates - literally
-  // identical). No second distinct gazebo photo exists in public/qs11/
-  // today, so no gallery/thumbnail row is offered rather than showing
-  // one real image twice - resolveProductMedia() already handles a
-  // single-image gallery gracefully (ProductHub only renders the
-  // thumbnail row when there is more than one distinct image).
+  // QS-21.1: real branded gazebo photography added (visually inspected
+  // and classified from a supplied photo batch - see the QS-21.1 media
+  // mapping report), replacing the earlier single stock-style
+  // event-gazebo.webp placeholder and its "no second distinct photo
+  // exists" limitation. hero shows the full kit (frame + carry bag +
+  // stakes), matching the "full kit or replacement canopy" copy below;
+  // gallery adds the walled, half-wall and open-frame variations so the
+  // real configuration range is visible before configuring.
   "media": {
-    "hero": "/qs11/event-gazebo.webp",
-    "gallery": []
+    "hero": "/qs21/gazebo-hero-kit.webp",
+    "gallery": [
+      "/qs21/gazebo-walled.webp",
+      "/qs21/gazebo-half-wall.webp",
+      "/qs21/gazebo-open-frame.webp"
+    ]
   },
   "productPage": {
     "headline": "Branded steel and aluminium gazebos for markets, activations and events",

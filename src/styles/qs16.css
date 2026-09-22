@@ -301,7 +301,12 @@
   display: grid;
   gap: 8px;
 }
-.product-hub-related-list button {
+/* QS-21.1: scoped to the toggle specifically (was a bare "button"
+   descendant selector) - the related row now also contains real
+   .button.ghost/.button.dark actions inside its expanded preview
+   (see qs21-navigation.css), which must keep their own app.css
+   styling rather than inheriting this row-toggle look. */
+.product-hub-related-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -315,30 +320,26 @@
   font-weight: 700;
   color: var(--ink);
 }
-.product-hub-related-list button:hover {
+.product-hub-related-toggle:hover {
   border-color: #cfcfc6;
 }
 
-.product-hub-share-note {
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: var(--muted);
-  margin: 0 0 14px;
-}
-.product-hub-share-links {
-  display: grid;
+/* QS-21.1 section 8: collapsed from a full bordered .product-hub-block
+   card (heading + filler note + status line + button) to one slim
+   utility row, per the audit that deep links are still genuinely
+   unavailable (see ProductHub.jsx's own comment) - nothing left here to
+   justify a full card. */
+.product-hub-share-compact {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+  padding: 2px;
 }
-
-/* Correction: Product link / Configure link have no working route yet
-   (this app has no /products/:id or /configure/:id routing) - replaced
-   the two disabled full-width rows with one compact status line, so
-   they no longer consume significant vertical space for a non-action. */
 .product-hub-share-status {
   margin: 0;
-  padding: 0 2px;
-  font-size: 12px;
-  color: var(--muted);
+  font-size: 11px;
+  color: #9c9c96;
 }
 
 /* WhatsApp is the one real, primary action in this block - styled with
@@ -382,7 +383,7 @@
   .product-hub-hero-actions .button { min-height: 48px; flex: 1 1 auto; justify-content: center; }
   .product-hub-block { padding: 20px 0; }
   .product-hub-side .product-hub-block { border-radius: 16px; padding: 16px; }
-  .product-hub-related-list button,
+  .product-hub-related-toggle,
   .product-hub-share-primary { min-height: 46px; }
 
   /* Correction: position: fixed, not sticky - was overlapping in-page

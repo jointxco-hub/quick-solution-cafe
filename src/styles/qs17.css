@@ -13,13 +13,47 @@
   margin: 0 0 14px;
 }
 
+/* QS-21.1 section 6: a horizontal rail instead of a dense wrapping grid -
+   "Flags currently shows several dense cards at once" was the exact
+   complaint (5 curated presets used to wrap into two cramped rows).
+   Same scroll-snap rail pattern qs19-home-polish.css already
+   established for the hero outcome/proof cards - reused here rather
+   than inventing a second carousel mechanism, just applied on desktop
+   too (not mobile-only like that one), since 3-4 comfortably-spaced
+   cards is the ask at every width, not just small ones. Preset
+   text/prices themselves are completely unchanged - this is layout
+   only. */
+.product-hub-presets { position: relative; }
 .product-hub-preset-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  display: flex;
   gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 2px 2px 10px;
+  margin: -2px -2px 0;
+}
+.product-hub-preset-grid::-webkit-scrollbar { display: none; }
+
+/* A soft right-edge fade hints more cards are scrollable beyond it -
+   the "peek" the brief asks for, without a scroll-position-tracking
+   script. Purely decorative (pointer-events: none), so it never blocks
+   a card underneath it from being scrolled to or clicked. */
+.product-hub-presets::after {
+  content: '';
+  position: absolute;
+  top: 46px;
+  right: 0;
+  bottom: 10px;
+  width: 44px;
+  background: linear-gradient(to right, rgba(246, 246, 242, 0), var(--canvas, #f6f6f2));
+  pointer-events: none;
 }
 
 .product-hub-preset-card {
+  flex: 0 0 auto;
+  width: clamp(228px, 26vw, 272px);
+  scroll-snap-align: start;
   border: 1px solid var(--line);
   border-radius: 18px;
   padding: 16px;
@@ -70,12 +104,16 @@
   font-weight: 750;
 }
 
-/* Mobile */
+/* Mobile: one clear card + a peek of the next, snap-scrolling - same
+   rail, just a wider per-card share of the viewport. */
 @media (max-width: 720px) {
-  .product-hub-preset-grid {
-    grid-template-columns: 1fr;
+  .product-hub-preset-card {
+    width: min(82vw, 320px);
   }
   .product-hub-preset-actions .button {
     min-height: 44px;
+  }
+  .product-hub-presets::after {
+    width: 28px;
   }
 }

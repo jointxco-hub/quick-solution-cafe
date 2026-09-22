@@ -15,7 +15,16 @@ const proofItems = [
     copy: 'Packaging, stickers and labels for food, household, beauty and growing product businesses.'
   },
   {
-    image: '/qs11/proof-event-branding.webp',
+    // QS-21.1: upgraded to a real branded photo (visually inspected
+    // against its alternative - see the QS-21.1 media report) - this one
+    // has the gazebo larger/more central, both flags fully visible and
+    // only one chair, versus the busier 6-element alternative. Square
+    // source (1200x1200) into this card's landscape frame - a plain
+    // center crop would cut off the flag tops/gazebo peak (the exact
+    // thing this image was chosen for), so imagePosition shifts the
+    // object-fit:cover crop window upward. Copy/layout unchanged.
+    image: '/qs21/events-package-b.webp',
+    imagePosition: 'center 25%',
     kicker: 'Events & outdoor',
     title: 'Show up properly in the real world.',
     copy: 'Gazebos, displays, banners and event branding built for visibility beyond the screen.'
@@ -43,7 +52,7 @@ export default function ProofGallery({ onExploreCollection }) {
         {proofItems.map((item) => (
           <article className="qs10-proof-card" key={item.title}>
             <div className="qs10-proof-media">
-              <img src={item.image} alt="" loading="lazy"/>
+              <img src={item.image} alt="" loading="lazy" style={item.imagePosition ? { objectPosition: item.imagePosition } : undefined}/>
             </div>
             <div className="qs10-proof-copy">
               <span>{item.kicker}</span>
