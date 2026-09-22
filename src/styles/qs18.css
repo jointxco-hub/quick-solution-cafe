@@ -97,9 +97,6 @@ button.bag-button { border: 0; cursor: pointer; }
 .qs18-shop-filters button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 .qs18-shop-empty { color: #74746e; font-size: 14px; padding: 20px 0; }
 
-/* ── Preset spec line (composeVariantSummary) ────────────────────────── */
-.product-hub-preset-spec { display: block; color: #74746e; font-size: 12px; margin-top: 2px; }
-
 @media (max-width: 900px) {
   .qs18-outcome-grid { grid-template-columns: 1fr; }
 }

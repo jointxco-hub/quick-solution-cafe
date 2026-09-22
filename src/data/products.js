@@ -55,9 +55,9 @@ export const products = [
       {
         id: 'artwork', type: 'select', label: 'What is happening with the design?', shortLabel: 'Artwork', simpleShortLabel: 'Your design', default: 'ready',
         options: [
-          { id: 'ready', label: 'My artwork is ready', fee: 0 },
-          { id: 'check', label: 'Please check my artwork', fee: 75 },
-          { id: 'design', label: 'I need help with the design', fee: 250 }
+          { id: 'ready', label: 'My artwork is ready', shortLabel: 'Ready', fee: 0 },
+          { id: 'check', label: 'Please check my artwork', shortLabel: 'Please check', fee: 75 },
+          { id: 'design', label: 'I need help with the design', shortLabel: 'Need help', fee: 250 }
         ]
       },
       {
@@ -135,9 +135,9 @@ export const products = [
       {
         id: 'artwork', type: 'select', label: 'What is happening with the design?', shortLabel: 'Artwork', simpleShortLabel: 'Your design', default: 'ready',
         options: [
-          { id: 'ready', label: 'My artwork is ready', fee: 0 },
-          { id: 'check', label: 'Please check my artwork', fee: 75 },
-          { id: 'design', label: 'I need help with the design', fee: 250 }
+          { id: 'ready', label: 'My artwork is ready', shortLabel: 'Ready', fee: 0 },
+          { id: 'check', label: 'Please check my artwork', shortLabel: 'Please check', fee: 75 },
+          { id: 'design', label: 'I need help with the design', shortLabel: 'Need help', fee: 250 }
         ]
       },
       {
@@ -370,9 +370,9 @@ export const products = [
       {
         id: 'artwork', type: 'select', label: 'What is happening with the artwork?', shortLabel: 'Artwork', simpleShortLabel: 'Your design', default: 'ready',
         options: [
-          { id: 'ready', label: 'My artwork is ready', fee: 0 },
-          { id: 'check', label: 'Please check my artwork', fee: 75 },
-          { id: 'design', label: 'I need help with the design', fee: 250 }
+          { id: 'ready', label: 'My artwork is ready', shortLabel: 'Ready', fee: 0 },
+          { id: 'check', label: 'Please check my artwork', shortLabel: 'Please check', fee: 75 },
+          { id: 'design', label: 'I need help with the design', shortLabel: 'Need help', fee: 250 }
         ]
       },
       { id: 'file', type: 'file', label: 'Artwork file', help: 'PNG with a transparent background is ideal.' }
@@ -983,15 +983,18 @@ export const products = [
       "options": [
         {
           "id": "ready",
-          "label": "My artwork is ready"
+          "label": "My artwork is ready",
+          "shortLabel": "Ready"
         },
         {
           "id": "check",
-          "label": "Please check my artwork"
+          "label": "Please check my artwork",
+          "shortLabel": "Please check"
         },
         {
           "id": "design",
-          "label": "I need help with the design"
+          "label": "I need help with the design",
+          "shortLabel": "Need help"
         }
       ]
     },
@@ -1057,31 +1060,41 @@ export const products = [
       {
         "id": "flag-2m-telescopic-full",
         "name": "2m Telescopic Flag — Complete kit",
+        "shortName": "2m Telescopic Flag",
         "description": "A ready-to-use 2m telescopic flag with stand, spike and single-sided print. Single-sided flags are supplied in pairs of 2.",
+        "shortDescription": "Full kit · single-sided, pair of 2",
         "config": { "variant": "telescopic-2m-ss-full", "quantity": 2, "artwork": null }
       },
       {
         "id": "flag-3m-telescopic-full",
         "name": "3m Telescopic Flag — Complete kit",
+        "shortName": "3m Telescopic Flag",
         "description": "A ready-to-use 3m telescopic flag with stand, spike and single-sided print. Single-sided flags are supplied in pairs of 2.",
+        "shortDescription": "Full kit · single-sided, pair of 2",
         "config": { "variant": "telescopic-3m-ss-full", "quantity": 2, "artwork": null }
       },
       {
         "id": "flag-3m-telescopic-double-full",
         "name": "3m Double-Sided Telescopic Flag — Complete kit",
+        "shortName": "3m Double-Sided Flag",
         "description": "A ready-to-use 3m telescopic flag, printed on both sides, with stand and spike.",
+        "shortDescription": "Full kit · printed both sides",
         "config": { "variant": "telescopic-3m-ds-full", "quantity": 1, "artwork": null }
       },
       {
         "id": "flag-4m-telescopic-full",
         "name": "4m Telescopic Flag — Complete kit",
+        "shortName": "4m Telescopic Flag",
         "description": "A ready-to-use 4m telescopic flag with stand, spike and single-sided print. Single-sided flags are supplied in pairs of 2.",
+        "shortDescription": "Full kit · single-sided, pair of 2",
         "config": { "variant": "telescopic-4m-ss-full", "quantity": 2, "artwork": null }
       },
       {
         "id": "flag-3m-telescopic-reprint",
         "name": "Replacement print — 3m Telescopic Flag",
+        "shortName": "3m Flag — reprint only",
         "description": "A replacement single-sided print only, for an existing 3m telescopic flag stand. Supplied in pairs of 2.",
+        "shortDescription": "Print only · for an existing stand",
         "config": { "variant": "telescopic-3m-ss-reprint", "quantity": 2, "artwork": null }
       }
     ]
@@ -1375,15 +1388,18 @@ export const products = [
       "options": [
         {
           "id": "ready",
-          "label": "My artwork is ready"
+          "label": "My artwork is ready",
+          "shortLabel": "Ready"
         },
         {
           "id": "check",
-          "label": "Please check my artwork"
+          "label": "Please check my artwork",
+          "shortLabel": "Please check"
         },
         {
           "id": "design",
-          "label": "I need help with the design"
+          "label": "I need help with the design",
+          "shortLabel": "Need help"
         }
       ]
     },
@@ -1451,31 +1467,41 @@ export const products = [
       {
         "id": "gazebo-2x2-steel-full",
         "name": "2×2 Steel Gazebo — Complete kit",
+        "shortName": "2×2 Steel Gazebo",
         "description": "A ready-to-use 2m × 2m steel-frame gazebo with printed canopy, frame and carry bag.",
+        "shortDescription": "Full kit · printed canopy + frame",
         "config": { "variant": "steel-2x2-full", "quantity": 1, "artwork": null }
       },
       {
         "id": "gazebo-3x3-steel-standard-full",
         "name": "3×3 Steel Gazebo — Complete kit",
+        "shortName": "3×3 Steel Gazebo",
         "description": "A ready-to-use 3m × 3m standard steel-frame gazebo with printed canopy, frame and carry bag.",
+        "shortDescription": "Full kit · printed canopy + frame",
         "config": { "variant": "steel-3x3-standard-full", "quantity": 1, "artwork": null }
       },
       {
         "id": "gazebo-3x3-aluminium-standard-full",
         "name": "3×3 Aluminium Gazebo — Complete kit",
+        "shortName": "3×3 Aluminium Gazebo",
         "description": "A ready-to-use 3m × 3m standard aluminium-frame gazebo with printed canopy, frame and carry bag.",
+        "shortDescription": "Full kit · printed canopy + frame",
         "config": { "variant": "aluminium-3x3-standard-full", "quantity": 1, "artwork": null }
       },
       {
         "id": "gazebo-3x3-aluminium-deluxe-full",
         "name": "3×3 Aluminium Deluxe Gazebo — Complete kit",
+        "shortName": "3×3 Aluminium Deluxe Gazebo",
         "description": "A ready-to-use 3m × 3m deluxe aluminium-frame gazebo with printed canopy, frame and carry bag.",
+        "shortDescription": "Full kit · printed canopy + frame",
         "config": { "variant": "aluminium-3x3-deluxe-full", "quantity": 1, "artwork": null }
       },
       {
         "id": "gazebo-3x3-steel-standard-reprint",
         "name": "Replacement canopy print — 3×3 Steel Standard Gazebo",
+        "shortName": "3×3 Steel Gazebo — reprint",
         "description": "A replacement canopy print only, for an existing 3m × 3m standard steel-frame gazebo.",
+        "shortDescription": "Canopy print only · for an existing frame",
         "config": { "variant": "steel-3x3-standard-reprint", "quantity": 1, "artwork": null }
       }
     ]

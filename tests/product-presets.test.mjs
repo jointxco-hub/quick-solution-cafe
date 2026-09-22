@@ -204,7 +204,12 @@ test('resolveProductPresets: keeps only the genuinely valid entries, drops every
 test('resolveProductPresets: no internal pricing/supplier field survives normalization, even when present on the raw entry', () => {
   const presets = resolveProductPresets(fixtureFlagLike)
   for (const preset of presets) {
-    assert.deepEqual(Object.keys(preset).sort(), ['config', 'description', 'id', 'name'])
+    // QS-21.4: shortName/shortDescription are legitimate additive fields
+    // (the compact "quick option card" text - see resolveProductPresets'
+    // own comment in productContent.js), not internal pricing/supplier
+    // data - the real guard below (referencePrice/marginRate) is what
+    // this test is actually protecting.
+    assert.deepEqual(Object.keys(preset).sort(), ['config', 'description', 'id', 'name', 'shortDescription', 'shortName'])
     assert.equal('referencePrice' in preset.config, false)
     assert.equal('marginRate' in preset.config, false)
     assert.equal('sourceUrl' in preset.config, false)

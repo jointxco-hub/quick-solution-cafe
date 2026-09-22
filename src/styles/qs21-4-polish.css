@@ -1,0 +1,78 @@
+/* QS-21.4 — copy + layout cleanup pass. Loads last, so these rules
+   intentionally override/extend qs16/qs17/qs18/qs19/qs21-*.css rather
+   than duplicating a second design language. No pricing/config/cart/
+   checkout logic - copy, spacing and one shared background image only. */
+
+/* ── 3 — Quick Points / Easy Locate map background ────────────────────
+   Used behind Product Detail's "Collection or delivery" block and
+   Home's "Nearby collection" card - background only, very low opacity,
+   soft fade, content stays on a plain readable surface above it. Never
+   used as a full-strength decorative poster. */
+.qs21-map-surface {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.qs21-map-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: url('/qs21-4/quick-points-map-bg.webp');
+  background-size: cover;
+  background-position: center;
+  opacity: .16;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .9), rgba(0, 0, 0, .35));
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .9), rgba(0, 0, 0, .35));
+}
+/* Product Detail's fulfilment block is normally just a borderless
+   divider-topped section (.product-hub-block), not a bounded card - give
+   it a defined surface here specifically so the faded map reads as an
+   intentional card, not a stray background bleeding into the column. */
+.product-hub-fulfilment-block.qs21-map-surface {
+  border-top: 0;
+  border-radius: 20px;
+  padding: 22px;
+  margin-top: 8px;
+  background: #fff;
+}
+.product-hub-fulfilment-block.qs21-map-surface::before {
+  opacity: .12;
+}
+
+/* ── 7 — "Works well for" (was "Worked with") ─────────────────────────
+   Previously used the exact same all-caps/wide-tracked treatment as
+   every structural eyebrow on the site, so at a glance it read like a
+   code/category label rather than a sentence. Sentence case, no
+   letter-spacing, reads as a natural lead-in phrase instead. */
+.qs18-worked-with-label {
+  font-size: 13px;
+  font-weight: 750;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #55554f;
+}
+
+/* ── 6 — Home hero: calmer, more even mobile rhythm ───────────────────
+   Nothing removed - tightens headline weight, gives the search bar and
+   the transition into "What do you need today?" more breathing room, so
+   the task rail no longer feels jammed directly against the hero. */
+@media (max-width: 620px) {
+  .hero h1 {
+    line-height: .96;
+    letter-spacing: -.03em;
+  }
+  .search-wrap {
+    margin-top: 24px;
+  }
+  .trust-row {
+    margin-top: 16px;
+    row-gap: 6px;
+  }
+  .hero {
+    gap: 40px;
+  }
+  .qs18-outcome-panel h2 {
+    margin: 0 0 16px;
+  }
+}
