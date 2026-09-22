@@ -297,7 +297,7 @@ export default function App() {
         </section>
 
         {selectedProduct && (
-          <div ref={productHubRef}>
+          <div ref={productHubRef} className="qs16-product-hub-anchor">
             <ProductHub
               product={selectedProduct}
               catalog={customerProducts}

@@ -1,3 +1,36 @@
+/* Correction — sticky-header scroll offset.
+   .site-header is `position: sticky; top: 0`, 76px tall on desktop and
+   var(--qs-mobile-header) = 60px at <=720px (qs15-mobile-polish.css).
+   scrollIntoView({block:'start'}) has no built-in awareness of a sticky
+   header, so without scroll-margin-top a scrolled-to section's top edge
+   lands flush under it - exactly the reported bug for Product Card ->
+   Product Hub, "View product" -> Product Hub, and (same root cause,
+   fixed for consistency) #configure. Targets the actual element each
+   scrollIntoView() call is made on:
+     - #product (ProductHub.jsx's own root) AND .qs16-product-hub-anchor
+       (the wrapper div App.jsx actually attaches productHubRef to,
+       since ProductHub is a plain function component, not forwardRef -
+       both are styled so the fix holds regardless of which one ends up
+       being the literal scroll target)
+     - #configure (already has its own ref directly)
+   #configure's id selector deliberately outranks qs15's older
+   `.configurator-section { scroll-margin-top: var(--qs-mobile-header) }`
+   (id specificity beats class, regardless of file/import order) rather
+   than editing that existing QS-15 file. */
+#product,
+.qs16-product-hub-anchor,
+#configure {
+  scroll-margin-top: 92px; /* 76px header + 16px breathing room */
+}
+
+@media (max-width: 720px) {
+  #product,
+  .qs16-product-hub-anchor,
+  #configure {
+    scroll-margin-top: calc(var(--qs-mobile-header, 60px) + 12px); /* matches html's existing scroll-padding-top convention in qs15-mobile-polish.css */
+  }
+}
+
 /* QS-16 — "View product" link back to the Hub, shown inside the
    standalone #configure section so a direct-to-configurator visitor
    still has product context and a way back. */
@@ -102,9 +135,15 @@
   padding: 0;
   cursor: pointer;
   background: var(--canvas);
+  transition: box-shadow .15s ease, border-color .15s ease;
 }
+/* Correction: a clearer selected marker on mobile - adds a soft ring
+   (existing --soft-green token, no new colour) around the already-green
+   border so the active thumbnail reads unambiguously at a glance,
+   without adding a badge/icon or enlarging the thumbnail. */
 .product-hub-thumbs button.active {
   border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--soft-green);
 }
 .product-hub-thumbs img {
   width: 100%;
@@ -288,48 +327,35 @@
 }
 .product-hub-share-links {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
-.product-hub-share-links button,
-.product-hub-share-links a {
+
+/* Correction: Product link / Configure link have no working route yet
+   (this app has no /products/:id or /configure/:id routing) - replaced
+   the two disabled full-width rows with one compact status line, so
+   they no longer consume significant vertical space for a non-action. */
+.product-hub-share-status {
+  margin: 0;
+  padding: 0 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* WhatsApp is the one real, primary action in this block - styled with
+   the existing soft-green accent rather than a plain bordered row. */
+.product-hub-share-primary {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 11px 14px;
   border-radius: 14px;
-  border: 1px solid var(--line);
-  background: #fff;
+  border: 1px solid var(--soft-green);
+  background: var(--soft-green);
   cursor: pointer;
   font-size: 13px;
-  font-weight: 700;
-  color: var(--ink);
-  text-decoration: none;
-}
-.product-hub-share-links a {
+  font-weight: 750;
   color: var(--green);
-  border-color: var(--soft-green);
-}
-
-/* Correction: Product link / Configure link have no working route to
-   copy yet (this app has no /products/:id or /configure/:id routing) -
-   shown clearly disabled with a "Coming soon" pill rather than copying
-   a dead URL. WhatsApp sharing (.product-hub-share-links a, above)
-   stays fully functional and unstyled by this rule. */
-.product-hub-share-links button.product-hub-share-disabled {
-  cursor: not-allowed;
-  color: var(--muted);
-  background: var(--canvas);
-  justify-content: space-between;
-}
-.product-hub-coming-soon {
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: var(--soft-lilac);
-  color: #6641a7;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .04em;
+  text-decoration: none;
 }
 
 .product-hub-sticky-cta {
@@ -345,35 +371,52 @@
 
 /* Mobile */
 @media (max-width: 720px) {
-  .product-hub { padding: 40px 0 56px; }
+  /* Bottom padding reserves room for the now-fixed .product-hub-sticky-cta
+     (~60px button + padding + offset) so it never covers the Share Kit
+     block at the true end of the page - same reasoning as body's own
+     padding-bottom reservation for .qs-cart-floating in
+     qs15-mobile-polish.css. */
+  .product-hub { padding: 40px 0 max(96px, calc(84px + env(safe-area-inset-bottom))); }
   .product-hub-hero { gap: 24px; }
   .product-hub-media-frame { border-radius: 20px; }
   .product-hub-hero-actions .button { min-height: 48px; flex: 1 1 auto; justify-content: center; }
   .product-hub-block { padding: 20px 0; }
   .product-hub-side .product-hub-block { border-radius: 16px; padding: 16px; }
   .product-hub-related-list button,
-  .product-hub-share-links button,
-  .product-hub-share-links a { min-height: 46px; }
+  .product-hub-share-primary { min-height: 46px; }
 
-  /* Sticky mobile Configure CTA, matching .guided-actions/.qs-cart-floating's
-     fixed-bar pattern elsewhere in this app. */
+  /* Correction: position: fixed, not sticky - was overlapping in-page
+     content across most of the Product Hub's scroll range. #product is
+     ~2300px tall; a `position: sticky; bottom: Npx` element sticks to
+     the viewport bottom for nearly the ENTIRE time its (very long)
+     containing section is on screen, not just near the section's own
+     end, so it visually overlapped the hero actions almost immediately
+     after landing on the Hub. .qs-cart-floating (qs13.css) - the
+     pattern this claimed to match - is actually position: fixed with
+     left/right edges on mobile (qs15-mobile-polish.css), i.e. a true
+     always-reachable floating bar, not a sticky-within-content one;
+     .guided-actions IS sticky, but its containing panel is short
+     (~580px, one form step at a time) so it doesn't hit this problem.
+     Fixed here the same way .qs-cart-floating already is. */
   .product-hub-sticky-cta {
     display: flex;
-    position: sticky;
-    bottom: max(10px, env(safe-area-inset-bottom));
-    z-index: 4;
-    margin-top: 24px;
-    padding: 10px;
-    border-radius: 17px;
+    position: fixed;
+    left: var(--qs-mobile-edge, 14px);
+    right: var(--qs-mobile-edge, 14px);
+    bottom: max(8px, env(safe-area-inset-bottom));
+    z-index: 25;
+    padding: 7px;
+    border-radius: 15px;
     background: rgba(255,255,255,.96);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(17,17,15,.08);
-    box-shadow: 0 12px 30px rgba(17,17,15,.12);
+    box-shadow: 0 10px 26px rgba(17,17,15,.11);
   }
   .product-hub-sticky-cta .button {
     width: 100%;
     justify-content: center;
-    min-height: 50px;
+    min-height: 44px;
+    padding: 10px 16px;
   }
 }
 

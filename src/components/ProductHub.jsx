@@ -241,23 +241,18 @@ export default function ProductHub({ product, catalog = [], onConfigure, onGuide
           {/* 9 — Share Kit placeholder */}
           <div className="product-hub-block product-hub-share">
             <h3>Share this product</h3>
-            <p className="product-hub-share-note">Ask us on WhatsApp today. Direct product/configure links are coming soon. Brochures, spec sheets and artwork templates can be added here later.</p>
+            <p className="product-hub-share-note">Brochures, spec sheets and artwork templates can be added here later.</p>
             <div className="product-hub-share-links">
               {/* Correction: this app has no routing for /products/:id or
                   /configure/:id yet, so shareLinks.productPageUrl/
                   configureUrl do not resolve to anything if opened -
-                  copying them would hand someone a dead link. Disabled
-                  and clearly marked rather than wired to copy a fake
-                  URL. buildShareLinks() still computes them (kept for
-                  tests/future use) - this component just doesn't expose
-                  them as a working action yet. */}
-              <button type="button" className="product-hub-share-disabled" disabled title="Coming soon">
-                <Icon name="copy" size={16}/> Product link <span className="product-hub-coming-soon">Coming soon</span>
-              </button>
-              <button type="button" className="product-hub-share-disabled" disabled title="Coming soon">
-                <Icon name="copy" size={16}/> Configure link <span className="product-hub-coming-soon">Coming soon</span>
-              </button>
-              <a href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer">
+                  never exposed as copyable/clickable. A single compact
+                  status line replaces what used to be two disabled
+                  full-width rows. buildShareLinks() still computes both
+                  URLs (kept for tests/future use). WhatsApp is the one
+                  primary, actionable row. */}
+              <p className="product-hub-share-status">Direct product and configure links are coming soon.</p>
+              <a href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer" className="product-hub-share-primary">
                 <Icon name="send" size={16}/> Share on WhatsApp
               </a>
             </div>

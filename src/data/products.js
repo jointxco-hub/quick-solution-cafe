@@ -86,7 +86,7 @@ export const products = [
       {
         id: 'material', type: 'select', label: 'Which vinyl should we use?', shortLabel: 'Vinyl', default: 'standard',
         options: [
-          { id: 'standard', label: 'White adhesive vinyl', helper: 'A versatile everyday vinyl for bottles, packaging, windows and product branding.', multiplier: 1 }
+          { id: 'standard', label: 'White self-adhesive vinyl', helper: 'A versatile everyday vinyl for bottles, packaging, windows and product branding.', multiplier: 1 }
         ]
       },
       {
