@@ -18,6 +18,7 @@ import {
 } from '../lib/productContent.js'
 import { resolveQuickConfigureEligibility } from '../lib/navigation.js'
 import { resolveRelatedDisclosureState } from '../lib/relatedContent.js'
+import { resolveNextGalleryIndex, resolvePrevGalleryIndex } from '../lib/gallery.js'
 
 // QS-16 — generic Product Hub / Product Detail page.
 //
@@ -38,15 +39,24 @@ import { resolveRelatedDisclosureState } from '../lib/relatedContent.js'
 // QS-17: `onGuided`/`onConfigure` now optionally accept a preset config
 // argument (`onGuided(presetConfig)`/`onConfigure(presetConfig)`) - the
 // plain hero CTAs still call them with no argument (unchanged, existing
-// behavior), while the new Presets section's "Choose this"/"Customise"
+// behavior), while the Presets section's "Choose this"/"Customise"
 // buttons call them WITH a preset's config. No new App.jsx state or
 // prop was introduced for this - openAdvanced/openGuided already accept
 // a `nextPreset` argument (used since QS-16 for related-product/
 // continue-from-advanced handoffs), so passing a preset's config through
 // these same two existing props reuses that exact mechanism.
+//
+// QS-21.3 — reworked into a real PDP layout: a sticky media/gallery
+// column on the left, a compact title+CTA+quick-facts column on the
+// right (was copy-left/media-right, and "Good to know"/"Choices you
+// will make" lived much further down the page, each a full heavy
+// section - see the QS-21.3 report for the before/after). Also adds
+// lightbox behavior for the existing gallery - no new pricing/config
+// logic anywhere in this pass.
 export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated, onQuickConfigure }) {
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [mediaFailed, setMediaFailed] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   // QS-21.1: which related-product row (if any) is expanded into its
   // local disclosure preview - see resolveRelatedDisclosureState()
   // (src/lib/relatedContent.js) for the "only one at a time" rule. Reset
@@ -58,6 +68,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
     setGalleryIndex(0)
     setMediaFailed(false)
     setExpandedRelatedId(null)
+    setLightboxOpen(false)
   }, [product?.id])
 
   const media = useMemo(() => resolveProductMedia(product), [product])
@@ -121,11 +132,82 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
     setGalleryIndex(index)
   }
 
+  // QS-21.3 — lightbox. Only ever opens for a real photo (activeImage) -
+  // the ProductScene placeholder has nothing to zoom into. Next/Prev
+  // reuse the exact same selectGalleryImage() path the thumbnails use
+  // (resets mediaFailed the same way), so the lightbox and the inline
+  // gallery can never disagree about which image is "current" - one
+  // index, one source of truth.
+  const openLightbox = () => { if (activeImage) setLightboxOpen(true) }
+  const closeLightbox = () => setLightboxOpen(false)
+  const showNextImage = () => selectGalleryImage(resolveNextGalleryIndex(galleryIndex, galleryImages.length))
+  const showPrevImage = () => selectGalleryImage(resolvePrevGalleryIndex(galleryIndex, galleryImages.length))
+
+  useEffect(() => {
+    if (!lightboxOpen) return
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') closeLightbox()
+      else if (event.key === 'ArrowRight') showNextImage()
+      else if (event.key === 'ArrowLeft') showPrevImage()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxOpen, galleryIndex, galleryImages.length])
+
   return (
     <section id="product" className="shell product-hub">
-      {/* 1 — Hero */}
-      <div className="product-hub-hero">
-        <div className="product-hub-hero-copy">
+      {/* QS-21.3 — real PDP layout: sticky media/gallery on the left,
+          title/price/CTA/quick-facts on the right (desktop only - see
+          qs21-3-product-detail.css; mobile stacks in this same DOM
+          order, media first, same as it already did). "Good to know"
+          and "Choices you will make" moved up here from much further
+          down the page and compacted (pills / one line per field
+          instead of a full bulleted list and a full options grid) -
+          same truthful content, no invented copy, just less of it
+          before the customer can actually act. */}
+      <div className="product-hub-pdp">
+        {/* 1 — Media / gallery */}
+        <div className="product-hub-pdp-media">
+          <div
+            className={`product-hub-media-frame${activeImage ? ' has-lightbox' : ''}`}
+            role={activeImage ? 'button' : undefined}
+            tabIndex={activeImage ? 0 : undefined}
+            aria-label={activeImage ? `View larger photo of ${product.name}` : undefined}
+            onClick={activeImage ? openLightbox : undefined}
+            onKeyDown={activeImage ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openLightbox() } } : undefined}
+          >
+            {activeImage ? (
+              <img src={activeImage} alt={product.name} loading="lazy" onError={() => setMediaFailed(true)}/>
+            ) : (
+              <ProductScene productId={product.id} className="product-hub-scene"/>
+            )}
+            {activeImage && (
+              <span className="product-hub-media-zoom" aria-hidden="true">
+                <Icon name="arrowUpRight" size={15}/> Enlarge
+              </span>
+            )}
+          </div>
+          {galleryImages.length > 1 && (
+            <div className="product-hub-thumbs" role="tablist" aria-label={`${product.name} photos`}>
+              {galleryImages.map((src, index) => (
+                <button
+                  key={src}
+                  type="button"
+                  role="tab"
+                  aria-selected={index === galleryIndex}
+                  className={index === galleryIndex ? 'active' : ''}
+                  onClick={() => selectGalleryImage(index)}
+                >
+                  <img src={src} alt="" loading="lazy"/>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 2 — Title / price / CTAs / quick facts */}
+        <div className="product-hub-pdp-info">
           <span className="eyebrow">{product.category}</span>
           <h2>{content.headline}</h2>
           <p className="product-hub-intro">{content.intro}</p>
@@ -156,43 +238,44 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </a>
           </div>
 
-          {/* QS-21.1 section 7: a compact trust row right next to the
-              primary configure actions - the SAME 4 verified-true claims
-              App.jsx's full trust strip makes lower down the page
-              (.qs21-trust-strip, near the configurator itself), just a
-              single condensed line here so the two never feel like
-              repeated blocks. */}
+          {/* QS-21.1 section 7 / QS-21.3: the one compact trust row - now
+              the ONLY trust mention on Product Detail (the separate full
+              4-card trust strip App.jsx used to render lower down the
+              page was removed as duplication, per this pass's brief). */}
           <ul className="product-hub-trust-compact">
             <li><Icon name="checkCircle" size={14}/> Secure checkout</li>
             <li><Icon name="store" size={14}/> Collect locally</li>
             <li><Icon name="truck" size={14}/> Courier or delivery</li>
             <li><Icon name="document" size={14}/> Artwork checked</li>
           </ul>
-        </div>
 
-        {/* 2 — Media */}
-        <div className="product-hub-media">
-          <div className="product-hub-media-frame">
-            {activeImage ? (
-              <img src={activeImage} alt={product.name} loading="lazy" onError={() => setMediaFailed(true)}/>
-            ) : (
-              <ProductScene productId={product.id} className="product-hub-scene"/>
-            )}
-          </div>
-          {galleryImages.length > 1 && (
-            <div className="product-hub-thumbs" role="tablist" aria-label={`${product.name} photos`}>
-              {galleryImages.map((src, index) => (
-                <button
-                  key={src}
-                  type="button"
-                  role="tab"
-                  aria-selected={index === galleryIndex}
-                  className={index === galleryIndex ? 'active' : ''}
-                  onClick={() => selectGalleryImage(index)}
-                >
-                  <img src={src} alt="" loading="lazy"/>
-                </button>
+          {/* QS-21.3: "Good to know" compacted from a bulleted, icon-per-
+              row list into inline fact pills - same facts, a fraction of
+              the vertical space. */}
+          {content.highlights.length > 0 && (
+            <ul className="product-hub-quickfacts">
+              {content.highlights.map((highlight) => (
+                <li key={highlight.label}><Icon name="checkCircle" size={13}/> {highlight.label}</li>
               ))}
+            </ul>
+          )}
+
+          {/* QS-21.3: "Choices you will make" compacted from a full grid
+              of one block + a wrapped row of option chips PER FIELD, down
+              to one line per field ("Label — option, option, option").
+              Every option is still listed (truthful, nothing hidden) -
+              the configurator itself remains the place to actually
+              choose, per this pass's brief. */}
+          {previewFields.length > 0 && (
+            <div className="product-hub-quickchoices">
+              <strong>You will choose:</strong>
+              <ul>
+                {previewFields.map((field) => (
+                  <li key={field.id}>
+                    <span>{field.label}</span> — {field.options.map((option) => option.label).join(', ')}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
@@ -200,8 +283,10 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
 
       {/* QS-17 — Quick options / Quick Presets. Only renders when the
           product actually has valid presets - products without any
-          (every product except flags/gazebos, this phase) render
-          exactly as they did before this section existed. */}
+          render exactly as they did before this section existed. Kept
+          full-width (outside the sticky PDP grid above) so the
+          horizontal rail (QS-21.1) still has room for 3-4 comfortable
+          cards, not squeezed into a half-width column. */}
       {presets.length > 0 && (
         <div className="product-hub-presets">
           <h3>Quick options</h3>
@@ -279,43 +364,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
 
       <div className="product-hub-grid">
         <div className="product-hub-main">
-          {/* 4 — Highlights */}
-          {content.highlights.length > 0 && (
-            <div className="product-hub-block">
-              <h3>Good to know</h3>
-              <ul className="product-hub-highlights">
-                {content.highlights.map((highlight) => (
-                  <li key={highlight.label}>
-                    <Icon name="checkCircle" size={17}/>
-                    <span>{highlight.label}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* 5 — Configuration preview */}
-          {previewFields.length > 0 && (
-            <div className="product-hub-block">
-              <h3>Choices you will make</h3>
-              <div className="product-hub-preview-grid">
-                {previewFields.map((field) => (
-                  <div key={field.id} className="product-hub-preview-field">
-                    <span className="product-hub-preview-label">{field.label}</span>
-                    <div className="product-hub-preview-options">
-                      {field.options.map((option) => (
-                        <span key={option.id} className="product-hub-preview-option" title={option.helper || undefined}>
-                          {option.label}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 6 — Artwork */}
+          {/* 4 — Artwork */}
           {artwork.help && (
             <div className="product-hub-block">
               <h3>Artwork</h3>
@@ -323,7 +372,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </div>
           )}
 
-          {/* 7 — Fulfilment */}
+          {/* 5 — Fulfilment */}
           <div className="product-hub-block">
             <h3>Collection or delivery</h3>
             <div className="product-hub-fulfilment">
@@ -342,7 +391,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
         </div>
 
         <aside className="product-hub-side">
-          {/* 8 — Related products. QS-21.1: the row itself no longer
+          {/* 6 — Related products. QS-21.1: the row itself no longer
               navigates on click (was abrupt - straight to another
               Product Detail page, top of page, no warning) - it toggles
               a local disclosure preview instead (thumbnail, short
@@ -402,17 +451,14 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </div>
           )}
 
-          {/* 9 — Share, collapsed to a slim utility row (QS-21.1 section
+          {/* 7 — Share, collapsed to a slim utility row (QS-21.1 section
               8 audit): QS-21 added real page/selectedProductId browser-
               history STATE, but never a visible URL (path or query never
               change - only history.state does), so a copied address bar
               link still cannot restore a specific product. Deep links
               are therefore still genuinely unavailable, not just
               unbuilt - shareLinks.productPageUrl/configureUrl remain
-              unexposed. This used to be a full bordered card with a
-              filler note for content that does not exist yet; now it is
-              one line, WhatsApp is the only real action, and the "coming
-              soon" copy is kept but de-emphasised rather than removed. */}
+              unexposed. */}
           <div className="product-hub-share-compact">
             <a href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer" className="product-hub-share-primary">
               <Icon name="send" size={16}/> Share on WhatsApp
@@ -440,6 +486,39 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
           </a>
         )}
       </div>
+
+      {/* QS-21.3 — lightbox. Same backdrop-click-to-close pattern
+          QuickConfigureSheet.jsx already established (role="presentation"
+          backdrop + stopPropagation on the inner content), plus Escape/
+          Arrow keys (see the keydown effect above) and explicit
+          next/prev buttons when there is more than one image. */}
+      {lightboxOpen && activeImage && (
+        <div className="qs21-lightbox-backdrop" role="presentation" onClick={closeLightbox}>
+          <div
+            className="qs21-lightbox-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${product.name} photo ${galleryIndex + 1} of ${galleryImages.length}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button type="button" className="qs21-lightbox-close" onClick={closeLightbox} aria-label="Close">×</button>
+            {galleryImages.length > 1 && (
+              <button type="button" className="qs21-lightbox-nav qs21-lightbox-prev" onClick={showPrevImage} aria-label="Previous photo">
+                <Icon name="arrowLeft" size={20}/>
+              </button>
+            )}
+            <img src={activeImage} alt={product.name} className="qs21-lightbox-image"/>
+            {galleryImages.length > 1 && (
+              <button type="button" className="qs21-lightbox-nav qs21-lightbox-next" onClick={showNextImage} aria-label="Next photo">
+                <Icon name="arrowRight" size={20}/>
+              </button>
+            )}
+            {galleryImages.length > 1 && (
+              <span className="qs21-lightbox-count">{galleryIndex + 1} / {galleryImages.length}</span>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   )
 }

@@ -57,14 +57,10 @@
   padding: 56px 0 72px;
 }
 
-.product-hub-hero {
-  display: grid;
-  grid-template-columns: 1.05fr .95fr;
-  gap: 48px;
-  align-items: center;
-}
-
-.product-hub-hero-copy h2 {
+/* QS-21.3: the old copy-left/media-right .product-hub-hero grid was
+   replaced by .product-hub-pdp (sticky media left, info right) - see
+   qs21-3-product-detail.css, loaded after this file. */
+.product-hub-pdp-info h2 {
   font-size: clamp(34px, 5vw, 52px);
   line-height: 1.02;
   letter-spacing: -.03em;
@@ -189,52 +185,11 @@
   margin: 0 0 14px;
 }
 
-.product-hub-highlights {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-.product-hub-highlights li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #3c3c38;
-}
-.product-hub-highlights li svg {
-  color: var(--green);
-  flex: 0 0 auto;
-  margin-top: 1px;
-}
-
-.product-hub-preview-grid {
-  display: grid;
-  gap: 16px;
-}
-.product-hub-preview-label {
-  display: block;
-  font-size: 13px;
-  font-weight: 750;
-  color: var(--ink);
-  margin-bottom: 8px;
-}
-.product-hub-preview-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.product-hub-preview-option {
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: #fff;
-  font-size: 12.5px;
-  color: #52524c;
-  cursor: help;
-}
+/* QS-21.3: "Good to know" (.product-hub-highlights) and "Choices you
+   will make" (.product-hub-preview-*) moved into the PDP info column
+   and compacted into .product-hub-quickfacts/.product-hub-quickchoices
+   (see qs21-3-product-detail.css) - these rules are now dead and
+   removed rather than left unused. */
 
 .product-hub-artwork-note {
   display: flex;
@@ -365,9 +320,10 @@
 
 /* Tablet */
 @media (max-width: 960px) {
-  .product-hub-hero { grid-template-columns: 1fr; }
   .product-hub-grid { grid-template-columns: 1fr; }
   .product-hub-side { order: -1; }
+  /* .product-hub-pdp's own tablet/mobile single-column collapse lives in
+     qs21-3-product-detail.css, next to the sticky rule it turns off. */
 }
 
 /* Mobile */
@@ -378,7 +334,6 @@
      padding-bottom reservation for .qs-cart-floating in
      qs15-mobile-polish.css. */
   .product-hub { padding: 40px 0 max(96px, calc(84px + env(safe-area-inset-bottom))); }
-  .product-hub-hero { gap: 24px; }
   .product-hub-media-frame { border-radius: 20px; }
   .product-hub-hero-actions .button { min-height: 48px; flex: 1 1 auto; justify-content: center; }
   .product-hub-block { padding: 20px 0; }
