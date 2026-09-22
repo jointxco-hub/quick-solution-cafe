@@ -86,7 +86,7 @@ export const products = [
       {
         id: 'material', type: 'select', label: 'Which vinyl should we use?', shortLabel: 'Vinyl', default: 'standard',
         options: [
-          { id: 'standard', label: 'White adhesive vinyl', helper: 'A versatile everyday vinyl for bottles, packaging, windows and product branding.', multiplier: 1 }
+          { id: 'standard', label: 'White self-adhesive vinyl', helper: 'A versatile everyday vinyl for bottles, packaging, windows and product branding.', multiplier: 1 }
         ]
       },
       {
@@ -112,7 +112,58 @@ export const products = [
         ]
       },
       { id: 'file', type: 'file', label: 'Artwork file', help: 'Optional for now. PDF, PNG or high-resolution JPG works best.' }
-    ]
+    ],
+    // QS-16 — optional, backward-compatible customer-facing content for
+    // the Product Hub (src/components/ProductHub.jsx). Every value here
+    // is derived directly from facts already present above (description/
+    // plainDescription text, and the material/finishing/artwork/turnaround
+    // field option labels) — no new durability/thickness/waterproofing/
+    // adhesive-grade/turnaround-day/minimum-quantity claims and no prices.
+    // Read only via src/lib/productContent.js's resolve*() helpers, which
+    // fall back gracefully for any product without this block at all.
+    media: {
+      hero: '/qs11/product-vinyl-labels-clean.webp',
+      gallery: [
+        '/qs11/product-vinyl-labels-clean.webp',
+        '/qs11/product-vinyl.webp',
+        '/qs11/product-labels-perfume.webp',
+        '/qs11/product-labels-household.webp'
+      ]
+    },
+    productPage: {
+      headline: 'Custom vinyl stickers and labels for bottles, packaging, windows and branding',
+      intro: 'Choose the print area, artwork help and whether you need print only or print + cut.',
+      useCases: [
+        { label: 'Bottles' },
+        { label: 'Packaging' },
+        { label: 'Windows' },
+        { label: 'Product branding' }
+      ],
+      highlights: [
+        { label: 'White self-adhesive vinyl' },
+        { label: 'Print only or print + cut' },
+        { label: 'Artwork ready, checked, or designed for you' },
+        { label: 'Standard or express turnaround, where available' }
+      ],
+      configPreview: ['finishing', 'artwork'],
+      // Correction: showStartingPrice is opt-in and must only be enabled
+      // once someone has confirmed the DEFAULT configuration really is
+      // the cheapest valid one - not merely because the product has a
+      // pricing object. Confirmed for vinyl-stickers: pricing.js's
+      // priceArea() is monotonically non-decreasing in every input
+      // (billableArea, material.multiplier, finishing.fee, artwork.fee,
+      // turnaround.multiplier), and every default option here is the
+      // minimum for its field - width/height default to 1x1 = 1m²,
+      // exactly matching pricing.minimumBillableArea (not below the
+      // floor, not above it); material has only the one, multiplier:1
+      // option; finishing defaults to 'print-only' (fee 0, cheaper than
+      // print-cut's fee 100); artwork defaults to 'ready' (fee 0,
+      // cheaper than check's 75 / design's 250); turnaround defaults to
+      // 'standard' (multiplier 1, cheaper than express's 1.2). So the
+      // default IS the true minimum price for this product, not merely
+      // "a" price.
+      showStartingPrice: true
+    }
   },
   {
     id: 'a4-print',

@@ -2,6 +2,7 @@
 import Icon from './components/Icon.jsx'
 import Header from './components/Header.jsx'
 import ProductCard from './components/ProductCard.jsx'
+import ProductHub from './components/ProductHub.jsx'
 import ProductConfigurator from './components/ProductConfigurator.jsx'
 import GuidedOrder from './components/GuidedOrder.jsx'
 import PaymentReturn from './components/PaymentReturn.jsx'
@@ -34,6 +35,7 @@ export default function App() {
   const [taskContext, setTaskContext] = useState(null)
   const [view, setView] = useState(() => window.location.hash === '#admin' ? 'admin' : 'storefront')
   const configureRef = useRef(null)
+  const productHubRef = useRef(null)
 
   useEffect(() => {
     const onHash = () => setView(window.location.hash === '#admin' ? 'admin' : 'storefront')
@@ -76,6 +78,7 @@ export default function App() {
   }, [query, customerProducts])
 
   const scrollToConfigure = () => window.setTimeout(() => configureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+  const scrollToProductHub = () => window.setTimeout(() => productHubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
 
   useEffect(() => {
     saveCart(cart)
@@ -148,6 +151,36 @@ export default function App() {
       return
     }
     openAdvanced(product, nextPreset)
+  }
+
+  // QS-16: a normal visual product-card click opens the Product Hub
+  // (sales/context layer) rather than dropping straight into a
+  // configurator. Reuses the same selectedId state everything else
+  // already reads from - the Hub's own Configure/Guided CTAs then call
+  // openAdvanced/openGuided/openPreferred (unchanged) exactly as a card
+  // click used to.
+  //
+  // Resets preset/taskContext/guidedStartStep/guidedInitialFile exactly
+  // like openAdvanced/openGuided already do - #configure is ALWAYS
+  // rendered for whatever selectedProduct currently is (not only after
+  // an explicit Configure/Guided click), and GuidedOrder/ProductConfigurator
+  // are keyed on `${selectedProduct.id}-...-${JSON.stringify(preset)}`,
+  // so switching products without clearing preset would remount a fresh
+  // configurator for the NEW product but seed it from the OLD product's
+  // leftover config (getDefaultConfig merges {...defaults, ...preset} -
+  // any matching field id, e.g. a shared 'width'/'artwork' field, would
+  // leak a stale value in). Reproducible before this fix: configure
+  // product A, click a related product on the new Hub (or any product
+  // card) without first clicking that Hub's own Configure/Guided button,
+  // then scroll to #configure - it would show product B pre-filled with
+  // product A's answers.
+  const openProductPage = (product) => {
+    setSelectedId(product.id)
+    setPreset({})
+    setTaskContext(null)
+    setGuidedStartStep(null)
+    setGuidedInitialFile(null)
+    scrollToProductHub()
   }
 
   const selectTask = (task) => {
@@ -260,8 +293,20 @@ export default function App() {
             <div><span className="eyebrow">Browse products</span><h2>See what we can make.</h2></div>
             <p>Browse visually, then configure. Every product starts in Guided mode, with Full options available when you already know the exact specs.</p>
           </div>
-          <div className="product-grid">{customerProducts.map((product) => <ProductCard key={product.id} product={product} active={selectedProduct?.id === product.id} onConfigure={openPreferred}/>)}</div>
+          <div className="product-grid">{customerProducts.map((product) => <ProductCard key={product.id} product={product} active={selectedProduct?.id === product.id} onConfigure={openProductPage}/>)}</div>
         </section>
+
+        {selectedProduct && (
+          <div ref={productHubRef} className="qs16-product-hub-anchor">
+            <ProductHub
+              product={selectedProduct}
+              catalog={customerProducts}
+              onConfigure={() => openAdvanced(selectedProduct)}
+              onGuided={selectedJourney ? () => openGuided(selectedProduct, selectedJourney.id) : null}
+              onSelectRelated={openProductPage}
+            />
+          </div>
+        )}
 
         <ComingSoonRail liveProductIds={customerProducts.map((product) => product.id)} />
 
@@ -272,10 +317,13 @@ export default function App() {
             <div className="shell">
               <div className="qs10-config-intro">
                 <div>
-                  <span className="eyebrow">Ready to order?</span>
+                  <span className="eyebrow">Ready to order? · {selectedProduct.name}</span>
                   <h2>Configure your order.</h2>
                 </div>
                 <p>Start with Guided mode for the simplest route. Switch to Full options only when you already know the exact production specs.</p>
+                <button type="button" className="qs16-view-product-link" onClick={scrollToProductHub}>
+                  <Icon name="arrowUpRight" size={15}/> View product
+                </button>
               </div>
               <div className="configure-toolbar">
                 <div className="configure-switcher" role="tablist" aria-label="Choose a product to configure">
