@@ -298,11 +298,17 @@ export default function App() {
 
         {selectedProduct && (
           <div ref={productHubRef} className="qs16-product-hub-anchor">
+            {/* QS-17: onConfigure/onGuided now optionally forward a
+                preset config (from the Presets section's "Choose
+                this"/"Customise") straight into the EXISTING
+                openAdvanced/openGuided nextPreset argument - the same
+                mechanism QS-16 already used for related-product/
+                continue-from-advanced handoffs. No new state. */}
             <ProductHub
               product={selectedProduct}
               catalog={customerProducts}
-              onConfigure={() => openAdvanced(selectedProduct)}
-              onGuided={selectedJourney ? () => openGuided(selectedProduct, selectedJourney.id) : null}
+              onConfigure={(presetConfig) => openAdvanced(selectedProduct, presetConfig || {})}
+              onGuided={selectedJourney ? (presetConfig) => openGuided(selectedProduct, selectedJourney.id, presetConfig || {}) : null}
               onSelectRelated={openProductPage}
             />
           </div>

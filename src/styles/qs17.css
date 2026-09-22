@@ -1,0 +1,81 @@
+/* QS-17 — Product Hubs + Quick Presets
+   UI-only. Reuses existing tokens (--green/--orange/--lilac/--soft-green/
+   --soft-lilac), .button/.shell/.product-hub-block base classes from
+   qs16.css and pricing.js — no new pricing logic, no payment/checkout
+   changes, no new architecture beyond what QS-16 already established. */
+
+.product-hub-presets {
+  margin-top: 30px;
+}
+.product-hub-presets h3 {
+  font-size: 20px;
+  letter-spacing: -.01em;
+  margin: 0 0 14px;
+}
+
+.product-hub-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.product-hub-preset-card {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.product-hub-preset-card strong {
+  font-size: 14.5px;
+  letter-spacing: -.01em;
+}
+.product-hub-preset-card p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.product-hub-preset-price {
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.product-hub-preset-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.product-hub-preset-actions .button {
+  flex: 1 1 auto;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  min-height: 40px;
+}
+
+.product-hub-preset-buildown {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+/* Mobile */
+@media (max-width: 720px) {
+  .product-hub-preset-grid {
+    grid-template-columns: 1fr;
+  }
+  .product-hub-preset-actions .button {
+    min-height: 44px;
+  }
+}

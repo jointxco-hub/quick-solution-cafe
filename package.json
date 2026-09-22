@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test tests/pricing-supplier-margin-photography.test.mjs tests/product-hub-content.test.mjs"
+    "test": "node --test tests/pricing-supplier-margin-photography.test.mjs tests/product-hub-content.test.mjs tests/product-presets.test.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

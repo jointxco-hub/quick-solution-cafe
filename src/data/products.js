@@ -63,7 +63,38 @@ export const products = [
         ]
       },
       { id: 'file', type: 'file', label: 'Artwork file', help: 'Optional for now. PDF, JPG or PNG works best.' }
-    ]
+    ],
+    // QS-17 — optional, backward-compatible Product Hub content (see
+    // src/components/ProductHub.jsx / src/lib/productContent.js).
+    // Derived directly from the description/field data above — no new
+    // durability/material-spec/turnaround-day claims and no prices.
+    media: {
+      hero: '/qs11/product-pvc-banner-clean.webp',
+      // Found while visually QA-ing the built page (not just filenames):
+      // pvc-banner.webp and product-banner.webp are near-duplicate
+      // exports of the SAME photo (different crop/resolution only) - a
+      // "gallery" showing the same image twice adds no real value, so
+      // only one of the pair is kept alongside the genuinely distinct
+      // stand-mounted hero shot.
+      gallery: ['/qs11/product-pvc-banner-clean.webp', '/qs11/pvc-banner.webp']
+    },
+    productPage: {
+      headline: 'Custom PVC banners for shops, events and promotions',
+      intro: 'Choose the size, finish and artwork help you need.',
+      useCases: [
+        { label: 'Shop signage' },
+        { label: 'Events' },
+        { label: 'Promotions' }
+      ],
+      highlights: [
+        { label: 'Standard, premium or mesh PVC' },
+        { label: 'Hem and eyelet finishing available' },
+        { label: 'Artwork ready, checked, or designed for you' },
+        { label: 'Standard or express turnaround' }
+      ],
+      configPreview: ['material', 'finishing'],
+      showStartingPrice: false
+    }
   },
   {
     id: 'vinyl-stickers',
@@ -257,7 +288,31 @@ export const products = [
         ]
       },
       { id: 'file', type: 'file', label: 'Design file', help: 'Optional now. You can add it before checkout.' }
-    ]
+    ],
+    // QS-17 — optional, backward-compatible Product Hub content.
+    // showStartingPrice: true per agreed rule - confirmed safe: the
+    // default config (100 cards, standard stock ×1, standard finish fee
+    // 0, ready artwork fee 0) is every field's cheapest option, so it is
+    // genuinely the minimum price, not merely "a" price (same
+    // reasoning/verification standard as vinyl-stickers in QS-16).
+    media: {
+      hero: '/qs11/product-business-cards-clean.webp',
+      // Same near-duplicate pair issue as pvc-banner: business-cards.webp
+      // and product-business-cards.webp are the same photo re-exported -
+      // only one kept alongside the genuinely distinct hero.
+      gallery: ['/qs11/product-business-cards-clean.webp', '/qs11/business-cards.webp']
+    },
+    productPage: {
+      headline: 'Professional business cards with clear quantity-based pricing',
+      intro: 'Choose quantity, stock and whether you need design help.',
+      highlights: [
+        { label: 'Standard or extra-thick card stock' },
+        { label: 'Matt or gloss lamination available' },
+        { label: 'Design ready, checked, or designed for you' }
+      ],
+      configPreview: ['stock', 'finish'],
+      showStartingPrice: true
+    }
   },
   {
     id: 'printed-tshirt',
@@ -310,7 +365,26 @@ export const products = [
         ]
       },
       { id: 'file', type: 'file', label: 'Artwork file', help: 'PNG with a transparent background is ideal.' }
-    ]
+    ],
+    // QS-17 — optional, backward-compatible Product Hub content.
+    media: {
+      hero: '/qs11/product-tshirt-clean.webp',
+      // Same near-duplicate pair issue: apparel-printing.webp and
+      // product-apparel.webp are the same photo re-exported - only one
+      // kept alongside the genuinely distinct hanging-shirt hero.
+      gallery: ['/qs11/product-tshirt-clean.webp', '/qs11/apparel-printing.webp']
+    },
+    productPage: {
+      headline: 'Custom printed T-shirts, your garment or ours',
+      intro: 'Choose the shirt, print size and quantity without print jargon.',
+      highlights: [
+        { label: 'Bring your own shirt or choose a Joint X blank' },
+        { label: 'Front and back print sizes available' },
+        { label: 'Artwork ready, checked, or designed for you' }
+      ],
+      configPreview: ['garment', 'frontPrint'],
+      showStartingPrice: false
+    }
   },
   {
     id: 'media-services',
@@ -505,15 +579,21 @@ export const products = [
     "variants": {
       "telescopic-2m-ss-full": {
         "label": "Telescopic flag — 2.0m — single-sided — full kit (print + system + ground spike + carry bag)",
-        "price": 990
+        "price": 990,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "telescopic-3m-ss-full": {
         "label": "Telescopic flag — 3.0m — single-sided — full kit (print + system + ground spike + carry bag)",
-        "price": 1190
+        "price": 1190,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "telescopic-4m-ss-full": {
         "label": "Telescopic flag — 4.0m — single-sided — full kit (print + system + ground spike + carry bag)",
-        "price": 1390
+        "price": 1390,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "telescopic-2m-ds-full": {
         "label": "Telescopic flag — 2.0m — double-sided — full kit (print + system + ground spike + carry bag)",
@@ -529,15 +609,21 @@ export const products = [
       },
       "telescopic-2m-ss-reprint": {
         "label": "Telescopic flag — 2.0m — single-sided — replacement print only",
-        "price": 470
+        "price": 470,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "telescopic-3m-ss-reprint": {
         "label": "Telescopic flag — 3.0m — single-sided — replacement print only",
-        "price": 650
+        "price": 650,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "telescopic-4m-ss-reprint": {
         "label": "Telescopic flag — 4.0m — single-sided — replacement print only",
-        "price": 790
+        "price": 790,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "telescopic-2m-ds-reprint": {
         "label": "Telescopic flag — 2.0m — double-sided — replacement print only",
@@ -553,15 +639,21 @@ export const products = [
       },
       "sharkfin-2m-ss-full": {
         "label": "Shark Fin flag — 2.0m — single-sided — full kit (print + system + ground spike + carry bag)",
-        "price": 990
+        "price": 990,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "sharkfin-3m-ss-full": {
         "label": "Shark Fin flag — 3.0m — single-sided — full kit (print + system + ground spike + carry bag)",
-        "price": 1190
+        "price": 1190,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "sharkfin-4m-ss-full": {
         "label": "Shark Fin flag — 4.0m — single-sided — full kit (print + system + ground spike + carry bag)",
-        "price": 1390
+        "price": 1390,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "sharkfin-2m-ds-full": {
         "label": "Shark Fin flag — 2.0m — double-sided — full kit (print + system + ground spike + carry bag)",
@@ -577,15 +669,21 @@ export const products = [
       },
       "sharkfin-2m-ss-reprint": {
         "label": "Shark Fin flag — 2.0m — single-sided — replacement print only",
-        "price": 470
+        "price": 470,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "sharkfin-3m-ss-reprint": {
         "label": "Shark Fin flag — 3.0m — single-sided — replacement print only",
-        "price": 650
+        "price": 650,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "sharkfin-4m-ss-reprint": {
         "label": "Shark Fin flag — 4.0m — single-sided — replacement print only",
-        "price": 790
+        "price": 790,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "sharkfin-2m-ds-reprint": {
         "label": "Shark Fin flag — 2.0m — double-sided — replacement print only",
@@ -601,15 +699,21 @@ export const products = [
       },
       "curved-2m-ss-full": {
         "label": "Curved flag — 2.0m — single-sided — full kit (print + system + ground spike + carry bag)",
-        "price": 1050
+        "price": 1050,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "curved-3m-ss-full": {
         "label": "Curved flag — 3.0m — single-sided — full kit (print + system + ground spike + carry bag)",
-        "price": 1250
+        "price": 1250,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "curved-4m-ss-full": {
         "label": "Curved flag — 4.0m — single-sided — full kit (print + system + ground spike + carry bag)",
-        "price": 1500
+        "price": 1500,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "curved-2m-ds-full": {
         "label": "Curved flag — 2.0m — double-sided — full kit (print + system + ground spike + carry bag)",
@@ -625,15 +729,21 @@ export const products = [
       },
       "curved-2m-ss-reprint": {
         "label": "Curved flag — 2.0m — single-sided — replacement print only",
-        "price": 500
+        "price": 500,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "curved-3m-ss-reprint": {
         "label": "Curved flag — 3.0m — single-sided — replacement print only",
-        "price": 700
+        "price": 700,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "curved-4m-ss-reprint": {
         "label": "Curved flag — 4.0m — single-sided — replacement print only",
-        "price": 850
+        "price": 850,
+        "minQuantity": 2,
+        "quantityStep": 2
       },
       "curved-2m-ds-reprint": {
         "label": "Curved flag — 2.0m — double-sided — replacement print only",
@@ -875,7 +985,84 @@ export const products = [
       "label": "Artwork file",
       "help": "PDF or high-resolution PNG/JPG works best."
     }
-  ]
+  ],
+  // No dedicated flag photography exists yet (documented decision,
+  // already made pre-QS-17 - see the "Flags has no dedicated product
+  // photography" comment on LEGACY_IMAGE_FALLBACK in
+  // src/lib/productContent.js). Deliberately left without a `hero` here
+  // rather than reusing an unrelated photo - resolveProductMedia() falls
+  // through to ProductScene, exactly as it already does today.
+  "media": {
+    "gallery": []
+  },
+  "productPage": {
+    "headline": "Telescopic, Shark Fin and Curved flags for shopfronts, stands and events",
+    "intro": "Choose the flag style, size, sides and whether you need the full kit or just a replacement print.",
+    "useCases": [
+      { "label": "Shopfronts" },
+      { "label": "Stands" },
+      { "label": "Events" }
+    ],
+    "highlights": [
+      { "label": "Telescopic, Shark Fin or Curved styles" },
+      { "label": "2m, 3m or 4m sizes" },
+      { "label": "Single or double-sided printing" },
+      { "label": "Full kit or replacement print only" }
+    ],
+    "configPreview": ["artwork"],
+    "showStartingPrice": false,
+    // QS-17 curated presets. No documented "default"/"most popular"
+    // flag style exists anywhere in the catalogue (checked: product-
+    // level popular:false, no `default` key on the variant field) - so
+    // every preset below names its style explicitly (Telescopic) rather
+    // than implying a house default that was never actually decided.
+    // Telescopic was chosen as the illustrative/reference style (it is
+    // listed first among the three styles and is the most generic/
+    // common flag type) - this is a QS-17 judgment call, not a
+    // recovered business rule; confirmed by the business (keep
+    // Telescopic; every preset name says so explicitly, never implied).
+    // Every config below maps to a real, existing key in
+    // pricing.variants above - none invented.
+    //
+    // artwork: null (not 'ready') - a preset configures the PHYSICAL
+    // PRODUCT (variant/quantity), it must not silently assert the
+    // customer already has print-ready artwork. See the full
+    // investigation/reasoning in src/lib/productContent.js above
+    // validatePresetConfig(). Guided mode then genuinely asks the
+    // artwork question with nothing pre-selected.
+    "presets": [
+      {
+        "id": "flag-2m-telescopic-full",
+        "name": "2m Telescopic Flag — Complete kit",
+        "description": "A ready-to-use 2m telescopic flag with stand, spike and single-sided print. Single-sided flags are supplied in pairs of 2.",
+        "config": { "variant": "telescopic-2m-ss-full", "quantity": 2, "artwork": null }
+      },
+      {
+        "id": "flag-3m-telescopic-full",
+        "name": "3m Telescopic Flag — Complete kit",
+        "description": "A ready-to-use 3m telescopic flag with stand, spike and single-sided print. Single-sided flags are supplied in pairs of 2.",
+        "config": { "variant": "telescopic-3m-ss-full", "quantity": 2, "artwork": null }
+      },
+      {
+        "id": "flag-3m-telescopic-double-full",
+        "name": "3m Double-Sided Telescopic Flag — Complete kit",
+        "description": "A ready-to-use 3m telescopic flag, printed on both sides, with stand and spike.",
+        "config": { "variant": "telescopic-3m-ds-full", "quantity": 1, "artwork": null }
+      },
+      {
+        "id": "flag-4m-telescopic-full",
+        "name": "4m Telescopic Flag — Complete kit",
+        "description": "A ready-to-use 4m telescopic flag with stand, spike and single-sided print. Single-sided flags are supplied in pairs of 2.",
+        "config": { "variant": "telescopic-4m-ss-full", "quantity": 2, "artwork": null }
+      },
+      {
+        "id": "flag-3m-telescopic-reprint",
+        "name": "Replacement print — 3m Telescopic Flag",
+        "description": "A replacement single-sided print only, for an existing 3m telescopic flag stand. Supplied in pairs of 2.",
+        "config": { "variant": "telescopic-3m-ss-reprint", "quantity": 2, "artwork": null }
+      }
+    ]
+  }
 },
   {
   "id": "gazebos",
@@ -995,27 +1182,33 @@ export const products = [
     "accessories": {
       "wall-2x2-half": {
         "label": "2m × 2m half wall",
-        "price": 650
+        "price": 650,
+        "compatibleVariants": ["steel-2x2-full", "steel-2x2-reprint", "aluminium-2x2-full", "aluminium-2x2-reprint"]
       },
       "wall-2x2-full": {
         "label": "2m × 2m full wall",
-        "price": 1190
+        "price": 1190,
+        "compatibleVariants": ["steel-2x2-full", "steel-2x2-reprint", "aluminium-2x2-full", "aluminium-2x2-reprint"]
       },
       "wall-3x3-half": {
         "label": "3m × 3m half wall",
-        "price": 850
+        "price": 850,
+        "compatibleVariants": ["steel-3x3-standard-full", "steel-3x3-standard-reprint", "steel-3x3-deluxe-full", "steel-3x3-deluxe-reprint", "aluminium-3x3-standard-full", "aluminium-3x3-standard-reprint", "aluminium-3x3-deluxe-full", "aluminium-3x3-deluxe-reprint"]
       },
       "wall-3x3-full": {
         "label": "3m × 3m full wall",
-        "price": 1650
+        "price": 1650,
+        "compatibleVariants": ["steel-3x3-standard-full", "steel-3x3-standard-reprint", "steel-3x3-deluxe-full", "steel-3x3-deluxe-reprint", "aluminium-3x3-standard-full", "aluminium-3x3-standard-reprint", "aluminium-3x3-deluxe-full", "aluminium-3x3-deluxe-reprint"]
       },
       "wall-3x4.5-full": {
         "label": "3m × 4.5m full wall",
-        "price": 2500
+        "price": 2500,
+        "compatibleVariants": ["aluminium-3x4.5-deluxe-full", "aluminium-3x4.5-deluxe-reprint"]
       },
       "wall-3x6-full": {
         "label": "3m × 6m full wall",
-        "price": 3300
+        "price": 3300,
+        "compatibleVariants": ["aluminium-3x6-deluxe-full", "aluminium-3x6-deluxe-reprint"]
       },
       "wall-window": {
         "label": "Window add-on for a wall",
@@ -1035,15 +1228,18 @@ export const products = [
       },
       "wheely-bag-2-3m": {
         "label": "Wheely bag (2m or 3m gazebo)",
-        "price": 750
+        "price": 750,
+        "compatibleVariants": ["steel-2x2-full", "steel-2x2-reprint", "steel-3x3-standard-full", "steel-3x3-standard-reprint", "steel-3x3-deluxe-full", "steel-3x3-deluxe-reprint", "aluminium-2x2-full", "aluminium-2x2-reprint", "aluminium-3x3-standard-full", "aluminium-3x3-standard-reprint", "aluminium-3x3-deluxe-full", "aluminium-3x3-deluxe-reprint"]
       },
       "wheely-bag-4-5m": {
         "label": "Wheely bag (4.5m gazebo)",
-        "price": 900
+        "price": 900,
+        "compatibleVariants": ["aluminium-3x4.5-deluxe-full", "aluminium-3x4.5-deluxe-reprint"]
       },
       "wheely-bag-6m": {
         "label": "Wheely bag (6m gazebo)",
-        "price": 990
+        "price": 990,
+        "compatibleVariants": ["aluminium-3x6-deluxe-full", "aluminium-3x6-deluxe-reprint"]
       }
     },
     "artwork": {
@@ -1171,7 +1367,89 @@ export const products = [
       "label": "Artwork file",
       "help": "PDF or high-resolution PNG/JPG works best."
     }
-  ]
+  ],
+  // Found while visually QA-ing the built page: event-gazebo.webp and
+  // work-gazebo.webp are the exact same photo (not a crop/resolution
+  // variant like the other three products' near-duplicates - literally
+  // identical). No second distinct gazebo photo exists in public/qs11/
+  // today, so no gallery/thumbnail row is offered rather than showing
+  // one real image twice - resolveProductMedia() already handles a
+  // single-image gallery gracefully (ProductHub only renders the
+  // thumbnail row when there is more than one distinct image).
+  "media": {
+    "hero": "/qs11/event-gazebo.webp",
+    "gallery": []
+  },
+  "productPage": {
+    "headline": "Branded steel and aluminium gazebos for markets, activations and events",
+    "intro": "Choose the frame, size and whether you need the full kit or just a replacement canopy print.",
+    "useCases": [
+      { "label": "Markets" },
+      { "label": "Activations" },
+      { "label": "Events" }
+    ],
+    "highlights": [
+      { "label": "Steel or aluminium frames" },
+      { "label": "2×2m up to 3×6m sizes" },
+      { "label": "Full kit or replacement canopy print only" },
+      { "label": "Optional walls and weights" }
+    ],
+    "configPreview": ["artwork"],
+    "showStartingPrice": false,
+    // QS-17 curated presets. Like flags, no documented default frame
+    // exists (product-level popular:false, no `default` on the variant
+    // field), so every 3x3 preset names its frame explicitly. The one
+    // genuine ambiguity: "3×3 Deluxe Gazebo" (the brief's own example
+    // name) does not specify a frame, and both steel and aluminium have
+    // a deluxe 3x3 variant. Chose aluminium here (the frame that also
+    // carries the larger deluxe sizes, i.e. the more "premium" line in
+    // this catalogue's structure) - a QS-17 judgment call, not a
+    // recovered business rule; confirmed by the business (keep the
+    // "3×3 Aluminium Deluxe Gazebo" as the deluxe preset - the "Complete
+    // Kit" in that confirmation was a reference to which preset to
+    // keep, not a mandated casing; the customer-facing name below uses
+    // the QS-17 review's exact copy spec, "Complete kit").
+    // Every config below maps to a real, existing key in
+    // pricing.variants above - none invented.
+    //
+    // artwork: null (not 'ready') - same reasoning as the flags
+    // presets above: a preset configures the PHYSICAL PRODUCT, not
+    // whether the customer's artwork happens to be ready. See
+    // src/lib/productContent.js's validatePresetConfig() for the full
+    // investigation.
+    "presets": [
+      {
+        "id": "gazebo-2x2-steel-full",
+        "name": "2×2 Steel Gazebo — Complete kit",
+        "description": "A ready-to-use 2m × 2m steel-frame gazebo with printed canopy, frame and carry bag.",
+        "config": { "variant": "steel-2x2-full", "quantity": 1, "artwork": null }
+      },
+      {
+        "id": "gazebo-3x3-steel-standard-full",
+        "name": "3×3 Steel Gazebo — Complete kit",
+        "description": "A ready-to-use 3m × 3m standard steel-frame gazebo with printed canopy, frame and carry bag.",
+        "config": { "variant": "steel-3x3-standard-full", "quantity": 1, "artwork": null }
+      },
+      {
+        "id": "gazebo-3x3-aluminium-standard-full",
+        "name": "3×3 Aluminium Gazebo — Complete kit",
+        "description": "A ready-to-use 3m × 3m standard aluminium-frame gazebo with printed canopy, frame and carry bag.",
+        "config": { "variant": "aluminium-3x3-standard-full", "quantity": 1, "artwork": null }
+      },
+      {
+        "id": "gazebo-3x3-aluminium-deluxe-full",
+        "name": "3×3 Aluminium Deluxe Gazebo — Complete kit",
+        "description": "A ready-to-use 3m × 3m deluxe aluminium-frame gazebo with printed canopy, frame and carry bag.",
+        "config": { "variant": "aluminium-3x3-deluxe-full", "quantity": 1, "artwork": null }
+      },
+      {
+        "id": "gazebo-3x3-steel-standard-reprint",
+        "name": "Replacement canopy print — 3×3 Steel Standard Gazebo",
+        "description": "A replacement canopy print only, for an existing 3m × 3m standard steel-frame gazebo.",
+        "config": { "variant": "steel-3x3-standard-reprint", "quantity": 1, "artwork": null }
+      }
+    ]
+  }
 },
   {
   "id": "photo-session",
