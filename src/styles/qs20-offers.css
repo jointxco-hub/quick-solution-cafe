@@ -1,0 +1,98 @@
+/* QS-20 — Offers / Combos. Reuses existing tokens (--green/--orange/
+   --lilac/--soft-green, --qs19-shadow-rest/--qs19-shadow-hover from
+   qs19-home-polish.css) and the same card language ProductHub's
+   "Quick options" preset cards (qs17.css) and the QS-19 polish pass
+   already established - no new design system, no pricing changes. */
+
+.qs20-offer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.qs20-offer-card {
+  border: 1px solid rgba(17, 17, 15, .06);
+  border-radius: 20px;
+  padding: 18px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: var(--qs19-shadow-rest, 0 1px 2px rgba(17,17,15,.03), 0 10px 24px rgba(17,17,15,.05));
+}
+.qs20-offer-card strong { font-size: 16px; letter-spacing: -.01em; }
+.qs20-offer-description { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); }
+
+.qs20-offer-items { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 5px; }
+.qs20-offer-items li { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #46463f; }
+.qs20-offer-items li svg { color: var(--green); flex: 0 0 auto; }
+
+.qs20-offer-price { margin: 2px 0 0; font-size: 15px; color: var(--ink); }
+.qs20-offer-price strong { font-size: 19px; }
+.qs20-offer-price-note { display: block; margin-top: -2px; color: var(--muted); font-size: 11.5px; }
+
+.qs20-offer-actions { display: flex; gap: 8px; margin-top: 6px; }
+.qs20-offer-actions .button { flex: 1 1 auto; padding: 10px 12px; font-size: 12.5px; min-height: 42px; }
+
+.qs20-offer-customise {
+  margin-top: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line, #e1e1da);
+  display: grid;
+  gap: 10px;
+}
+.qs20-offer-customise-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; transition: opacity .15s ease; }
+.qs20-offer-customise-info { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.qs20-offer-customise-info strong { display: block; font-size: 13px; }
+.qs20-offer-customise-info small { display: block; font-size: 11.5px; color: var(--muted); }
+.qs20-offer-optional-tag { font-weight: 600; color: var(--muted); font-size: 11.5px; }
+/* Unchecked-but-still-visible row (see the OfferCard.jsx comment on why
+   every item keeps a row, checked or not) - dimmed, not hidden, so the
+   checkbox stays reachable to re-include it. */
+.qs20-offer-row-excluded { opacity: .45; }
+
+.qs20-offer-optional-toggle input { width: 16px; height: 16px; accent-color: var(--green); }
+
+.qs20-offer-customise-controls { display: flex; align-items: center; gap: 10px; }
+.qs20-offer-qty-stepper { display: flex; align-items: center; gap: 6px; background: #f3f3ef; border-radius: 999px; padding: 4px 8px; }
+.qs20-offer-qty-stepper button {
+  width: 22px; height: 22px; border-radius: 50%; border: 0; background: #fff; cursor: pointer;
+  font-size: 14px; line-height: 1; display: grid; place-items: center;
+}
+.qs20-offer-qty-stepper button:disabled { opacity: .4; cursor: not-allowed; }
+.qs20-offer-qty-stepper span { min-width: 14px; text-align: center; font-size: 12.5px; font-weight: 750; }
+
+.qs20-offer-change-line { border: 0; background: none; padding: 0; color: var(--green); font-size: 12px; font-weight: 750; cursor: pointer; }
+
+.qs20-offer-customise-total { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.qs20-offer-customise-total strong { font-size: 16px; }
+.qs20-offer-add-customised { width: 100%; justify-content: center; }
+
+/* ── Cart: grouping offer-derived lines under the offer's name ──────── */
+.qs20-cart-offer-group {
+  border: 1px solid var(--soft-green);
+  border-radius: 18px;
+  padding: 10px;
+  background: rgba(232, 244, 241, .35);
+  display: grid;
+  gap: 8px;
+}
+.qs20-cart-offer-group-label {
+  display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--green); padding: 2px 4px;
+}
+
+/* ── Shop: Products | Offers toggle ──────────────────────────────────── */
+.qs20-shop-mode-toggle { display: flex; gap: 8px; margin: 0 0 22px; }
+.qs20-shop-mode-toggle button {
+  border: 1px solid #d8d8d1; background: transparent; border-radius: 999px; padding: 9px 18px;
+  font-size: 13px; font-weight: 750; color: #46463f; cursor: pointer;
+}
+.qs20-shop-mode-toggle button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.qs20-offer-empty { color: #74746e; font-size: 14px; padding: 20px 0; }
+
+@media (max-width: 720px) {
+  .qs20-offer-grid { grid-template-columns: 1fr; }
+  .qs20-offer-actions .button { min-height: 46px; }
+  .qs20-offer-customise-row { flex-direction: column; align-items: flex-start; }
+}

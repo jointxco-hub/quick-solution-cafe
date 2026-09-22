@@ -542,12 +542,12 @@ export const products = [
     "outdoor flag"
   ],
   "popular": false,
-  // Not yet published live in commerce.service_product_configs — kept
-  // inactive in this fallback so it can never flash as orderable
-  // before the live catalogue fetch resolves (or if that fetch fails).
-  // ComingSoonRail is the only place this shows up until it's live.
-  // Flip to true once the QS-14 migration is applied to Supabase.
-  "active": false,
+  // QS-20: production rollout confirmed complete and verified - QS-14
+  // supplier-pricing foundation, this product's base catalogue row,
+  // server-authoritative supplier pricing, single-sided minQuantity/
+  // quantityStep rules and QS-17B's Product Hub + presets are all live.
+  // The prior "not yet published" fallback is stale - flipped to true.
+  "active": true,
   "channels": {
     "storefront": true,
     "guided": true,
@@ -1086,9 +1086,11 @@ export const products = [
     "event branding"
   ],
   "popular": false,
-  // See the matching comment on the 'flags' entry above — not yet
-  // published live, kept inactive so it never flashes as orderable.
-  "active": false,
+  // QS-20: see the matching comment on the 'flags' entry above -
+  // production rollout confirmed complete and verified, including this
+  // product's base catalogue row and gazebo accessory compatibility
+  // rules. Flipped to true.
+  "active": true,
   "channels": {
     "storefront": true,
     "guided": true,
@@ -1473,8 +1475,11 @@ export const products = [
     "photography special"
   ],
   "popular": true,
-  // See the matching comment on the 'flags' entry above — not yet
-  // published live, kept inactive so it never flashes as orderable.
+  // Not yet published live in commerce.service_product_configs — kept
+  // inactive in this fallback so it can never flash as orderable before
+  // the live catalogue fetch resolves (or if that fetch fails). Unlike
+  // flags/gazebos (QS-20: now confirmed live), this product's own
+  // production rollout has not been confirmed yet.
   "active": false,
   "serviceType": "media",
   "channels": {
@@ -1830,5 +1835,116 @@ export const heroOutcomes = [
     icon: 'camera',
     kind: 'shop',
     shopCategory: 'Photo & Video'
+  }
+]
+
+// QS-20 — Offers / Combos: curated groups of REAL products/presets, not
+// a second catalogue or a second price. Every id below was verified
+// against this file's own product/preset data before being written
+// here (see the QS-20 audit) - nothing invented. `category` reuses the
+// exact SHOP_CATEGORIES vocabulary (productContent.js) so an offer can
+// be filtered/surfaced with the same bucket a hero outcome's
+// `shopCategory` already names - no second taxonomy.
+//
+// `items[].quantity` is a REPEAT COUNT of that exact resolved line
+// (see src/lib/offers.js's own header comment for why) - it is NOT
+// merged into a preset/config's own internal quantity. The 3m
+// Telescopic Flag preset below already sets config.quantity: 2 (single-
+// sided flags are sold in pairs) - that is one pair, one order line;
+// this offer's own item.quantity: 1 means exactly one of that pair,
+// matching the "2× Flags" a customer sees as one line reading "3m
+// Telescopic Flag - Complete kit x2" from the preset itself, not two
+// separate order lines.
+//
+// QS-20 final review: flags/gazebos' production rollout is now confirmed
+// complete and verified (base catalogue rows published, server-
+// authoritative supplier pricing, QS-17B Product Hub + presets all
+// live) - both flipped to active:true above, and "Event Starter" below
+// is active accordingly. "Business Starter" and "Promotion Pack" use
+// only products that don't yet have curated presets, so their lines use
+// explicit `config` instead of a presetId - allowed by the QS-20 spec
+// ("config? // only when necessary") specifically because no preset
+// exists yet to prefer.
+//
+// A fourth "Market Setup" offer (suggested as an initial direction) was
+// considered and deliberately NOT added, per explicit confirmation:
+// three curated offers is enough for v1.
+export const offers = [
+  {
+    id: 'business-starter',
+    name: 'Business Starter',
+    description: 'Cards to hand out and a shop sign to be seen by - the two essentials to look established from day one.',
+    category: 'Business',
+    active: true,
+    items: [
+      {
+        id: 'cards',
+        productId: 'business-cards',
+        config: { quantity: '100', stock: 'standard', finish: 'standard', artwork: 'ready' },
+        quantity: 1
+      },
+      {
+        id: 'shop-banner',
+        productId: 'pvc-banner',
+        config: { width: 1.5, height: 1, material: 'standard', finishing: 'hem-eyelets', artwork: 'ready', turnaround: 'standard' },
+        quantity: 1
+      }
+    ]
+  },
+  {
+    id: 'promotion-pack',
+    name: 'Promotion Pack',
+    description: 'A banner to draw the eye and window stickers to reinforce it - one combo for getting noticed.',
+    category: 'Signs & Advertising',
+    active: true,
+    items: [
+      {
+        id: 'promo-banner',
+        productId: 'pvc-banner',
+        config: { width: 2, height: 1, material: 'standard', finishing: 'hem-eyelets', artwork: 'ready', turnaround: 'standard' },
+        quantity: 1
+      },
+      {
+        id: 'window-stickers',
+        productId: 'vinyl-stickers',
+        config: { width: 1, height: 1, material: 'standard', finishing: 'print-cut', artwork: 'ready', turnaround: 'standard' },
+        quantity: 1
+      }
+    ]
+  },
+  {
+    id: 'event-starter',
+    name: 'Event Starter',
+    description: 'A deluxe gazebo, a telescopic flag pair and a banner - everything to show up properly at a market or activation.',
+    category: 'Events',
+    // QS-20 final review: flags/gazebos' production rollout is
+    // confirmed live (see the block comment above and both products'
+    // own active:true) - Event Starter activated accordingly. The
+    // optional PVC Banner line means this offer's real minimum
+    // composition is R11,280 (gazebo + flags only), not the R12,090
+    // shown by default with every item included - see OfferCard.jsx's
+    // total-display fix for why the card never claims "From R12,090".
+    active: true,
+    items: [
+      {
+        id: 'gazebo',
+        productId: 'gazebos',
+        presetId: 'gazebo-3x3-aluminium-deluxe-full',
+        quantity: 1
+      },
+      {
+        id: 'flags',
+        productId: 'flags',
+        presetId: 'flag-3m-telescopic-full',
+        quantity: 1
+      },
+      {
+        id: 'event-banner',
+        productId: 'pvc-banner',
+        config: { width: 2, height: 1, material: 'standard', finishing: 'hem-eyelets', artwork: 'ready', turnaround: 'standard' },
+        quantity: 1,
+        optional: true
+      }
+    ]
   }
 ]

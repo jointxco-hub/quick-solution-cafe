@@ -14,13 +14,15 @@ import HelpCta from './components/HelpCta.jsx'
 import LanguageModePrompt from './components/LanguageModePrompt.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
 import OrderBasket from './components/OrderBasket.jsx'
+import OfferCard from './components/OfferCard.jsx'
 import { loadCart, saveCart } from './lib/cartStore.js'
-import { guidedJourneys, heroOutcomes, products as defaultProducts } from './data/products.js'
+import { guidedJourneys, heroOutcomes, offers as defaultOffers, products as defaultProducts } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
 import { resolveProductDisplayName, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
 import { loadLanguageMode, saveLanguageMode, hasSeenLanguageModePrompt, markLanguageModePromptSeen } from './lib/languageMode.js'
 import { DEFAULT_PAGE, resolveHeroOutcomeNavigation } from './lib/navigation.js'
+import { resolveActiveOffers, resolveOffersForCategory, resolveOfferDisplayName } from './lib/offers.js'
 
 export default function App() {
   const [catalog, setCatalog] = useState(() => loadCatalog(defaultProducts))
@@ -54,6 +56,14 @@ export default function App() {
   const [languageMode, setLanguageMode] = useState(() => loadLanguageMode())
   const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => !hasSeenLanguageModePrompt())
   const [shopFilter, setShopFilter] = useState('All')
+  // QS-20: Shop gains a lightweight Products|Offers toggle - reuses the
+  // exact same shopFilter category chips for both (offer.category uses
+  // the same SHOP_CATEGORIES vocabulary as a product's), no second
+  // filter UI. Defaults to 'products'; a hero outcome with a matching
+  // active offer switches to 'offers' before landing on Shop (see
+  // selectHeroOutcome below) so "Get my business ready" etc. surface
+  // the relevant combo first, per the QS-20 brief.
+  const [shopMode, setShopMode] = useState('products')
   const configureRef = useRef(null)
   const productHubRef = useRef(null)
   const shopRef = useRef(null)
@@ -102,6 +112,20 @@ export default function App() {
   const filteredShopProducts = useMemo(
     () => filterProductsByShopCategory(customerProducts, shopFilter),
     [customerProducts, shopFilter]
+  )
+
+  // QS-20: offers resolve against the FULL catalog (not customerProducts)
+  // because an offer's line can legitimately reference a product that
+  // is not yet active at the storefront level (e.g. Event Starter's
+  // flags/gazebos lines) - the OFFER's own active flag is what gates
+  // customer visibility (resolveActiveOffers), independent of each
+  // referenced product's own storefront/active flag. Purely local for
+  // this phase - no Supabase-sourced offers table yet (see QS-20
+  // report's "no unnecessary database tables before proving the model").
+  const activeOffers = useMemo(() => resolveActiveOffers(defaultOffers, catalog), [catalog])
+  const filteredOffers = useMemo(
+    () => resolveOffersForCategory(activeOffers, shopFilter),
+    [activeOffers, shopFilter]
   )
 
   const scrollToConfigure = () => window.setTimeout(() => configureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
@@ -180,6 +204,58 @@ export default function App() {
     }])
     setCartNotice(`${product.name} added to your order`)
     window.setTimeout(() => setCartNotice(''), 2200)
+  }
+
+  // QS-20: "Offer expands into its real child product lines for pricing/
+  // order fulfilment" (per the brief) - each of the offer's resolved
+  // lines becomes an ordinary cart entry, exactly the same shape
+  // addToCart() already produces (createQuickSolutionCartOrder only
+  // ever sends {clientItemKey, productKey, configuration} per item - it
+  // has no concept of "offer" at all, so nothing on the backend needs
+  // to change). offerId/offerName are extra, backend-ignored fields
+  // used only so OrderBasket can show the lines grouped under the
+  // offer's name for customer presentation - they never reach the RPC
+  // payload (see supabaseApi.js's createQuickSolutionCartOrder, which
+  // only reads clientItemKey/productKey/configuration off each item).
+  // QS-20 final review: a line's `quantity` is a REPEAT COUNT (see
+  // offers.js's header comment) - the cart/order payload
+  // (createQuickSolutionCartOrder) has no per-item quantity field at
+  // all, so the ONLY representation the server can independently
+  // re-verify is genuinely separate cart entries, each with the
+  // per-UNIT config and per-unit total. A single entry carrying
+  // config (1 unit) but total (N units) would show the customer one
+  // total while the server - which only ever recalculates from
+  // `configuration` - would charge for one unit: a real pricing
+  // integrity bug, caught and fixed here before this ever reached
+  // checkout.
+  const addOfferToCart = (offer, result) => {
+    const validLines = (result?.lines || []).filter((line) => !line.error)
+    if (!validLines.length) return
+    const offerName = resolveOfferDisplayName(offer, languageMode)
+    const newItems = []
+    for (const line of validLines) {
+      const product = catalog.find((item) => item.id === line.productId)
+      const repeatCount = Math.max(Number(line.quantity) || 1, 1)
+      for (let unit = 0; unit < repeatCount; unit++) {
+        newItems.push({
+          cartId: globalThis.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          productId: line.productId,
+          productName: line.productName,
+          category: product?.category || '',
+          config: line.config,
+          files: [],
+          file: null,
+          total: Number(line.unitTotal || 0),
+          summary: line.summary,
+          quoteRequired: Boolean(line.quoteRequired),
+          offerId: offer.id,
+          offerName
+        })
+      }
+    }
+    setCart((items) => [...items, ...newItems])
+    setCartNotice(`${offerName} added to your order — ${newItems.length} item${newItems.length === 1 ? '' : 's'}`)
+    window.setTimeout(() => setCartNotice(''), 2600)
   }
 
   const removeCartItem = (cartId) => setCart((items) => items.filter((item) => item.cartId !== cartId))
@@ -275,6 +351,14 @@ export default function App() {
     if (!nav) return
     if (nav.type === 'shop') {
       setShopFilter(nav.shopFilter)
+      // QS-20: land on the Offers tab, not Products, when this outcome's
+      // category actually has a ready-made offer - "Get my business
+      // ready" should surface Business Starter first, not send the
+      // customer straight to browsing individual products. Falls back
+      // to Products when a category has no offers yet (e.g. Photo &
+      // Video today), so the tab is never shown empty by default.
+      const matchingOffers = resolveOffersForCategory(activeOffers, nav.shopFilter)
+      setShopMode(matchingOffers.length > 0 ? 'offers' : 'products')
       setPage('shop')
       scrollToShop()
       return
@@ -403,9 +487,25 @@ export default function App() {
         <section id="shop" ref={shopRef} className="shell section services-section">
           <div className="section-heading">
             <div><span className="eyebrow">Shop</span><h2>See what we can make.</h2></div>
-            <p>Browse visually, then configure. Every product starts in Guided mode, with Full options available when you already know the exact specs.</p>
+            <p>{shopMode === 'offers'
+              ? 'Ready-made setups built from real products - choose one, or customise it first.'
+              : 'Browse visually, then configure. Every product starts in Guided mode, with Full options available when you already know the exact specs.'}</p>
           </div>
-          <div className="qs18-shop-filters" role="tablist" aria-label="Filter products by category">
+
+          {/* QS-20: Quick (ready-made Offers) vs Build your own (browse
+              individual Products) - both read/filter the SAME
+              shopFilter category chips below, just render a different
+              grid. No new router, no second filter UI. */}
+          <div className="qs20-shop-mode-toggle" role="tablist" aria-label="Products or Offers">
+            <button type="button" role="tab" aria-selected={shopMode === 'products'} className={shopMode === 'products' ? 'active' : ''} onClick={() => setShopMode('products')}>
+              Build your own
+            </button>
+            <button type="button" role="tab" aria-selected={shopMode === 'offers'} className={shopMode === 'offers' ? 'active' : ''} onClick={() => setShopMode('offers')}>
+              Quick — ready-made setups
+            </button>
+          </div>
+
+          <div className="qs18-shop-filters" role="tablist" aria-label="Filter by category">
             {SHOP_CATEGORIES.map((category) => (
               <button
                 key={category}
@@ -417,9 +517,35 @@ export default function App() {
               >{category}</button>
             ))}
           </div>
-          <div className="product-grid">{filteredShopProducts.map((product) => <ProductCard key={product.id} product={product} mode={languageMode} active={selectedProduct?.id === product.id} onConfigure={openProductPage}/>)}</div>
-          {filteredShopProducts.length === 0 && (
-            <p className="qs18-shop-empty">Nothing in this category yet — try “All” or WhatsApp us and we will help directly.</p>
+
+          {shopMode === 'offers' ? (
+            <>
+              <div className="qs20-offer-grid">
+                {filteredOffers.map((offer) => (
+                  <OfferCard
+                    key={offer.id}
+                    offer={offer}
+                    products={catalog}
+                    mode={languageMode}
+                    onChooseThis={(result) => addOfferToCart(offer, result)}
+                    onCustomiseLine={(line) => {
+                      const product = catalog.find((item) => item.id === line.productId)
+                      if (product) openAdvanced(product, line.config)
+                    }}
+                  />
+                ))}
+              </div>
+              {filteredOffers.length === 0 && (
+                <p className="qs20-offer-empty">No ready-made setups in this category yet — try “All”, switch to “Build your own”, or WhatsApp us and we will help directly.</p>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="product-grid">{filteredShopProducts.map((product) => <ProductCard key={product.id} product={product} mode={languageMode} active={selectedProduct?.id === product.id} onConfigure={openProductPage}/>)}</div>
+              {filteredShopProducts.length === 0 && (
+                <p className="qs18-shop-empty">Nothing in this category yet — try “All” or WhatsApp us and we will help directly.</p>
+              )}
+            </>
           )}
         </section>
 

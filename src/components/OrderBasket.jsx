@@ -31,6 +31,27 @@ function pointLabel(point) {
   return [address.area || address.city, address.line1].filter(Boolean).join(' · ')
 }
 
+// QS-20: presentation only - groups consecutive cart items that share
+// an offerId under that offer's name, e.g. "Event Starter" showing its
+// 3×3 Gazebo / Flags / Banner lines together instead of as three
+// unrelated rows. The cart itself (and the order payload built from it
+// in submitCombinedOrder) is unchanged: every item is still submitted
+// as its own independent {productKey, configuration} line - this only
+// changes how the basket is DISPLAYED. An item with no offerId gets its
+// own single-item "group" so ungrouped items render exactly as before.
+function groupCartItemsByOffer(items) {
+  const groups = []
+  for (const item of items) {
+    const last = groups[groups.length - 1]
+    if (item.offerId && last?.offerId === item.offerId) {
+      last.items.push(item)
+    } else {
+      groups.push({ offerId: item.offerId || null, offerName: item.offerName || null, items: [item] })
+    }
+  }
+  return groups
+}
+
 export default function OrderBasket({
   items,
   open,
@@ -260,26 +281,35 @@ export default function OrderBasket({
         {phase === 'basket' ? (
           <>
             <div className="qs-cart-items">
-              {items.map((item) => (
-                <article className="qs-cart-item" key={item.cartId}>
-                  <div>
-                    <span className="eyebrow">{item.category}</span>
-                    <strong>{item.productName}</strong>
-                    <small>{item.summary || 'Configured item'}</small>
-                    {(() => {
-                      const liveFiles = itemFiles(item)
-                      const metaFiles = itemFileMetas(item)
-                      const count = liveFiles.length || metaFiles.length
-                      if (!count) return null
-                      if (count === 1) return <small>File: {displayFileName(liveFiles[0], metaFiles[0])}</small>
-                      return <small>{count} files attached</small>
-                    })()}
-                  </div>
-                  <div className="qs-cart-item-side">
-                    <strong>{item.quoteRequired ? 'Quote' : formatMoney(item.total)}</strong>
-                    <button type="button" onClick={() => onRemove(item.cartId)}>Remove</button>
-                  </div>
-                </article>
+              {groupCartItemsByOffer(items).map((group, groupIndex) => (
+                <div key={group.offerId ? `offer-${group.offerId}-${groupIndex}` : group.items[0].cartId} className={group.offerId ? 'qs20-cart-offer-group' : undefined}>
+                  {group.offerId && (
+                    <div className="qs20-cart-offer-group-label">
+                      <Icon name="checkCircle" size={13}/> {group.offerName}
+                    </div>
+                  )}
+                  {group.items.map((item) => (
+                    <article className="qs-cart-item" key={item.cartId}>
+                      <div>
+                        <span className="eyebrow">{item.category}</span>
+                        <strong>{item.productName}</strong>
+                        <small>{item.summary || 'Configured item'}</small>
+                        {(() => {
+                          const liveFiles = itemFiles(item)
+                          const metaFiles = itemFileMetas(item)
+                          const count = liveFiles.length || metaFiles.length
+                          if (!count) return null
+                          if (count === 1) return <small>File: {displayFileName(liveFiles[0], metaFiles[0])}</small>
+                          return <small>{count} files attached</small>
+                        })()}
+                      </div>
+                      <div className="qs-cart-item-side">
+                        <strong>{item.quoteRequired ? 'Quote' : formatMoney(item.total)}</strong>
+                        <button type="button" onClick={() => onRemove(item.cartId)}>Remove</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               ))}
             </div>
 
