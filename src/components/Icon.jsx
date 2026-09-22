@@ -7,6 +7,7 @@ export default function Icon({ name, size = 20, className = '' }) {
     upload: <><path d="M12 3v12"/><path d="m7 8 5-5 5 5"/><path d="M5 21h14"/></>,
     pin: <><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></>,
     arrowRight: <><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></>,
+    arrowLeft: <><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></>,
     arrowUpRight: <><path d="M7 17 17 7"/><path d="M7 7h10v10"/></>,
     store: <><path d="M3 9h18"/><path d="M5 9v10h14V9"/><path d="m5 3-2 6h18l-2-6Z"/><path d="M9 19v-6h6v6"/></>,
     truck: <><path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></>,

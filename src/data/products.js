@@ -315,7 +315,13 @@ export const products = [
         { label: 'Matt or gloss lamination available' },
         { label: 'Design ready, checked, or designed for you' }
       ],
-      configPreview: ['stock', 'finish'],
+      // QS-21: 'quantity' added - the single biggest price driver
+      // (100/250/500/1000 cards) was missing from this curated preview,
+      // which also feeds Quick Configure (src/lib/navigation.js) - a
+      // "quick" configure without the main quantity choice wasn't
+      // actually quick/useful. Purely additive; ProductHub's own
+      // "Choices you will make" section gains the same field for free.
+      configPreview: ['quantity', 'stock', 'finish'],
       showStartingPrice: true
     }
   },
@@ -387,7 +393,11 @@ export const products = [
         { label: 'Front and back print sizes available' },
         { label: 'Artwork ready, checked, or designed for you' }
       ],
-      configPreview: ['garment', 'frontPrint'],
+      // QS-21: 'quantity' added - same reasoning as business-cards
+      // above. FieldControl already renders type:'number' fields fine
+      // (this one has a real default:1/min:1), so this is safe for
+      // both ProductHub's preview and Quick Configure.
+      configPreview: ['quantity', 'garment', 'frontPrint'],
       showStartingPrice: false
     }
   },

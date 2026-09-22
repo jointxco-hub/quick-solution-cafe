@@ -1,0 +1,290 @@
+/* QS-21 — Shop / Product Detail / Configuration navigation.
+   Reuses existing tokens (--green/--orange/--lilac/--soft-green,
+   --qs19-shadow-rest/--qs19-shadow-hover) and card language already
+   established in qs17/qs19/qs20 - no new design system, no pricing
+   changes, no router. */
+
+/* ── ProductCard: two click targets (view vs configure) ──────────────
+   .product-card is now a plain container (not a button) holding an
+   inner .product-card-body button (view product) and a footer row with
+   its own View product / Configure buttons - the padding/min-height/
+   hover/active treatment moves from the old single <button> onto this
+   split structure without changing the card's outward appearance. */
+.product-card {
+  min-height: 285px;
+  background: #fff;
+  border: 1px solid #e1e1da;
+  border-radius: 24px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  box-shadow: var(--qs19-shadow-rest, 0 1px 2px rgba(17,17,15,.03), 0 10px 24px rgba(17,17,15,.05));
+}
+.product-card:hover { transform: translateY(-3px); box-shadow: var(--qs19-shadow-hover, 0 18px 50px rgba(17,17,17,.08)); }
+.product-card.active { border-color: var(--green); box-shadow: inset 0 0 0 1px var(--green); }
+
+.product-card-body {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.product-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+}
+.product-card-footer .product-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+.product-card-configure {
+  border: 1px solid #d8d8d1;
+  background: transparent;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 780;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.product-card-configure:hover { border-color: var(--green); background: var(--soft-green); }
+
+/* ── Product Detail: Back to Shop + context rail ──────────────────────
+   The brief's "customer must always know which product they are
+   configuring" requirement (section 4/5) - the SAME product-switcher
+   Shop's old inline configure-toolbar used to bury below the fold is
+   now the page's own top-level orientation device. Restrained "glass"
+   treatment on the active tab only (translucent fill + a soft ring,
+   no neon) - every other tab stays the plain existing button style. */
+.qs21-product-detail-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 0 16px;
+  flex-wrap: wrap;
+}
+.qs21-back-to-shop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  padding: 8px 4px;
+  font-size: 13px;
+  font-weight: 780;
+  color: var(--muted, #676761);
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: color .15s ease;
+}
+.qs21-back-to-shop:hover { color: var(--ink); }
+
+.qs21-context-rail {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  scrollbar-width: none;
+  flex: 1;
+  min-width: 0;
+}
+.qs21-context-rail::-webkit-scrollbar { display: none; }
+.qs21-context-tab {
+  border: 1px solid #d0d0c7;
+  background: #f6f6f2;
+  border-radius: 999px;
+  padding: 10px 15px;
+  white-space: nowrap;
+  cursor: pointer;
+  font-weight: 750;
+  font-size: 13px;
+  color: var(--ink);
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease;
+}
+.qs21-context-tab.active {
+  background: rgba(0, 139, 114, .1);
+  backdrop-filter: blur(6px);
+  border-color: rgba(0, 139, 114, .35);
+  color: #075f50;
+  box-shadow: 0 0 0 1px rgba(0, 139, 114, .12), 0 0 14px rgba(0, 139, 114, .12);
+}
+
+/* ── Home Quick Points band (QS-21 section 8) ─────────────────────────
+   A compact 4-up credibility grid + the real nearby-collection listing,
+   reusing the same card language qs18/qs19 already established rather
+   than inventing a new one. */
+.qs21-quickpoints-benefits {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 40px;
+}
+.qs21-quickpoints-benefits > div {
+  background: #fff;
+  border: 1px solid rgba(17, 17, 15, .06);
+  border-radius: 18px;
+  padding: 18px;
+  display: grid;
+  gap: 8px;
+  box-shadow: var(--qs19-shadow-rest, 0 1px 2px rgba(17,17,15,.03), 0 10px 24px rgba(17,17,15,.05));
+}
+.qs21-quickpoints-benefits svg { color: var(--green); }
+.qs21-quickpoints-benefits strong { font-size: 14px; }
+.qs21-quickpoints-benefits span { font-size: 12px; line-height: 1.5; color: #66665f; }
+.qs21-quickpoints-locations { max-width: 640px; }
+.qs21-quickpoints-locations .quick-copy { margin-bottom: 14px; }
+.qs21-quickpoints-locations .quick-copy strong { display: block; font-size: 20px; }
+.qs21-quickpoints-locations .quick-copy span { font-size: 12px; color: var(--green); font-weight: 800; }
+
+@media (max-width: 900px) {
+  .qs21-quickpoints-benefits { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 620px) {
+  .qs21-quickpoints-benefits { grid-template-columns: 1fr; }
+}
+
+/* ── Quick Configure: desktop contained panel, mobile bottom sheet ────
+   Same DOM (QuickConfigureSheet.jsx), CSS-only layout switch. A
+   restrained "Apple-glass" surface (translucent + blurred backdrop) -
+   the only place besides mode-choice/site-header this pass uses it,
+   per the brief's "selectively, not everywhere" instruction. */
+.qs21-quickconfig-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 17, 15, .38);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 20px;
+}
+.qs21-quickconfig-sheet {
+  width: min(480px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: auto;
+  background: rgba(255, 255, 255, .92);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(17, 17, 15, .08);
+  border-radius: 26px;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 30px 80px rgba(17, 17, 15, .22);
+}
+.qs21-quickconfig-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.qs21-quickconfig-head h3 { font-size: 24px; margin: 6px 0 0; letter-spacing: -.02em; }
+.qs21-quickconfig-close {
+  border: 0;
+  background: #f0f0ea;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.qs21-quickconfig-empty { color: #66665f; font-size: 13px; line-height: 1.6; }
+.qs21-quickconfig-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 16px;
+  border-top: 1px solid #ecece6;
+}
+.qs21-quickconfig-price { display: grid; gap: 2px; }
+.qs21-quickconfig-price span { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #81817a; font-weight: 800; }
+.qs21-quickconfig-price strong { font-size: 22px; letter-spacing: -.03em; }
+.qs21-quickconfig-actions { display: flex; gap: 8px; }
+
+@media (max-width: 620px) {
+  .qs21-quickconfig-backdrop { align-items: flex-end; padding: 0; }
+  .qs21-quickconfig-sheet {
+    width: 100%;
+    max-height: 88vh;
+    border-radius: 22px 22px 0 0;
+    padding: 20px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+  }
+  .qs21-quickconfig-footer {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255, 255, 255, .96);
+    margin: 0 -18px -20px;
+    padding: 14px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .qs21-quickconfig-backdrop { animation: qs21FadeIn .18s ease both; }
+  .qs21-quickconfig-sheet { animation: qs21SheetIn .2s ease both; }
+}
+@keyframes qs21FadeIn { from { opacity: 0; } }
+@keyframes qs21SheetIn { from { opacity: 0; transform: translateY(12px); } }
+
+/* ── Restrained glass, section 6/9: Simple/Pro toggle + outcome panel ──
+   Only the ACTIVE/selected state gets the translucent-glass treatment -
+   every other surface here keeps qs18/qs19's existing plain styling.
+   Overrides qs18.css's solid #fff active pill and qs19's plain hover,
+   loaded after both. */
+.qs18-mode-toggle button.active {
+  background: rgba(255, 255, 255, .82);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 1px rgba(0, 139, 114, .12), 0 2px 8px rgba(17, 17, 15, .1);
+}
+.qs18-outcome-card:hover,
+.qs18-outcome-card:focus-visible {
+  background: rgba(0, 139, 114, .05);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 0 0 1px rgba(0, 139, 114, .1), 0 0 20px rgba(0, 139, 114, .07), var(--qs19-shadow-hover, 0 4px 10px rgba(17,17,15,.05));
+}
+
+/* ── Product Detail trust/payment strip (section 10) ──────────────────── */
+.qs21-trust-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 22px 0;
+}
+.qs21-trust-strip > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid rgba(17, 17, 15, .06);
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+.qs21-trust-strip svg { color: var(--green); flex: 0 0 auto; margin-top: 1px; }
+.qs21-trust-strip strong { display: block; font-size: 13px; }
+.qs21-trust-strip small { display: block; font-size: 11px; color: #77776f; line-height: 1.4; margin-top: 2px; }
+
+@media (max-width: 900px) {
+  .qs21-trust-strip { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 620px) {
+  .qs21-trust-strip { grid-template-columns: 1fr; }
+}
