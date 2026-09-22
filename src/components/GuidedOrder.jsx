@@ -6,10 +6,34 @@ import SupplierVariantConfigurator from './SupplierVariantConfigurator.jsx'
 import PhotoDeliverablesField from './PhotoDeliverablesField.jsx'
 import DocumentPrintPlan from './DocumentPrintPlan.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
+import { deriveVariantAxisValues, resolveDisplayLabel, resolveProductDisplayName } from '../lib/productContent.js'
 import { fulfilmentOptions } from '../data/products.js'
 import { beginQuickSolutionPayment, createQuickSolutionOrder, createQuickSolutionServiceRequest, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
 import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from '../lib/trackingSession.js'
+
+// QS-17D fix: SupplierVariantConfigurator.jsx's axis <select>s (Style/
+// Size/Sides/Kit, Frame/Size/Kit) read their displayed value from
+// dedicated `config.variantAxis_<axisId>` keys, not from `config.variant`
+// itself - so a config that arrives with a real `variant` already set
+// (a Quick Preset, or any other future producer of a ready-made variant
+// id) but no variantAxis_* keys renders every axis dropdown blank, even
+// though pricing (which reads config.variant directly) is already
+// correct. This derives those display keys FROM config.variant, once,
+// at the moments GuidedOrder (re)builds its config - config.variant
+// remains the only pricing-authority value; these are a read-model
+// refreshed from it, never an independent, driftable state. Once the
+// customer touches an axis dropdown, SupplierVariantConfigurator's own
+// chooseAxis() keeps variant and variantAxis_* in sync from then on.
+function hydrateVariantAxisConfig(product, config) {
+  const axes = product?.pricing?.variantAxes
+  if (!Array.isArray(axes) || axes.length === 0) return config
+  const derived = deriveVariantAxisValues(product, config.variant)
+  if (!derived) return config
+  const patch = {}
+  for (const axis of axes) patch[`variantAxis_${axis.id}`] = derived[axis.id]
+  return { ...config, ...patch }
+}
 
 function optionLabel(product, fieldId, value) {
   const field = product.fields.find((item) => item.id === fieldId)
@@ -61,14 +85,14 @@ function LocationSummaryRow({ config }) {
   )
 }
 
-function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0, showFulfilment = true, isServiceRequest = false }) {
+function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0, showFulfilment = true, isServiceRequest = false, mode = 'simple' }) {
   const rows = product.fields
     .filter((field) => field.type !== 'file')
     .filter((field) => !(isServiceRequest && field.id === 'shootAddress'))
     .map((field) => (
       isServiceRequest && field.id === 'shootLocation'
         ? { id: field.id, special: true }
-        : { id: field.id, label: field.shortLabel || field.label, value: optionLabel(product, field.id, config[field.id]) }
+        : { id: field.id, label: resolveDisplayLabel({ label: field.shortLabel || field.label, simpleLabel: field.simpleShortLabel }, mode), value: optionLabel(product, field.id, config[field.id]) }
     ))
 
   const fulfilmentLabel = fulfilment === 'delivery'
@@ -132,13 +156,14 @@ export default function GuidedOrder({
   journey,
   preset = {},
   task,
+  mode = 'simple',
   onAdvanced,
   fulfilmentPoints = [],
   initialStepId = null,
   initialFile = null,
   onAddToCart
 }) {
-  const [config, setConfig] = useState(() => getDefaultConfig(product, preset))
+  const [config, setConfig] = useState(() => hydrateVariantAxisConfig(product, getDefaultConfig(product, preset)))
   const [file, setFile] = useState(initialFile)
   const [fulfilment, setFulfilment] = useState('cafe')
   const [selectedPointId, setSelectedPointId] = useState('')
@@ -167,7 +192,7 @@ export default function GuidedOrder({
   const [itemAdded, setItemAdded] = useState(false)
 
   useEffect(() => {
-    setConfig(getDefaultConfig(product, preset))
+    setConfig(hydrateVariantAxisConfig(product, getDefaultConfig(product, preset)))
     setFile(initialFile)
     setFulfilment('cafe')
     setSelectedPointId('')
@@ -496,7 +521,7 @@ export default function GuidedOrder({
         <span className="eyebrow">{isServiceRequest ? 'Request received' : 'Order received'}</span>
         <h2>{orderNumber}</h2>
         <p>{isServiceRequest ? (isPricedResponse ? 'We saved your booking request at the price shown below. Quick Solution will confirm your schedule and arrange payment separately — nothing is charged yet.' : 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.') : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
-        <div className="complete-summary"><strong>{product.name}</strong><span>{isServiceRequest && !isPricedResponse ? 'Quote after review' : formatMoney(total)}</span></div>
+        <div className="complete-summary"><strong>{resolveProductDisplayName(product, mode)}</strong><span>{isServiceRequest && !isPricedResponse ? 'Quote after review' : formatMoney(total)}</span></div>
 
         {isServiceRequest && config.shootLocation && (
           <div className="complete-fulfilment-card">
@@ -637,7 +662,7 @@ export default function GuidedOrder({
             onChange={updateMany}
           />
         ) : step.type === 'variant-builder' ? (
-          <SupplierVariantConfigurator product={product} config={config} onUpdateConfig={updateMany}/>
+          <SupplierVariantConfigurator product={product} config={config} mode={mode} onUpdateConfig={updateMany}/>
         ) : step.type === 'photo-deliverables' ? (
           <PhotoDeliverablesField product={product} config={config} onUpdateConfig={updateMany}/>
         ) : step.fields && (
@@ -794,6 +819,7 @@ export default function GuidedOrder({
               fulfilmentFee={selectedFulfilmentFee}
               showFulfilment={false}
               isServiceRequest={isServiceRequest}
+              mode={mode}
             />
 
             {isServiceRequest ? (

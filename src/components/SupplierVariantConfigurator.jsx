@@ -1,5 +1,6 @@
 import React from 'react'
 import { getVariantQuantityRule, accessoryCompatible, filterCompatibleAccessories } from '../lib/pricing.js'
+import { resolveDisplayLabel } from '../lib/productContent.js'
 
 // Decomposed style/size/sides/kit configurator for SUPPLIER_MARGIN
 // products (Flags, Gazebos) instead of one long combined dropdown.
@@ -35,7 +36,7 @@ function optionAvailable(option, config) {
   )
 }
 
-export default function SupplierVariantConfigurator({ product, config, onUpdateConfig }) {
+export default function SupplierVariantConfigurator({ product, config, mode = 'simple', onUpdateConfig }) {
   const axes = product.pricing?.variantAxes || []
   const variantId = composeVariantId(product, config)
   const variant = variantId ? product.pricing.variants?.[variantId] : null
@@ -98,12 +99,17 @@ export default function SupplierVariantConfigurator({ product, config, onUpdateC
     <div className="guided-fields qs14-variant-builder">
       {axes.map((axis) => {
         const options = axis.options.filter((option) => optionAvailable(option, config))
+        // QS-18: resolveDisplayLabel(axis, mode) shows the friendlier
+        // simpleLabel (e.g. "Do you need the stand too?") in Simple mode
+        // where one exists, falling back to today's existing axis.label
+        // ("Kit") otherwise - same for each option. Never changes which
+        // axis.id/option.id is stored in config.
         return (
           <label className="field" key={axis.id}>
-            <span>{axis.label}</span>
+            <span>{resolveDisplayLabel(axis, mode)}</span>
             <select value={axisValue(config, axis.id)} onChange={(event) => chooseAxis(axis.id, event.target.value)}>
               <option value="" disabled>Choose {axis.label.toLowerCase()}</option>
-              {options.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+              {options.map((option) => <option key={option.id} value={option.id}>{resolveDisplayLabel(option, mode)}</option>)}
             </select>
           </label>
         )

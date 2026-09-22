@@ -1,0 +1,139 @@
+/* QS-19 — Home / mobile polish and app-like task flow.
+   Presentation-only: no pricing, checkout, Supabase, guided-flow logic
+   or preset changes. Loads after qs18.css, so these rules intentionally
+   override/extend qs18's base outcome-card/proof-card/help-cta styling
+   rather than duplicating a second design language. Scoped to Home's
+   own classes (.qs18-*, .qs10-proof-*) - Shop/ProductHub/the
+   configurator/checkout are untouched. */
+
+:root {
+  /* --soft-green/--soft-lilac already exist (app.css) - --soft-orange
+     is the missing third tint for the same faint-brand-surface system,
+     used to cycle outcome-card icon backgrounds without introducing a
+     new, unrelated palette. */
+  --soft-orange: #fbe9e0;
+  --deep-lilac: #7a4fd1;
+  --qs19-shadow-rest: 0 1px 2px rgba(17, 17, 15, .03), 0 10px 24px rgba(17, 17, 15, .05);
+  --qs19-shadow-hover: 0 4px 10px rgba(17, 17, 15, .05), 0 18px 34px rgba(17, 17, 15, .09);
+}
+
+/* ── Task cards ("What do you need done today?") ─────────────────────
+   Individually elevated, soft-tinted icon per card (cycling the 3
+   brand colors so the list reads with more life without turning
+   playful), a real circular CTA badge instead of a bare chevron, and
+   genuine hover/press affordance. */
+.qs18-outcome-card {
+  grid-template-columns: 44px 1fr 28px;
+  gap: 14px;
+  border-color: rgba(17, 17, 15, .06);
+  border-radius: 18px;
+  padding: 13px 14px 13px 13px;
+  box-shadow: var(--qs19-shadow-rest);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.qs18-outcome-card:hover {
+  border-color: rgba(0, 139, 114, .25);
+  transform: translateY(-3px);
+  box-shadow: var(--qs19-shadow-hover);
+}
+.qs18-outcome-card:active {
+  transform: translateY(-1px) scale(.98);
+  transition-duration: .08s;
+}
+
+.qs18-outcome-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: var(--soft-green);
+  color: var(--green);
+}
+.qs18-outcome-card:nth-child(3n+2) .qs18-outcome-icon { background: var(--soft-orange); color: var(--orange); }
+.qs18-outcome-card:nth-child(3n) .qs18-outcome-icon { background: var(--soft-lilac); color: var(--deep-lilac); }
+
+.qs18-outcome-arrow {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f3f3ef;
+  color: #55554f;
+  flex: 0 0 auto;
+  transition: background .18s ease, color .18s ease, transform .18s ease;
+}
+.qs18-outcome-card:hover .qs18-outcome-arrow {
+  background: var(--green);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+/* ── Proof cards ("Real businesses. Real events. Real products.") ──── */
+.qs10-proof-card {
+  border-color: rgba(17, 17, 15, .06);
+  box-shadow: var(--qs19-shadow-rest);
+}
+
+/* ── Help CTA: reuse the same soft-tint token instead of a one-off hex ── */
+.qs18-help-cta {
+  background: var(--soft-green);
+  box-shadow: var(--qs19-shadow-rest);
+}
+
+/* ── Horizontal swipe rails on mobile ─────────────────────────────────
+   Uber-style: horizontally scrollable, snap-to-card, next card peeking
+   in from the edge, no visible scrollbar. Desktop is untouched (stays
+   the existing vertical task list / 3-up proof grid - a forced rail
+   there would be worse, not better, per the brief). */
+@media (max-width: 720px) {
+  /* Grid/flex items default to min-width:auto (content-based), so an
+     unconstrained horizontal rail's natural content width bubbles all
+     the way up through .qs18-outcome-panel into .hero's single grid
+     column, stretching the whole hero off-screen. min-width:0 at each
+     level breaks that chain; the cards themselves are sized in vw
+     (viewport-relative) rather than % of their own scroll container,
+     which sidesteps the same circular-width problem at the source. */
+  .hero-copy,
+  .qs18-outcome-panel {
+    min-width: 0;
+  }
+  .qs18-outcome-panel {
+    background: transparent;
+    border: 0;
+    padding: 0;
+  }
+  .qs18-outcome-panel h2 { padding: 0 2px; }
+
+  .qs18-outcome-grid,
+  .qs10-proof-grid {
+    display: flex;
+    grid-template-columns: unset;
+    min-width: 0;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 4px 4px 14px;
+    margin: 0 -4px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .qs18-outcome-grid::-webkit-scrollbar,
+  .qs10-proof-grid::-webkit-scrollbar { display: none; }
+
+  .qs18-outcome-card {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+    width: min(78vw, 320px);
+  }
+  /* Rail cards have room to spare (≈78vw on a 360-390px viewport) -
+     restore the helper line qs18.css hides at ≤390px in the old
+     dense vertical-list layout; it fits comfortably here and adds
+     real information instead of a bare title. */
+  .qs18-outcome-copy small { display: block; }
+
+  .qs10-proof-card {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+    width: min(80vw, 340px);
+  }
+}

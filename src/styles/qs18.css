@@ -1,0 +1,146 @@
+/* QS-18 — homepage simplification, Simple/Pro language mode, Shop,
+   document-printing shortcut, Worked With strip. UI-only: no pricing,
+   checkout or Supabase behavior changes. */
+
+/* ── QS-18A: Home/Shop nav buttons match the existing anchor styling ── */
+/* .desktop-nav a already has this via app.css - Home/Shop/Quick Points
+   became <button>s (they now switch page state, not just scroll), so
+   they need the browser's default button chrome reset to look identical
+   to the untouched Track order <a>. */
+.desktop-nav button {
+  display: flex; align-items: center; gap: 5px; border: 0; background: transparent;
+  font: inherit; color: inherit; padding: 0; cursor: pointer;
+}
+/* The bag-button/"Start order" CTA is now sometimes a <button> (Home,
+   where #configure isn't mounted yet) instead of an <a> - same visual
+   treatment either way, just resetting the UA button border. */
+button.bag-button { border: 0; cursor: pointer; }
+
+/* ── Header additions: mode toggle + Send documents ─────────────────── */
+.qs18-header-actions { display: flex; align-items: center; gap: 10px; }
+.qs18-mode-toggle {
+  display: flex; align-items: center; background: #efefe9; border-radius: 999px; padding: 3px;
+  font-size: 12px; font-weight: 750;
+}
+.qs18-mode-toggle button {
+  border: 0; background: transparent; padding: 6px 12px; border-radius: 999px; color: #6c6c67; cursor: pointer;
+}
+.qs18-mode-toggle button.active { background: #fff; color: var(--ink); box-shadow: 0 2px 6px rgba(17,17,15,.1); }
+.qs18-send-docs {
+  display: flex; align-items: center; gap: 6px; border: 1px solid #d8d8d1; background: transparent; color: var(--ink);
+  border-radius: 999px; padding: 9px 14px; font-size: 12px; font-weight: 750; cursor: pointer; white-space: nowrap;
+}
+.qs18-send-docs-mobile { display: none; }
+
+/* ── Language mode prompt (non-blocking banner, not a modal) ────────── */
+.qs18-mode-prompt {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: #fff; border: 1px solid var(--line, #e1e1da); border-radius: 18px;
+  padding: 14px 18px; margin: 14px auto 0; box-shadow: 0 12px 30px rgba(17,17,15,.06);
+}
+.qs18-mode-prompt-copy { flex: 1 1 220px; font-size: 14px; }
+.qs18-mode-prompt-actions { display: flex; gap: 8px; }
+.qs18-mode-prompt-choice {
+  display: grid; text-align: left; border: 1px solid #d8d8d1; background: transparent; border-radius: 12px;
+  padding: 8px 14px; cursor: pointer;
+}
+.qs18-mode-prompt-choice span { font-weight: 800; font-size: 13px; }
+.qs18-mode-prompt-choice small { color: #74746e; font-size: 11px; }
+.qs18-mode-prompt-choice:hover { border-color: var(--green); }
+.qs18-mode-prompt-dismiss { border: 0; background: transparent; color: #9c9c96; cursor: pointer; padding: 4px; }
+
+/* ── Hero: outcome-first, no more workflow-card visual ───────────────── */
+.qs18-hero .hero-copy > p { margin-bottom: 0; }
+.qs18-outcome-panel {
+  background: #fff; border-radius: 28px; padding: 26px; border: 1px solid var(--line, #e1e1da);
+}
+.qs18-outcome-panel h2 { font-size: 19px; margin: 0 0 14px; letter-spacing: -.01em; }
+.qs18-outcome-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+.qs18-outcome-card {
+  display: grid; grid-template-columns: 38px 1fr 18px; align-items: center; gap: 12px;
+  border: 1px solid var(--line, #e1e1da); background: #fbfbf8; border-radius: 16px; padding: 12px 14px;
+  text-align: left; cursor: pointer; transition: .15s;
+}
+.qs18-outcome-card:hover { border-color: var(--green); transform: translateY(-1px); }
+.qs18-outcome-icon {
+  width: 38px; height: 38px; border-radius: 11px; background: #efefe9; display: grid; place-items: center;
+}
+.qs18-outcome-copy { display: grid; gap: 2px; min-width: 0; }
+.qs18-outcome-copy strong { font-size: 14px; }
+.qs18-outcome-copy small { font-size: 12px; color: #6c6c67; line-height: 1.35; }
+
+/* ── Worked With strip ────────────────────────────────────────────── */
+.qs18-worked-with {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 26px 0;
+  border-top: 1px solid var(--line, #e1e1da); border-bottom: 1px solid var(--line, #e1e1da);
+}
+.qs18-worked-with-label { font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: .12em; color: #74746e; flex: 0 0 auto; }
+.qs18-worked-with-list { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.qs18-worked-with-item { font-size: 13px; font-weight: 700; color: #46463f; }
+
+/* ── Help CTA ─────────────────────────────────────────────────────── */
+.qs18-help-cta {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  background: #f0f6f4; border-radius: 22px; padding: 22px 26px; margin: 40px auto;
+}
+.qs18-help-cta-copy { display: grid; gap: 4px; max-width: 480px; }
+.qs18-help-cta-copy strong { font-size: 17px; letter-spacing: -.01em; }
+
+/* ── Shop filters ─────────────────────────────────────────────────── */
+.qs18-shop-filters {
+  display: flex; gap: 8px; flex-wrap: wrap; margin: -8px 0 26px;
+}
+.qs18-shop-filters button {
+  border: 1px solid #d8d8d1; background: transparent; border-radius: 999px; padding: 8px 15px;
+  font-size: 12px; font-weight: 750; color: #46463f; cursor: pointer;
+}
+.qs18-shop-filters button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+.qs18-shop-empty { color: #74746e; font-size: 14px; padding: 20px 0; }
+
+/* ── Preset spec line (composeVariantSummary) ────────────────────────── */
+.product-hub-preset-spec { display: block; color: #74746e; font-size: 12px; margin-top: 2px; }
+
+@media (max-width: 900px) {
+  .qs18-outcome-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .qs18-header-actions { gap: 6px; }
+  .qs18-mode-toggle { font-size: 11px; }
+  .qs18-mode-toggle button { padding: 6px 9px; }
+  .qs18-send-docs { padding: 9px 11px; }
+  .qs18-send-docs-desktop { display: none; }
+  .qs18-send-docs-mobile { display: inline; }
+  .qs18-outcome-panel { padding: 18px; border-radius: 22px; }
+  .qs18-outcome-panel h2 { font-size: 17px; }
+  .qs18-worked-with { padding: 18px 0; gap: 10px; }
+  .qs18-help-cta { padding: 18px; margin: 28px auto; flex-direction: column; align-items: flex-start; }
+  .qs18-help-cta .button { width: 100%; justify-content: center; }
+  .qs18-mode-prompt { padding: 12px 14px; margin-top: 10px; }
+  .qs18-mode-prompt-actions { width: 100%; }
+  .qs18-mode-prompt-choice { flex: 1 1 0; }
+}
+
+/* Below ~480px the header cannot fit brand + mode toggle + "Send docs"
+   text + "Start order" text without overflowing - the bag/cart button
+   is the primary CTA and must win that space (per QS-18 instruction:
+   the document shortcut must never compete with it), so "Send docs"
+   drops to icon-only first. */
+@media (max-width: 480px) {
+  .qs18-send-docs-mobile { display: none; }
+  .qs18-send-docs { padding: 9px; }
+  .qs18-mode-toggle button { padding: 5px 7px; }
+  .bag-button { padding: 10px 12px; }
+}
+
+@media (max-width: 390px) {
+  .qs18-mode-toggle button { padding: 5px 6px; font-size: 10px; }
+  .qs18-outcome-copy small { display: none; }
+  .qs18-header-actions { gap: 4px; }
+  /* Three actions (mode toggle, document shortcut, cart CTA) cannot all
+     carry text at this width - the cart/primary CTA keeps its icon
+     (still the largest, right-most, most emphasized control) and drops
+     its label here rather than let the row overflow the viewport. */
+  .bag-button span { display: none; }
+  .bag-button { padding: 10px; }
+}

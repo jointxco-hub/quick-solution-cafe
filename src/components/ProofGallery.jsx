@@ -22,7 +22,13 @@ const proofItems = [
   }
 ]
 
-export default function ProofGallery() {
+// QS-18A: onExploreCollection is optional - when App.jsx passes it (the
+// Home page, where #quick-points does not exist in the DOM), the button
+// switches to Shop and scrolls to Quick Points once it mounts instead of
+// a plain #quick-points anchor that would silently do nothing. Any other
+// caller that doesn't pass it keeps the original anchor behavior
+// unchanged - smallest possible addition, not a redesign.
+export default function ProofGallery({ onExploreCollection }) {
   return (
     <section className="qs10-proof-section shell section" aria-labelledby="qs10-proof-title">
       <div className="qs10-proof-heading">
@@ -55,9 +61,15 @@ export default function ProofGallery() {
           <strong>Order online. Collect locally.</strong>
           <p>Start from home, upload your files, then collect from Quick Solution or a nearby Quick Point.</p>
         </div>
-        <a className="button ghost" href="#quick-points">
-          Explore collection options <Icon name="arrowRight" size={16}/>
-        </a>
+        {onExploreCollection ? (
+          <button type="button" className="button ghost" onClick={onExploreCollection}>
+            Explore collection options <Icon name="arrowRight" size={16}/>
+          </button>
+        ) : (
+          <a className="button ghost" href="#quick-points">
+            Explore collection options <Icon name="arrowRight" size={16}/>
+          </a>
+        )}
       </div>
     </section>
   )

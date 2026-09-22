@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
+import { resolveProductDisplayName } from '../lib/productContent.js'
 import Icon from './Icon.jsx'
 import FieldControl from './FieldControl.jsx'
 
 export default function ProductConfigurator({
   product,
   preset = {},
+  mode = 'simple',
   onSnapshot,
   onGuided,
   onContinue,
@@ -52,7 +54,7 @@ export default function ProductConfigurator({
         <div className="config-intro">
           <div>
             <span className="eyebrow">Full options</span>
-            <h2>{product.name}</h2>
+            <h2>{resolveProductDisplayName(product, mode)}</h2>
             <p className="section-copy">{product.plainDescription}</p>
           </div>
           <span className="pricing-pill">Live price</span>

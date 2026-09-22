@@ -1,5 +1,6 @@
 import React from 'react'
 import Icon from './Icon.jsx'
+import { resolveSelectControlState, resolveSelectControlChange } from '../lib/productContent.js'
 
 export function FileControl({ field, file, onFileChange, guided = false }) {
   const multiple = Boolean(field.multiple)
@@ -159,10 +160,25 @@ export default function FieldControl({ field, value, onChange, file, onFileChang
     )
   }
 
+  // A preset may intentionally leave an optional select field unanswered
+  // (value === null, e.g. artwork - see productContent.js's
+  // validatePresetConfig()). The native <select> has no null value, so
+  // null is mapped to '' only here, at this UI boundary (see
+  // resolveSelectControlState/resolveSelectControlChange in
+  // productContent.js), via a non-submittable placeholder option - the
+  // field's actual config value stays null (or whatever real option id
+  // is chosen) everywhere else. Without this, a controlled
+  // <select value={null}> silently renders with the browser's default
+  // first-option highlighted, visually implying that option was chosen
+  // when nothing was.
+  const { selectValue, isUnanswered } = resolveSelectControlState(value)
   return (
     <label className="field">
       <span>{field.label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
+      <select value={selectValue} onChange={(event) => onChange(resolveSelectControlChange(event.target.value))}>
+        {isUnanswered && (
+          <option value="" disabled>{field.placeholder || `Select ${field.label.replace(/\?$/, '').toLowerCase()}`}</option>
+        )}
         {field.options.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
       </select>
     </label>

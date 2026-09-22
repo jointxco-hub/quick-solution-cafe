@@ -11,6 +11,8 @@ import {
   deriveRelatedProducts,
   resolveStartingPriceEligibility,
   resolveHubAvailability,
+  resolveProductPresets,
+  composeVariantSummary,
   buildShareLinks
 } from '../lib/productContent.js'
 
@@ -29,7 +31,17 @@ import {
 // product that has not been given curated productPage content yet, so
 // this same component already works for every product in the catalogue,
 // not just vinyl-stickers.
-export default function ProductHub({ product, catalog = [], onConfigure, onGuided, onSelectRelated }) {
+//
+// QS-17: `onGuided`/`onConfigure` now optionally accept a preset config
+// argument (`onGuided(presetConfig)`/`onConfigure(presetConfig)`) - the
+// plain hero CTAs still call them with no argument (unchanged, existing
+// behavior), while the new Presets section's "Choose this"/"Customise"
+// buttons call them WITH a preset's config. No new App.jsx state or
+// prop was introduced for this - openAdvanced/openGuided already accept
+// a `nextPreset` argument (used since QS-16 for related-product/
+// continue-from-advanced handoffs), so passing a preset's config through
+// these same two existing props reuses that exact mechanism.
+export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated }) {
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [mediaFailed, setMediaFailed] = useState(false)
 
@@ -69,6 +81,28 @@ export default function ProductHub({ product, catalog = [], onConfigure, onGuide
     return null
   }, [priceEligibility, product])
 
+  // QS-17: resolveProductPresets() already guarantees every entry here
+  // is both structurally safe and semantically valid against this
+  // product's real field/option/accessory catalog (see
+  // validatePresetConfig() in productContent.js) - nothing further to
+  // check before rendering a card. Each preset's OWN price (shown only
+  // "if and only if calculateProductPrice can safely return it" per
+  // spec) is computed directly from the preset's saved config - never
+  // stored on the preset itself, never a second pricing implementation.
+  const presets = useMemo(() => resolveProductPresets(product), [product])
+  const presetPrices = useMemo(() => {
+    const prices = {}
+    for (const preset of presets) {
+      try {
+        const result = calculateProductPrice(product, preset.config)
+        prices[preset.id] = result?.metrics?.quoteRequired || result?.metrics?.invalid ? null : result.total
+      } catch {
+        prices[preset.id] = null
+      }
+    }
+    return prices
+  }, [presets, product])
+
   if (!product) return null
 
   const galleryImages = media.hero ? [media.hero, ...media.gallery.filter((src) => src !== media.hero)] : media.gallery
@@ -106,12 +140,16 @@ export default function ProductHub({ product, catalog = [], onConfigure, onGuide
 
           <div className="product-hub-hero-actions">
             {hasGuided && (
-              <button type="button" className="button dark" onClick={onGuided}>
+              // QS-17: called with no argument, explicitly - onGuided
+              // now optionally accepts a preset config (see the Presets
+              // section below), and onClick={onGuided} directly would
+              // pass the DOM click event as that argument instead.
+              <button type="button" className="button dark" onClick={() => onGuided()}>
                 Start guided order <Icon name="arrowRight" size={17}/>
               </button>
             )}
             {hasAdvanced && (
-              <button type="button" className={`button ${hasGuided ? 'ghost' : 'dark'}`} onClick={onConfigure}>
+              <button type="button" className={`button ${hasGuided ? 'ghost' : 'dark'}`} onClick={() => onConfigure()}>
                 {hasGuided ? 'Full options' : 'Configure'} <Icon name="arrowUpRight" size={16}/>
               </button>
             )}
@@ -148,6 +186,76 @@ export default function ProductHub({ product, catalog = [], onConfigure, onGuide
           )}
         </div>
       </div>
+
+      {/* QS-17 — Quick options / Quick Presets. Only renders when the
+          product actually has valid presets - products without any
+          (every product except flags/gazebos, this phase) render
+          exactly as they did before this section existed. */}
+      {presets.length > 0 && (
+        <div className="product-hub-presets">
+          <h3>Quick options</h3>
+          <div className="product-hub-preset-grid">
+            {presets.map((preset) => {
+              const price = presetPrices[preset.id]
+              // QS-18: a generic, mode-aware spec line composed straight
+              // from product.pricing.variantAxes (see composeVariantSummary()/
+              // productContent.js) - e.g. "Telescopic — 3.0m — Printed on
+              // both sides — Complete kit" (Simple) vs "... — Double-sided
+              // — Full kit" (Pro). Never changes preset.name/description,
+              // never a second copy of the variant's spec.
+              const specLine = composeVariantSummary(product, preset.config?.variant, mode)
+              return (
+                <div key={preset.id} className="product-hub-preset-card">
+                  <strong>{preset.name}</strong>
+                  {specLine && <small className="product-hub-preset-spec">{specLine}</small>}
+                  {preset.description && <p>{preset.description}</p>}
+                  {price != null && <p className="product-hub-preset-price">{formatMoney(price)}</p>}
+                  <div className="product-hub-preset-actions">
+                    {/* "Choose this": the fast path - Guided when
+                        available (pre-filled, walks the remaining
+                        steps), otherwise Advanced. Does not add to cart
+                        directly - QS-17 scope stops at handing the
+                        preset's config into the existing configurator,
+                        per instruction. */}
+                    {(hasGuided || hasAdvanced) && (
+                      <button
+                        type="button"
+                        className="button dark"
+                        onClick={() => (hasGuided ? onGuided(preset.config) : onConfigure(preset.config))}
+                      >
+                        Choose this
+                      </button>
+                    )}
+                    {/* "Customise": always Advanced/full options,
+                        pre-filled with the preset's config - lets the
+                        user see and change any field, including the
+                        variant itself, on one page. */}
+                    {hasAdvanced && (
+                      <button type="button" className="button ghost" onClick={() => onConfigure(preset.config)}>
+                        Customise
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          {/* Always retained: an explicit way out of the presets for
+              anyone who wants full control from a blank slate - the
+              same plain (no preset) Guided/Advanced entry points the
+              hero actions above already offer, surfaced again here so
+              it's not necessary to scroll back up. */}
+          {(hasGuided || hasAdvanced) && (
+            <button
+              type="button"
+              className="product-hub-preset-buildown"
+              onClick={() => (hasGuided ? onGuided() : onConfigure())}
+            >
+              Build your own <Icon name="arrowRight" size={15}/>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 3 — Use cases */}
       {content.useCases.length > 0 && (
@@ -265,11 +373,11 @@ export default function ProductHub({ product, catalog = [], onConfigure, onGuide
           viewports where it's actually visible. */}
       <div className="product-hub-sticky-cta">
         {hasGuided ? (
-          <button type="button" className="button dark" onClick={onGuided}>
+          <button type="button" className="button dark" onClick={() => onGuided()}>
             Start guided order <Icon name="arrowRight" size={17}/>
           </button>
         ) : hasAdvanced ? (
-          <button type="button" className="button dark" onClick={onConfigure}>
+          <button type="button" className="button dark" onClick={() => onConfigure()}>
             Configure <Icon name="arrowUpRight" size={16}/>
           </button>
         ) : (
