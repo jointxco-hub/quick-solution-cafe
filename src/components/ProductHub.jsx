@@ -12,6 +12,7 @@ import {
   resolveStartingPriceEligibility,
   resolveHubAvailability,
   resolveProductPresets,
+  composeVariantSummary,
   buildShareLinks
 } from '../lib/productContent.js'
 
@@ -40,7 +41,7 @@ import {
 // a `nextPreset` argument (used since QS-16 for related-product/
 // continue-from-advanced handoffs), so passing a preset's config through
 // these same two existing props reuses that exact mechanism.
-export default function ProductHub({ product, catalog = [], onConfigure, onGuided, onSelectRelated }) {
+export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated }) {
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [mediaFailed, setMediaFailed] = useState(false)
 
@@ -196,9 +197,17 @@ export default function ProductHub({ product, catalog = [], onConfigure, onGuide
           <div className="product-hub-preset-grid">
             {presets.map((preset) => {
               const price = presetPrices[preset.id]
+              // QS-18: a generic, mode-aware spec line composed straight
+              // from product.pricing.variantAxes (see composeVariantSummary()/
+              // productContent.js) - e.g. "Telescopic — 3.0m — Printed on
+              // both sides — Complete kit" (Simple) vs "... — Double-sided
+              // — Full kit" (Pro). Never changes preset.name/description,
+              // never a second copy of the variant's spec.
+              const specLine = composeVariantSummary(product, preset.config?.variant, mode)
               return (
                 <div key={preset.id} className="product-hub-preset-card">
                   <strong>{preset.name}</strong>
+                  {specLine && <small className="product-hub-preset-spec">{specLine}</small>}
                   {preset.description && <p>{preset.description}</p>}
                   {price != null && <p className="product-hub-preset-price">{formatMoney(price)}</p>}
                   <div className="product-hub-preset-actions">

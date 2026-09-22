@@ -6,7 +6,7 @@ import SupplierVariantConfigurator from './SupplierVariantConfigurator.jsx'
 import PhotoDeliverablesField from './PhotoDeliverablesField.jsx'
 import DocumentPrintPlan from './DocumentPrintPlan.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
-import { deriveVariantAxisValues } from '../lib/productContent.js'
+import { deriveVariantAxisValues, resolveDisplayLabel, resolveProductDisplayName } from '../lib/productContent.js'
 import { fulfilmentOptions } from '../data/products.js'
 import { beginQuickSolutionPayment, createQuickSolutionOrder, createQuickSolutionServiceRequest, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
@@ -85,14 +85,14 @@ function LocationSummaryRow({ config }) {
   )
 }
 
-function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0, showFulfilment = true, isServiceRequest = false }) {
+function ReviewRows({ product, config, fulfilment, file, selectedPoint, fulfilmentFee = 0, showFulfilment = true, isServiceRequest = false, mode = 'simple' }) {
   const rows = product.fields
     .filter((field) => field.type !== 'file')
     .filter((field) => !(isServiceRequest && field.id === 'shootAddress'))
     .map((field) => (
       isServiceRequest && field.id === 'shootLocation'
         ? { id: field.id, special: true }
-        : { id: field.id, label: field.shortLabel || field.label, value: optionLabel(product, field.id, config[field.id]) }
+        : { id: field.id, label: resolveDisplayLabel({ label: field.shortLabel || field.label, simpleLabel: field.simpleShortLabel }, mode), value: optionLabel(product, field.id, config[field.id]) }
     ))
 
   const fulfilmentLabel = fulfilment === 'delivery'
@@ -156,6 +156,7 @@ export default function GuidedOrder({
   journey,
   preset = {},
   task,
+  mode = 'simple',
   onAdvanced,
   fulfilmentPoints = [],
   initialStepId = null,
@@ -520,7 +521,7 @@ export default function GuidedOrder({
         <span className="eyebrow">{isServiceRequest ? 'Request received' : 'Order received'}</span>
         <h2>{orderNumber}</h2>
         <p>{isServiceRequest ? (isPricedResponse ? 'We saved your booking request at the price shown below. Quick Solution will confirm your schedule and arrange payment separately — nothing is charged yet.' : 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.') : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
-        <div className="complete-summary"><strong>{product.name}</strong><span>{isServiceRequest && !isPricedResponse ? 'Quote after review' : formatMoney(total)}</span></div>
+        <div className="complete-summary"><strong>{resolveProductDisplayName(product, mode)}</strong><span>{isServiceRequest && !isPricedResponse ? 'Quote after review' : formatMoney(total)}</span></div>
 
         {isServiceRequest && config.shootLocation && (
           <div className="complete-fulfilment-card">
@@ -661,7 +662,7 @@ export default function GuidedOrder({
             onChange={updateMany}
           />
         ) : step.type === 'variant-builder' ? (
-          <SupplierVariantConfigurator product={product} config={config} onUpdateConfig={updateMany}/>
+          <SupplierVariantConfigurator product={product} config={config} mode={mode} onUpdateConfig={updateMany}/>
         ) : step.type === 'photo-deliverables' ? (
           <PhotoDeliverablesField product={product} config={config} onUpdateConfig={updateMany}/>
         ) : step.fields && (
@@ -818,6 +819,7 @@ export default function GuidedOrder({
               fulfilmentFee={selectedFulfilmentFee}
               showFulfilment={false}
               isServiceRequest={isServiceRequest}
+              mode={mode}
             />
 
             {isServiceRequest ? (

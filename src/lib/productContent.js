@@ -498,3 +498,91 @@ export function buildShareLinks(product, { origin = '', whatsappNumber = '277545
     whatsappUrl: `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
   }
 }
+
+// ── QS-18: Simple / Pro language mode ─────────────────────────────────
+// A presentation-only mode - it never changes product ids, config keys,
+// variant ids or prices, only which STRING is shown for a piece of
+// customer-facing copy that already carries both variants. The data
+// shape is deliberately minimal and reuses whatever field name a piece
+// of content already uses for its default text (`label` on fields/
+// options/axes, `name` on products) plus a sibling `simple*` field
+// holding the friendlier alternative - nothing is renamed, so a product/
+// field/option that hasn't been given a simple variant yet keeps
+// rendering exactly as it always has (falls back to its one existing
+// string in both modes). "Pro" is always the fallback/default value -
+// so any call site that is not explicitly wired to a mode still shows
+// today's existing text unchanged, never something new or unreviewed.
+//
+// Only a small, deliberately incomplete set of high-friction terms carry
+// a simple variant right now (see the QS-18 comments on the flags/
+// gazebos variantAxes and the artwork fields in src/data/products.js) -
+// this does not rewrite the whole catalogue, per the QS-18 brief's own
+// "do not rewrite every product if unnecessary".
+export function resolveDisplayLabel(value, mode) {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  const pro = value.label ?? value.name ?? ''
+  if (mode !== 'simple') return pro
+  return value.simpleLabel ?? value.simpleName ?? pro
+}
+
+// Thin, product-specific wrapper: a product's display name uses `name`/
+// `simpleName` (matching the field name every other part of this app
+// already uses for a product's name), not `label`/`simpleLabel` -
+// resolveDisplayLabel already recognizes both shapes, this just avoids
+// every call site having to remember which pair applies to a product.
+export function resolveProductDisplayName(product, mode) {
+  return resolveDisplayLabel({ label: product?.name, simpleLabel: product?.simpleName }, mode) || product?.name || ''
+}
+
+// Composes a short, mode-aware spec line for a real variant from the
+// SAME product.pricing.variantAxes metadata deriveVariantAxisValues()
+// (QS-17D) already reads - e.g. "Telescopic — 3.0m — Double-sided — Full
+// kit" (Pro) vs "Telescopic — 3.0m — Printed on both sides — Complete
+// kit" (Simple) for telescopic-3m-ds-full. Generic and read-only: never
+// invents a variant, never stores anything, works for any current or
+// future product that has variantAxes - not flags/gazebos-specific
+// logic. Returns null wherever deriveVariantAxisValues would (no axis
+// metadata, malformed/nonexistent variant), so a caller can safely fall
+// back to the variant's own plain label.
+export function composeVariantSummary(product, variantId, mode) {
+  const axes = product?.pricing?.variantAxes
+  const derived = deriveVariantAxisValues(product, variantId)
+  if (!Array.isArray(axes) || !derived) return null
+
+  const parts = axes.map((axis) => {
+    const optionId = derived[axis.id]
+    const option = Array.isArray(axis.options) ? axis.options.find((item) => item?.id === optionId) : null
+    return option ? resolveDisplayLabel(option, mode) : optionId
+  })
+  return parts.filter(Boolean).join(' — ')
+}
+
+// ── QS-18: Shop category filter ───────────────────────────────────────
+// A small, presentation-only grouping ON TOP OF each product's existing
+// `category` (never a second catalogue/source of truth) - maps this
+// catalogue's 7 existing detailed categories onto the 7 broader,
+// customer-facing Shop filter buckets the QS-18 brief asks for. Every
+// current product's category is covered; a product whose category is
+// not in this map simply has no bucket (still shown under "All").
+export const SHOP_CATEGORIES = ['All', 'Print & Documents', 'Business', 'Signs & Advertising', 'Apparel', 'Events', 'Photo & Video']
+
+const CATEGORY_TO_SHOP_BUCKET = {
+  'Quick Print': 'Print & Documents',
+  'Labels & Packaging': 'Print & Documents',
+  'Signs & Large Format': 'Signs & Advertising',
+  'Business Essentials': 'Business',
+  'Clothing & Merch': 'Apparel',
+  'Flags & Events': 'Events',
+  'Photo & Video': 'Photo & Video'
+}
+
+export function resolveShopCategory(product) {
+  return CATEGORY_TO_SHOP_BUCKET[product?.category] || null
+}
+
+export function filterProductsByShopCategory(products, filter) {
+  const list = Array.isArray(products) ? products : []
+  if (!filter || filter === 'All') return list
+  return list.filter((product) => resolveShopCategory(product) === filter)
+}

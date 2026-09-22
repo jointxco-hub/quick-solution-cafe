@@ -1,9 +1,9 @@
 ﻿import React, { useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
-import { resolveProductMedia } from '../lib/productContent.js'
+import { resolveProductMedia, resolveProductDisplayName } from '../lib/productContent.js'
 
-export default function ProductCard({ product, active = false, onConfigure }) {
+export default function ProductCard({ product, active = false, mode = 'simple', onConfigure }) {
   const [imageFailed, setImageFailed] = useState(false)
   // QS-16: lookup order is product.media?.hero -> product.image ->
   // the legacy hardcoded map (moved into productContent.js so
@@ -32,7 +32,7 @@ export default function ProductCard({ product, active = false, onConfigure }) {
       </div>
 
       <div className="product-card-copy">
-        <h3>{product.name}</h3>
+        <h3>{resolveProductDisplayName(product, mode)}</h3>
         <p>{product.description}</p>
       </div>
 

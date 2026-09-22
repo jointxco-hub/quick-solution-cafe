@@ -7,16 +7,19 @@ import ProductConfigurator from './components/ProductConfigurator.jsx'
 import GuidedOrder from './components/GuidedOrder.jsx'
 import PaymentReturn from './components/PaymentReturn.jsx'
 import TrackOrder from './components/TrackOrder.jsx'
-import QuickTaskCard from './components/QuickTaskCard.jsx'
-import SubtleStoryRail from './components/SubtleStoryRail.jsx'
 import ProofGallery from './components/ProofGallery.jsx'
 import ComingSoonRail from './components/ComingSoonRail.jsx'
+import WorkedWithStrip from './components/WorkedWithStrip.jsx'
+import HelpCta from './components/HelpCta.jsx'
+import LanguageModePrompt from './components/LanguageModePrompt.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
 import OrderBasket from './components/OrderBasket.jsx'
 import { loadCart, saveCart } from './lib/cartStore.js'
-import { categories, guidedJourneys, products as defaultProducts, quickTasks } from './data/products.js'
+import { guidedJourneys, heroOutcomes, products as defaultProducts } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
+import { resolveProductDisplayName, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
+import { loadLanguageMode, saveLanguageMode, hasSeenLanguageModePrompt, markLanguageModePromptSeen } from './lib/languageMode.js'
 
 export default function App() {
   const [catalog, setCatalog] = useState(() => loadCatalog(defaultProducts))
@@ -34,8 +37,17 @@ export default function App() {
   const [journeyId, setJourneyId] = useState('document-guided')
   const [taskContext, setTaskContext] = useState(null)
   const [view, setView] = useState(() => window.location.hash === '#admin' ? 'admin' : 'storefront')
+  // QS-18: languageMode is presentation-only (see src/lib/languageMode.js
+  // and resolveDisplayLabel()/productContent.js) - it never touches
+  // product ids, config, pricing or the backend payload. shopFilter
+  // drives the Shop section's category chips; a hero outcome action can
+  // set it before scrolling there (see selectHeroOutcome below).
+  const [languageMode, setLanguageMode] = useState(() => loadLanguageMode())
+  const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => !hasSeenLanguageModePrompt())
+  const [shopFilter, setShopFilter] = useState('All')
   const configureRef = useRef(null)
   const productHubRef = useRef(null)
+  const shopRef = useRef(null)
 
   useEffect(() => {
     const onHash = () => setView(window.location.hash === '#admin' ? 'admin' : 'storefront')
@@ -77,12 +89,30 @@ export default function App() {
     return customerProducts.filter((product) => [product.name, product.category, product.description, ...(product.keywords || [])].join(' ').toLowerCase().includes(term)).slice(0, 4)
   }, [query, customerProducts])
 
+  const filteredShopProducts = useMemo(
+    () => filterProductsByShopCategory(customerProducts, shopFilter),
+    [customerProducts, shopFilter]
+  )
+
   const scrollToConfigure = () => window.setTimeout(() => configureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   const scrollToProductHub = () => window.setTimeout(() => productHubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+  const scrollToShop = () => window.setTimeout(() => shopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
 
   useEffect(() => {
     saveCart(cart)
   }, [cart])
+
+  const chooseLanguageMode = (mode) => {
+    setLanguageMode(mode)
+    saveLanguageMode(mode)
+    markLanguageModePromptSeen()
+    setShowLanguagePrompt(false)
+  }
+
+  const dismissLanguagePrompt = () => {
+    markLanguageModePromptSeen()
+    setShowLanguagePrompt(false)
+  }
 
   const addToCart = ({ product, config, file, files, total = 0, summary = '', quoteRequired = false }) => {
     const cartId = globalThis.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(36).slice(2)}`
@@ -112,7 +142,7 @@ export default function App() {
   const removeCartItem = (cartId) => setCart((items) => items.filter((item) => item.cartId !== cartId))
   const continueShopping = () => {
     setCartOpen(false)
-    window.setTimeout(() => document.querySelector('#services')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+    window.setTimeout(() => document.querySelector('#shop')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   }
 
   const openAdvanced = (product, nextPreset = {}) => {
@@ -183,13 +213,28 @@ export default function App() {
     scrollToProductHub()
   }
 
-  const selectTask = (task) => {
-    if (task.action === 'help') {
-      window.open('https://wa.me/27754534646?text=Hi%20Quick%20Solution%2C%20I%20need%20help%20with%20a%20service.', '_blank', 'noopener,noreferrer')
+  // QS-18 hero outcome actions: 'guided' reuses openGuided() exactly like
+  // App.jsx's other guided entry points already do (no new routing
+  // mechanism); 'shop' sets the existing Shop section's category filter
+  // and scrolls there, letting the customer pick between more than one
+  // matching product themselves rather than this guessing for them.
+  const selectHeroOutcome = (outcome) => {
+    if (outcome.kind === 'shop') {
+      setShopFilter(outcome.shopCategory || 'All')
+      scrollToShop()
       return
     }
-    const product = catalog.find((item) => item.id === task.productId)
-    if (product) openGuided(product, task.journeyId, task.preset, task)
+    const product = catalog.find((item) => item.id === outcome.productId)
+    if (product) openGuided(product, outcome.journeyId, outcome.preset || {})
+  }
+
+  // QS-18: document printing must be reachable immediately from anywhere
+  // (header action) - opens the SAME existing Guided document flow the
+  // "Print something" hero outcome already uses, never a second upload
+  // implementation.
+  const openDocumentPrinting = () => {
+    const product = catalog.find((item) => item.id === 'a4-print')
+    if (product) openGuided(product, 'document-guided', {})
   }
 
   const submitSearch = (event) => {
@@ -215,13 +260,13 @@ export default function App() {
 
   return (
     <div id="top">
-      <Header />
+      <Header mode={languageMode} onModeChange={chooseLanguageMode} onSendDocuments={openDocumentPrinting}/>
+      {showLanguagePrompt && <LanguageModePrompt onChoose={chooseLanguageMode} onDismiss={dismissLanguagePrompt}/>}
       <main>
-        <section className="hero shell">
+        <section className="hero shell qs18-hero">
           <div className="hero-copy">
             <span className="eyebrow">Joint X Quick Solution Café · Location 001</span>
-            <h1>Printing, branding<br/>& <em>everyday solutions.</em></h1>
-            <p>From documents and stickers to apparel, signage, photo, video and business essentials — quick, clean and local. Tell us what you are trying to make and we will guide the technical details.</p>
+            <h1>Printing, branding<br/>&amp; <em>everyday solutions.</em></h1>
 
             <form className="search-wrap" onSubmit={submitSearch}>
               <div className="search-box">
@@ -238,7 +283,7 @@ export default function App() {
                 <div className="search-results">
                   {searchMatches.map((product) => (
                     <button type="button" key={product.id} onClick={() => product.channels?.guided !== false && product.guidedJourneyId ? openGuided(product, product.guidedJourneyId) : openAdvanced(product)}>
-                      <span><strong>{product.name}</strong><small>{product.category} · guided start</small></span>
+                      <span><strong>{resolveProductDisplayName(product, languageMode)}</strong><small>{product.category} · guided start</small></span>
                       <Icon name="arrowRight" size={17}/>
                     </button>
                   ))}
@@ -246,54 +291,53 @@ export default function App() {
               )}
             </form>
 
-            <div className="hero-actions">
-              <a className="button dark" href="#start">Start an order <Icon name="arrowRight" size={17}/></a>
-              <a className="button ghost" href="#services">Browse products</a>
-            </div>
             <div className="trust-row"><span className="brand-dot green"></span><span>No account needed for quick orders</span><span className="divider"></span><span>Clear pricing</span><span className="divider"></span><span>Human help when needed</span></div>
           </div>
 
-          <div className="hero-visual" aria-label="How Quick Solution works">
-            <div className="brand-orbs"><span></span><span></span><span></span></div>
-            <div className="workflow-card">
-              <div className="workflow-icon"><Icon name="upload" size={22}/></div>
-              <span>1 · Tell us</span>
-              <strong>Say what you need done.</strong>
+          <div className="qs18-outcome-panel" aria-label="What do you need done today?">
+            <h2>What do you need done today?</h2>
+            <div className="qs18-outcome-grid">
+              {heroOutcomes.map((outcome) => (
+                <button type="button" key={outcome.id} className="qs18-outcome-card" onClick={() => selectHeroOutcome(outcome)}>
+                  <span className="qs18-outcome-icon"><Icon name={outcome.icon} size={20}/></span>
+                  <span className="qs18-outcome-copy">
+                    <strong>{outcome.label}</strong>
+                    <small>{outcome.helper}</small>
+                  </span>
+                  <Icon name="arrowRight" size={16}/>
+                </button>
+              ))}
             </div>
-            <div className="workflow-card offset">
-              <div className="workflow-icon"><Icon name="store" size={22}/></div>
-              <span>2 · We guide you</span>
-              <strong>Only the questions that matter.</strong>
-            </div>
-            <div className="workflow-card">
-              <div className="workflow-icon"><Icon name="pin" size={22}/></div>
-              <span>3 · Get it your way</span>
-              <strong>Collect nearby or deliver.</strong>
-            </div>
-            <small className="visual-caption">Simple for everyday jobs. Full control when you need it.</small>
           </div>
         </section>
 
-        <section className="category-strip" aria-label="Service categories">
-          <div className="shell category-scroll">{categories.map((category) => <span key={category}>{category}</span>)}</div>
-        </section>
+        <WorkedWithStrip/>
 
-        <SubtleStoryRail />
+        <ProofGallery/>
 
-        <section id="start" className="shell section start-section">
-          <div className="section-heading accessible-heading">
-            <div><span className="eyebrow">Guided ordering · recommended</span><h2>What do you need today?</h2></div>
-            <p>You do not need to know printing terms. Choose the outcome that sounds closest and we will only ask the questions that matter.</p>
-          </div>
-          <div className="task-grid six-tasks">{quickTasks.map((task) => <QuickTaskCard key={task.id} task={task} onSelect={selectTask}/>)}</div>
-        </section>
+        <HelpCta/>
 
-        <section id="services" className="shell section services-section">
+        <section id="shop" ref={shopRef} className="shell section services-section">
           <div className="section-heading">
-            <div><span className="eyebrow">Browse products</span><h2>See what we can make.</h2></div>
+            <div><span className="eyebrow">Shop</span><h2>See what we can make.</h2></div>
             <p>Browse visually, then configure. Every product starts in Guided mode, with Full options available when you already know the exact specs.</p>
           </div>
-          <div className="product-grid">{customerProducts.map((product) => <ProductCard key={product.id} product={product} active={selectedProduct?.id === product.id} onConfigure={openProductPage}/>)}</div>
+          <div className="qs18-shop-filters" role="tablist" aria-label="Filter products by category">
+            {SHOP_CATEGORIES.map((category) => (
+              <button
+                key={category}
+                type="button"
+                role="tab"
+                aria-selected={shopFilter === category}
+                className={shopFilter === category ? 'active' : ''}
+                onClick={() => setShopFilter(category)}
+              >{category}</button>
+            ))}
+          </div>
+          <div className="product-grid">{filteredShopProducts.map((product) => <ProductCard key={product.id} product={product} mode={languageMode} active={selectedProduct?.id === product.id} onConfigure={openProductPage}/>)}</div>
+          {filteredShopProducts.length === 0 && (
+            <p className="qs18-shop-empty">Nothing in this category yet — try “All” or WhatsApp us and we will help directly.</p>
+          )}
         </section>
 
         {selectedProduct && (
@@ -307,6 +351,7 @@ export default function App() {
             <ProductHub
               product={selectedProduct}
               catalog={customerProducts}
+              mode={languageMode}
               onConfigure={(presetConfig) => openAdvanced(selectedProduct, presetConfig || {})}
               onGuided={selectedJourney ? (presetConfig) => openGuided(selectedProduct, selectedJourney.id, presetConfig || {}) : null}
               onSelectRelated={openProductPage}
@@ -316,14 +361,12 @@ export default function App() {
 
         <ComingSoonRail liveProductIds={customerProducts.map((product) => product.id)} />
 
-        <ProofGallery />
-
         {selectedProduct && (
           <section id="configure" ref={configureRef} className="configurator-section">
             <div className="shell">
               <div className="qs10-config-intro">
                 <div>
-                  <span className="eyebrow">Ready to order? · {selectedProduct.name}</span>
+                  <span className="eyebrow">Ready to order? · {resolveProductDisplayName(selectedProduct, languageMode)}</span>
                   <h2>Configure your order.</h2>
                 </div>
                 <p>Start with Guided mode for the simplest route. Switch to Full options only when you already know the exact production specs.</p>
@@ -369,6 +412,7 @@ export default function App() {
                   journey={selectedJourney}
                   preset={preset}
                   task={taskContext}
+                  mode={languageMode}
                   fulfilmentPoints={fulfilmentPoints}
                   initialStepId={guidedStartStep}
                   initialFile={guidedInitialFile}
@@ -380,6 +424,7 @@ export default function App() {
                   key={`${selectedProduct.id}-${JSON.stringify(preset)}`}
                   product={selectedProduct}
                   preset={preset}
+                  mode={languageMode}
                   onGuided={selectedJourney ? () => openGuided(selectedProduct, selectedJourney.id, preset) : null}
                   onContinue={({ config, file }) => continueFromAdvanced(selectedProduct, config, file)}
                   onAddToCart={addToCart}

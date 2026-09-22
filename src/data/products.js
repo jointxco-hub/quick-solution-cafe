@@ -15,6 +15,11 @@ export const products = [
   {
     id: 'pvc-banner',
     name: 'PVC Banner',
+    // QS-18 Simple/Pro: 'name' stays the Pro/default term (unchanged -
+    // every existing, not-yet-mode-aware call site keeps showing exactly
+    // this); simpleName is the new Simple-mode override, resolved via
+    // resolveProductDisplayName()/resolveDisplayLabel() (productContent.js).
+    simpleName: 'Outdoor advertising banner',
     shortName: 'Banner',
     category: 'Signs & Large Format',
     description: 'Custom printed banners for shops, events and promotions.',
@@ -48,7 +53,7 @@ export const products = [
         ]
       },
       {
-        id: 'artwork', type: 'select', label: 'What is happening with the design?', shortLabel: 'Artwork', default: 'ready',
+        id: 'artwork', type: 'select', label: 'What is happening with the design?', shortLabel: 'Artwork', simpleShortLabel: 'Your design', default: 'ready',
         options: [
           { id: 'ready', label: 'My artwork is ready', fee: 0 },
           { id: 'check', label: 'Please check my artwork', fee: 75 },
@@ -128,7 +133,7 @@ export const products = [
         ]
       },
       {
-        id: 'artwork', type: 'select', label: 'What is happening with the design?', shortLabel: 'Artwork', default: 'ready',
+        id: 'artwork', type: 'select', label: 'What is happening with the design?', shortLabel: 'Artwork', simpleShortLabel: 'Your design', default: 'ready',
         options: [
           { id: 'ready', label: 'My artwork is ready', fee: 0 },
           { id: 'check', label: 'Please check my artwork', fee: 75 },
@@ -280,7 +285,7 @@ export const products = [
         ]
       },
       {
-        id: 'artwork', type: 'select', label: 'Do you already have a design?', shortLabel: 'Design', default: 'ready',
+        id: 'artwork', type: 'select', label: 'Do you already have a design?', shortLabel: 'Design', simpleShortLabel: 'Your design', default: 'ready',
         options: [
           { id: 'ready', label: 'My design is ready', fee: 0 },
           { id: 'check', label: 'Please check my design', fee: 75 },
@@ -357,7 +362,7 @@ export const products = [
         ]
       },
       {
-        id: 'artwork', type: 'select', label: 'What is happening with the artwork?', shortLabel: 'Artwork', default: 'ready',
+        id: 'artwork', type: 'select', label: 'What is happening with the artwork?', shortLabel: 'Artwork', simpleShortLabel: 'Your design', default: 'ready',
         options: [
           { id: 'ready', label: 'My artwork is ready', fee: 0 },
           { id: 'check', label: 'Please check my artwork', fee: 75 },
@@ -566,12 +571,12 @@ export const products = [
         { "id": "3m", "label": "3.0m" },
         { "id": "4m", "label": "4.0m" }
       ] },
-      { "id": "sides", "label": "Sides", "options": [
-        { "id": "ss", "label": "Single-sided (must be ordered in pairs of 2)" },
-        { "id": "ds", "label": "Double-sided" }
+      { "id": "sides", "label": "Sides", "simpleLabel": "Printed on one side or both?", "options": [
+        { "id": "ss", "label": "Single-sided (must be ordered in pairs of 2)", "simpleLabel": "Printed on one side (ordered in pairs of 2)" },
+        { "id": "ds", "label": "Double-sided", "simpleLabel": "Printed on both sides" }
       ] },
-      { "id": "kit", "label": "Kit", "options": [
-        { "id": "full", "label": "Full kit (print + system + ground spike + carry bag)" },
+      { "id": "kit", "label": "Kit", "simpleLabel": "Do you need the stand too?", "options": [
+        { "id": "full", "label": "Full kit (print + system + ground spike + carry bag)", "simpleLabel": "Complete kit (print + system + ground spike + carry bag)" },
         { "id": "reprint", "label": "Replacement print only" }
       ] }
     ],
@@ -963,6 +968,7 @@ export const products = [
       "type": "select",
       "label": "What is happening with the design?",
       "shortLabel": "Artwork",
+      "simpleShortLabel": "Your design",
       "default": "ready",
       "options": [
         {
@@ -1107,9 +1113,9 @@ export const products = [
         { "id": "3x4.5-deluxe", "label": "3m × 4.5m deluxe", "availableWhen": { "frame": ["aluminium"] } },
         { "id": "3x6-deluxe", "label": "3m × 6m deluxe", "availableWhen": { "frame": ["aluminium"] } }
       ] },
-      { "id": "kit", "label": "Kit", "options": [
-        { "id": "full", "label": "Full kit (print + system + carry bag + toolkit)" },
-        { "id": "reprint", "label": "Replacement canopy print only" }
+      { "id": "kit", "label": "Kit", "simpleLabel": "Do you need the full frame, or just a replacement print?", "options": [
+        { "id": "full", "label": "Full kit (print + system + carry bag + toolkit)", "simpleLabel": "Complete kit (print + system + carry bag + toolkit)" },
+        { "id": "reprint", "label": "Replacement canopy print only", "simpleLabel": "Replacement gazebo roof print" }
       ] }
     ],
     "variantTemplate": "{frame}-{size}-{kit}",
@@ -1345,6 +1351,7 @@ export const products = [
       "type": "select",
       "label": "What is happening with the design?",
       "shortLabel": "Artwork",
+      "simpleShortLabel": "Your design",
       "default": "ready",
       "options": [
         {
@@ -1754,73 +1761,72 @@ export const categories = [
   'Local & Quick Points'
 ]
 
-export const quickTasks = [
+// QS-18 — the Home hero's compact outcome actions (6 broad outcomes).
+// Replaces the old quickTasks list (7 more granular starting points,
+// rendered by the now-removed #start section/QuickTaskCard component) -
+// removed in the QS-18 Lite cleanup once confirmed to have zero
+// remaining runtime references anywhere in the app. Two kinds of entry,
+// both reusing EXISTING routing only (no new product/pricing logic):
+//  - kind: 'guided' -> opens an existing guided journey directly
+//    (App.jsx's openGuided(), the same existing entry point every
+//    guided flow already uses), used where exactly one product clearly
+//    answers the outcome.
+//  - kind: 'shop' -> scrolls to the Shop section pre-filtered to one of
+//    productContent.js's SHOP_CATEGORIES, used where more than one
+//    product could answer the outcome and the customer should pick.
+export const heroOutcomes = [
   {
-    id: 'schoolwork',
-    kicker: 'School & study',
-    label: 'Print homework or notes',
-    helper: 'Upload a document and choose your copies.',
+    id: 'print',
+    label: 'Print something',
+    helper: 'Documents, CVs, forms and everyday printing.',
+    icon: 'document',
+    kind: 'guided',
     productId: 'a4-print',
     journeyId: 'document-guided',
-    preset: { printMode: 'bw' },
-    icon: 'document'
+    preset: {}
   },
   {
-    id: 'cv',
-    kicker: 'Jobs & admin',
-    label: 'Print my CV or forms',
-    helper: 'Simple document printing without print jargon.',
-    productId: 'a4-print',
-    journeyId: 'document-guided',
-    preset: { printMode: 'bw', copies: 2 },
-    icon: 'user'
-  },
-  {
-    id: 'copy-scan',
-    kicker: 'Everyday admin',
-    label: 'Copy, print or email a document',
-    helper: 'Start here if you just need help getting a document handled.',
-    productId: 'a4-print',
-    journeyId: 'document-guided',
-    preset: { copies: 1 },
-    icon: 'upload'
-  },
-  {
-    id: 'business',
-    kicker: 'Business',
+    id: 'business-ready',
     label: 'Get my business ready',
-    helper: 'Start with cards now, then add signs and branding.',
+    helper: 'Cards, signage and the essentials to look established.',
+    icon: 'store',
+    kind: 'guided',
     productId: 'business-cards',
     journeyId: 'business-card-guided',
-    preset: {},
-    icon: 'store'
+    preset: {}
   },
   {
-    id: 'clothing',
-    kicker: 'Clothing & events',
-    label: 'Print a T-shirt',
-    helper: 'Bring your own shirt or choose a Joint X blank.',
+    id: 'promote',
+    label: 'Promote my business',
+    helper: 'Banners, signs and outdoor advertising.',
+    icon: 'signpost',
+    kind: 'shop',
+    shopCategory: 'Signs & Advertising'
+  },
+  {
+    id: 'event',
+    label: 'Prepare for an event',
+    helper: 'Flags, gazebos and displays for markets and activations.',
+    icon: 'tent',
+    kind: 'shop',
+    shopCategory: 'Events'
+  },
+  {
+    id: 'apparel',
+    label: 'Clothing & merch',
+    helper: 'Printed T-shirts, bring-your-own or a Joint X blank.',
+    icon: 'shirt',
+    kind: 'guided',
     productId: 'printed-tshirt',
     journeyId: 'tshirt-guided',
-    preset: {},
-    icon: 'shirt'
+    preset: {}
   },
   {
-    id: 'media-shoot',
-    kicker: 'Photo & video',
-    label: 'Book a shoot',
-    helper: 'Come to the Café or have us send a photographer, videographer or team to you.',
-    productId: 'media-services',
-    journeyId: 'media-guided',
-    preset: {},
-    icon: 'camera'
-  },
-  {
-    id: 'help',
-    kicker: 'Not sure?',
-    label: 'I need a person to help me',
-    helper: 'Message Quick Solution and we will guide you.',
-    action: 'help',
-    icon: 'message'
+    id: 'media',
+    label: 'Photo & video',
+    helper: 'Book a shoot or a quick photo session.',
+    icon: 'camera',
+    kind: 'shop',
+    shopCategory: 'Photo & Video'
   }
 ]
