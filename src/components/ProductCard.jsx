@@ -1,24 +1,14 @@
 ﻿import React, { useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
-
-const productImages = {
-  'pvc-banner': '/qs11/product-pvc-banner-clean.webp',
-  'vinyl-stickers': '/qs11/product-vinyl-labels-clean.webp',
-  'a4-print': '/qs11/product-document-printing-clean.webp',
-  'business-cards': '/qs11/product-business-cards-clean.webp',
-  'printed-tshirt': '/qs11/product-tshirt-clean.webp',
-  'media-services': '/qs12/product-photography-video.webp',
-  // Flags has no dedicated product photography yet — falls back to the
-  // existing generic ProductScene illustration rather than reusing an
-  // unrelated image.
-  gazebos: '/qs11/event-gazebo.webp',
-  'photo-session': '/qs12/product-photography-video.webp'
-}
+import { resolveProductMedia } from '../lib/productContent.js'
 
 export default function ProductCard({ product, active = false, onConfigure }) {
   const [imageFailed, setImageFailed] = useState(false)
-  const imageSrc = productImages[product.id]
+  // QS-16: lookup order is product.media?.hero -> product.image ->
+  // the legacy hardcoded map (moved into productContent.js so
+  // ProductCard and ProductHub share one copy) -> ProductScene.
+  const imageSrc = resolveProductMedia(product).hero
   const showImage = imageSrc && !imageFailed
 
   return (
@@ -47,7 +37,7 @@ export default function ProductCard({ product, active = false, onConfigure }) {
       </div>
 
       <div className="product-card-footer">
-        <span className="product-link">Configure <Icon name="arrowRight" size={15}/></span>
+        <span className="product-link">View product <Icon name="arrowRight" size={15}/></span>
         {product.guidedJourneyId && <span className="product-mode-label">Guided available</span>}
       </div>
     </button>

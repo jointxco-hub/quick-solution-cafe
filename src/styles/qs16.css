@@ -1,0 +1,388 @@
+/* QS-16 — "View product" link back to the Hub, shown inside the
+   standalone #configure section so a direct-to-configurator visitor
+   still has product context and a way back. */
+.qs16-view-product-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+/* QS-16 — Visual Product Hub
+   UI-only. Reuses existing tokens (--green/--orange/--lilac/--soft-green/
+   --soft-lilac), .button/.shell/.eyebrow base classes and pricing.js —
+   no new pricing logic, no payment/checkout changes. */
+
+.product-hub {
+  padding: 56px 0 72px;
+}
+
+.product-hub-hero {
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.product-hub-hero-copy h2 {
+  font-size: clamp(34px, 5vw, 52px);
+  line-height: 1.02;
+  letter-spacing: -.03em;
+  margin: 10px 0 14px;
+}
+
+.product-hub-intro {
+  font-size: 17px;
+  line-height: 1.6;
+  color: #565651;
+  max-width: 520px;
+}
+
+.product-hub-price-cue {
+  margin-top: 16px;
+  font-size: 15px;
+  color: var(--muted);
+}
+.product-hub-price-cue strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.product-hub-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+.product-hub-whatsapp {
+  color: var(--green);
+  border-color: var(--soft-green);
+}
+
+.product-hub-media-frame {
+  aspect-ratio: 4 / 3;
+  border-radius: 26px;
+  overflow: hidden;
+  background: var(--canvas);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+}
+.product-hub-media-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.product-hub-scene {
+  width: 62%;
+  height: auto;
+}
+
+.product-hub-thumbs {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+.product-hub-thumbs button {
+  flex: 0 0 auto;
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  background: var(--canvas);
+}
+.product-hub-thumbs button.active {
+  border-color: var(--green);
+}
+.product-hub-thumbs img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.product-hub-usecases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 30px;
+}
+.product-hub-usecase-pill {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--soft-green);
+  color: var(--green);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.product-hub-grid {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 32px;
+  margin-top: 36px;
+  align-items: start;
+}
+
+.product-hub-block {
+  padding: 24px 0;
+  border-top: 1px solid var(--line);
+}
+.product-hub-main .product-hub-block:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.product-hub-block h3 {
+  font-size: 20px;
+  letter-spacing: -.01em;
+  margin: 0 0 14px;
+}
+
+.product-hub-highlights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.product-hub-highlights li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #3c3c38;
+}
+.product-hub-highlights li svg {
+  color: var(--green);
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.product-hub-preview-grid {
+  display: grid;
+  gap: 16px;
+}
+.product-hub-preview-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.product-hub-preview-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.product-hub-preview-option {
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 12.5px;
+  color: #52524c;
+  cursor: help;
+}
+
+.product-hub-artwork-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #52524c;
+  background: var(--soft-lilac);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin: 0;
+}
+.product-hub-artwork-note svg {
+  color: #6641a7;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.product-hub-fulfilment {
+  display: grid;
+  gap: 10px;
+}
+.product-hub-fulfilment-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--canvas);
+}
+.product-hub-fulfilment-option svg {
+  color: var(--orange);
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.product-hub-fulfilment-option strong {
+  display: block;
+  font-size: 14px;
+}
+.product-hub-fulfilment-option span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.product-hub-fulfilment-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+.product-hub-side {
+  display: grid;
+  gap: 20px;
+}
+.product-hub-side .product-hub-block {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.product-hub-related-list {
+  display: grid;
+  gap: 8px;
+}
+.product-hub-related-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.product-hub-related-list button:hover {
+  border-color: #cfcfc6;
+}
+
+.product-hub-share-note {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+.product-hub-share-links {
+  display: grid;
+  gap: 8px;
+}
+.product-hub-share-links button,
+.product-hub-share-links a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+.product-hub-share-links a {
+  color: var(--green);
+  border-color: var(--soft-green);
+}
+
+/* Correction: Product link / Configure link have no working route to
+   copy yet (this app has no /products/:id or /configure/:id routing) -
+   shown clearly disabled with a "Coming soon" pill rather than copying
+   a dead URL. WhatsApp sharing (.product-hub-share-links a, above)
+   stays fully functional and unstyled by this rule. */
+.product-hub-share-links button.product-hub-share-disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+  background: var(--canvas);
+  justify-content: space-between;
+}
+.product-hub-coming-soon {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--soft-lilac);
+  color: #6641a7;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.product-hub-sticky-cta {
+  display: none;
+}
+
+/* Tablet */
+@media (max-width: 960px) {
+  .product-hub-hero { grid-template-columns: 1fr; }
+  .product-hub-grid { grid-template-columns: 1fr; }
+  .product-hub-side { order: -1; }
+}
+
+/* Mobile */
+@media (max-width: 720px) {
+  .product-hub { padding: 40px 0 56px; }
+  .product-hub-hero { gap: 24px; }
+  .product-hub-media-frame { border-radius: 20px; }
+  .product-hub-hero-actions .button { min-height: 48px; flex: 1 1 auto; justify-content: center; }
+  .product-hub-block { padding: 20px 0; }
+  .product-hub-side .product-hub-block { border-radius: 16px; padding: 16px; }
+  .product-hub-related-list button,
+  .product-hub-share-links button,
+  .product-hub-share-links a { min-height: 46px; }
+
+  /* Sticky mobile Configure CTA, matching .guided-actions/.qs-cart-floating's
+     fixed-bar pattern elsewhere in this app. */
+  .product-hub-sticky-cta {
+    display: flex;
+    position: sticky;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    z-index: 4;
+    margin-top: 24px;
+    padding: 10px;
+    border-radius: 17px;
+    background: rgba(255,255,255,.96);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(17,17,15,.08);
+    box-shadow: 0 12px 30px rgba(17,17,15,.12);
+  }
+  .product-hub-sticky-cta .button {
+    width: 100%;
+    justify-content: center;
+    min-height: 50px;
+  }
+}
+
+@media (max-width: 390px) {
+  .product-hub-hero-actions { flex-direction: column; }
+  .product-hub-hero-actions .button,
+  .product-hub-whatsapp { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-hub-thumbs button { transition: none; }
+}
