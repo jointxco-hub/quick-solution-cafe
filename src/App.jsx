@@ -367,6 +367,10 @@ export default function App() {
 
           <div className="qs18-outcome-panel" aria-label="What do you need done today?">
             <h2>What do you need done today?</h2>
+            {/* QS-19: horizontal swipe rail on mobile, vertical list on
+                desktop - pure CSS (qs19-home-polish.css), same DOM/data
+                either way. qs18-outcome-arrow wraps the chevron in a
+                circular badge for stronger tap affordance. */}
             <div className="qs18-outcome-grid">
               {heroOutcomes.map((outcome) => (
                 <button type="button" key={outcome.id} className="qs18-outcome-card" onClick={() => selectHeroOutcome(outcome)}>
@@ -375,7 +379,7 @@ export default function App() {
                     <strong>{outcome.label}</strong>
                     <small>{outcome.helper}</small>
                   </span>
-                  <Icon name="arrowRight" size={16}/>
+                  <span className="qs18-outcome-arrow"><Icon name="arrowRight" size={15}/></span>
                 </button>
               ))}
             </div>
