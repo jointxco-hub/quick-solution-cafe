@@ -1790,10 +1790,12 @@ export const heroOutcomes = [
     label: 'Get my business ready',
     helper: 'Cards, signage and the essentials to look established.',
     icon: 'store',
-    kind: 'guided',
-    productId: 'business-cards',
-    journeyId: 'business-card-guided',
-    preset: {}
+    // QS-18A correction: was kind:'guided' straight into business-cards -
+    // too narrow, since "get ready" isn't necessarily just cards. An
+    // outcome must not silently collapse into one product when more
+    // than one could satisfy it.
+    kind: 'shop',
+    shopCategory: 'Business'
   },
   {
     id: 'promote',
@@ -1816,10 +1818,10 @@ export const heroOutcomes = [
     label: 'Clothing & merch',
     helper: 'Printed T-shirts, bring-your-own or a Joint X blank.',
     icon: 'shirt',
-    kind: 'guided',
-    productId: 'printed-tshirt',
-    journeyId: 'tshirt-guided',
-    preset: {}
+    // QS-18A correction: was kind:'guided' straight into printed-tshirt -
+    // same reasoning as "Get my business ready" above.
+    kind: 'shop',
+    shopCategory: 'Apparel'
   },
   {
     id: 'media',

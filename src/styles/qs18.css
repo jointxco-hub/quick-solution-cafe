@@ -2,6 +2,20 @@
    document-printing shortcut, Worked With strip. UI-only: no pricing,
    checkout or Supabase behavior changes. */
 
+/* ── QS-18A: Home/Shop nav buttons match the existing anchor styling ── */
+/* .desktop-nav a already has this via app.css - Home/Shop/Quick Points
+   became <button>s (they now switch page state, not just scroll), so
+   they need the browser's default button chrome reset to look identical
+   to the untouched Track order <a>. */
+.desktop-nav button {
+  display: flex; align-items: center; gap: 5px; border: 0; background: transparent;
+  font: inherit; color: inherit; padding: 0; cursor: pointer;
+}
+/* The bag-button/"Start order" CTA is now sometimes a <button> (Home,
+   where #configure isn't mounted yet) instead of an <a> - same visual
+   treatment either way, just resetting the UA button border. */
+button.bag-button { border: 0; cursor: pointer; }
+
 /* ── Header additions: mode toggle + Send documents ─────────────────── */
 .qs18-header-actions { display: flex; align-items: center; gap: 10px; }
 .qs18-mode-toggle {

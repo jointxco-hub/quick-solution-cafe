@@ -4,13 +4,26 @@ import Icon from './Icon.jsx'
 // QS-18: mode/onModeChange add the subtle, always-available Simple|Pro
 // toggle (presentation-only - see src/lib/languageMode.js); onSendDocuments
 // opens the existing document-printing Guided flow directly (no new
-// upload implementation) from anywhere on the site. Both props are
-// optional so Header keeps rendering even before App.jsx wires them up.
-export default function Header({ mode = 'simple', onModeChange, onSendDocuments }) {
+// upload implementation) from anywhere on the site.
+//
+// QS-18A: Shop/Product Hub/the configurator/Quick Points now only exist
+// in App.jsx's Shop page tree, not permanently on Home - so the nav
+// links that used to be plain #anchor scrolls (Shop, Quick Points) and
+// the brand logo/bag-button (implicitly "go home"/"go to #configure")
+// are now buttons that ask App.jsx to switch page AND scroll, via
+// onGoHome/onGoShop/onGoQuickPoints/onStartOrder. All props are optional
+// so Header keeps rendering even before App.jsx wires them up (falls
+// back to the old plain-anchor behavior in that case).
+export default function Header({ mode = 'simple', onModeChange, onSendDocuments, onGoHome, onGoShop, onGoQuickPoints, onStartOrder }) {
   const homePrefix = window.location.pathname === '/' ? '' : '/'
+  const handleGoHome = (event) => {
+    if (!onGoHome) return
+    event.preventDefault()
+    onGoHome()
+  }
   return (
     <header className="site-header">
-      <a className="brand" href={homePrefix ? '/' : '#top'} aria-label="Joint X Quick Solution Café home">
+      <a className="brand" href={homePrefix ? '/' : '#top'} aria-label="Joint X Quick Solution Café home" onClick={handleGoHome}>
         <img className="brand-mark-image" src="/jointx-mark.png" alt="" />
         <span>
           <strong>Quick Solution</strong>
@@ -18,8 +31,11 @@ export default function Header({ mode = 'simple', onModeChange, onSendDocuments 
         </span>
       </a>
       <nav className="desktop-nav" aria-label="Primary navigation">
-        <a href={`${homePrefix}#shop`}>Shop</a>
-        <a href={`${homePrefix}#quick-points`}><Icon name="pin" size={16}/> Quick Points</a>
+        {onGoHome ? <button type="button" onClick={onGoHome}>Home</button> : <a href={`${homePrefix}#top`}>Home</a>}
+        {onGoShop ? <button type="button" onClick={onGoShop}>Shop</button> : <a href={`${homePrefix}#shop`}>Shop</a>}
+        {onGoQuickPoints
+          ? <button type="button" onClick={onGoQuickPoints}><Icon name="pin" size={16}/> Quick Points</button>
+          : <a href={`${homePrefix}#quick-points`}><Icon name="pin" size={16}/> Quick Points</a>}
         <a href="/track"><Icon name="search" size={15}/> Track order</a>
       </nav>
       <div className="qs18-header-actions">
@@ -36,7 +52,9 @@ export default function Header({ mode = 'simple', onModeChange, onSendDocuments 
             <span className="qs18-send-docs-mobile">Send docs</span>
           </button>
         )}
-        <a className="bag-button" href={`${homePrefix}#configure`} aria-label="Start an order"><Icon name="bag" size={18}/><span>Start order</span></a>
+        {onStartOrder
+          ? <button type="button" className="bag-button" onClick={onStartOrder} aria-label="Start an order"><Icon name="bag" size={18}/><span>Start order</span></button>
+          : <a className="bag-button" href={`${homePrefix}#configure`} aria-label="Start an order"><Icon name="bag" size={18}/><span>Start order</span></a>}
       </div>
     </header>
   )

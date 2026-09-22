@@ -20,6 +20,7 @@ import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
 import { resolveProductDisplayName, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
 import { loadLanguageMode, saveLanguageMode, hasSeenLanguageModePrompt, markLanguageModePromptSeen } from './lib/languageMode.js'
+import { DEFAULT_PAGE, resolveHeroOutcomeNavigation } from './lib/navigation.js'
 
 export default function App() {
   const [catalog, setCatalog] = useState(() => loadCatalog(defaultProducts))
@@ -37,6 +38,14 @@ export default function App() {
   const [journeyId, setJourneyId] = useState('document-guided')
   const [taskContext, setTaskContext] = useState(null)
   const [view, setView] = useState(() => window.location.hash === '#admin' ? 'admin' : 'storefront')
+  // QS-18A: page splits the storefront into Home (outcome-first, short)
+  // and Shop (browsing + Product Hub + configurator) - the smallest
+  // top-level addition to the existing state-machine/anchor-scroll
+  // architecture, no router. 'view' above already means something else
+  // (admin vs storefront), so this is deliberately a separate state
+  // rather than overloading it. Home always renders first (DEFAULT_PAGE,
+  // src/lib/navigation.js).
+  const [page, setPage] = useState(DEFAULT_PAGE)
   // QS-18: languageMode is presentation-only (see src/lib/languageMode.js
   // and resolveDisplayLabel()/productContent.js) - it never touches
   // product ids, config, pricing or the backend payload. shopFilter
@@ -48,6 +57,7 @@ export default function App() {
   const configureRef = useRef(null)
   const productHubRef = useRef(null)
   const shopRef = useRef(null)
+  const quickPointsRef = useRef(null)
 
   useEffect(() => {
     const onHash = () => setView(window.location.hash === '#admin' ? 'admin' : 'storefront')
@@ -97,6 +107,39 @@ export default function App() {
   const scrollToConfigure = () => window.setTimeout(() => configureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   const scrollToProductHub = () => window.setTimeout(() => productHubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   const scrollToShop = () => window.setTimeout(() => shopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+  const scrollToQuickPoints = () => window.setTimeout(() => quickPointsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+
+  // QS-18A: Shop/Product Hub/the configurator only exist in the Shop
+  // page's render tree now (see the JSX below) - every existing entry
+  // point that ends up showing one of them (openAdvanced/openGuided/
+  // continueFromAdvanced/openProductPage) must switch page to 'shop'
+  // first, or the matching scrollIntoView() would silently find nothing
+  // to scroll to. goHome()/goShop() are the two direct nav actions the
+  // header exposes.
+  const goHome = () => {
+    setPage('home')
+    setCartOpen(false)
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 40)
+  }
+
+  const goShop = () => {
+    setPage('shop')
+    scrollToShop()
+  }
+
+  const goToQuickPoints = () => {
+    setPage('shop')
+    scrollToQuickPoints()
+  }
+
+  // Header's bag-button ("Start order") - same target it already had
+  // (#configure, for whatever selectedProduct currently is), just now
+  // needs page switched to 'shop' first since #configure only exists in
+  // that branch.
+  const goToConfigure = () => {
+    setPage('shop')
+    scrollToConfigure()
+  }
 
   useEffect(() => {
     saveCart(cart)
@@ -142,10 +185,12 @@ export default function App() {
   const removeCartItem = (cartId) => setCart((items) => items.filter((item) => item.cartId !== cartId))
   const continueShopping = () => {
     setCartOpen(false)
-    window.setTimeout(() => document.querySelector('#shop')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+    setPage('shop')
+    scrollToShop()
   }
 
   const openAdvanced = (product, nextPreset = {}) => {
+    setPage('shop')
     setSelectedId(product.id)
     setPreset(nextPreset)
     setOrderMode('advanced')
@@ -154,6 +199,7 @@ export default function App() {
   }
 
   const openGuided = (product, nextJourneyId, nextPreset = {}, task = null) => {
+    setPage('shop')
     setSelectedId(product.id)
     setPreset(nextPreset)
     setJourneyId(nextJourneyId || product.guidedJourneyId)
@@ -165,6 +211,7 @@ export default function App() {
   }
 
   const continueFromAdvanced = (product, config, file) => {
+    setPage('shop')
     setSelectedId(product.id)
     setPreset(config)
     setJourneyId(product.guidedJourneyId)
@@ -205,6 +252,7 @@ export default function App() {
   // then scroll to #configure - it would show product B pre-filled with
   // product A's answers.
   const openProductPage = (product) => {
+    setPage('shop')
     setSelectedId(product.id)
     setPreset({})
     setTaskContext(null)
@@ -213,19 +261,26 @@ export default function App() {
     scrollToProductHub()
   }
 
-  // QS-18 hero outcome actions: 'guided' reuses openGuided() exactly like
-  // App.jsx's other guided entry points already do (no new routing
-  // mechanism); 'shop' sets the existing Shop section's category filter
-  // and scrolls there, letting the customer pick between more than one
-  // matching product themselves rather than this guessing for them.
+  // QS-18/QS-18A hero outcome actions: resolveHeroOutcomeNavigation()
+  // (pure, src/lib/navigation.js) decides WHERE an outcome leads; this
+  // just applies it. 'guided' reuses openGuided() exactly like App.jsx's
+  // other guided entry points already do (no new routing mechanism,
+  // and openGuided() already switches to the Shop page itself); 'shop'
+  // sets the existing Shop section's category filter, switches to the
+  // Shop page and scrolls there, letting the customer pick between more
+  // than one matching product themselves rather than this guessing for
+  // them.
   const selectHeroOutcome = (outcome) => {
-    if (outcome.kind === 'shop') {
-      setShopFilter(outcome.shopCategory || 'All')
+    const nav = resolveHeroOutcomeNavigation(outcome)
+    if (!nav) return
+    if (nav.type === 'shop') {
+      setShopFilter(nav.shopFilter)
+      setPage('shop')
       scrollToShop()
       return
     }
-    const product = catalog.find((item) => item.id === outcome.productId)
-    if (product) openGuided(product, outcome.journeyId, outcome.preset || {})
+    const product = catalog.find((item) => item.id === nav.productId)
+    if (product) openGuided(product, nav.journeyId, nav.preset)
   }
 
   // QS-18: document printing must be reachable immediately from anywhere
@@ -260,9 +315,25 @@ export default function App() {
 
   return (
     <div id="top">
-      <Header mode={languageMode} onModeChange={chooseLanguageMode} onSendDocuments={openDocumentPrinting}/>
+      <Header
+        mode={languageMode}
+        onModeChange={chooseLanguageMode}
+        onSendDocuments={openDocumentPrinting}
+        onGoHome={goHome}
+        onGoShop={goShop}
+        onGoQuickPoints={goToQuickPoints}
+        onStartOrder={goToConfigure}
+      />
       {showLanguagePrompt && <LanguageModePrompt onChoose={chooseLanguageMode} onDismiss={dismissLanguagePrompt}/>}
       <main>
+        {/* QS-18A: Home = outcome-first landing only. Shop/Product Hub/
+            configurator never render here - they only exist in the Shop
+            branch below, reached via an outcome action, the header's
+            Shop link, or Send documents (all of which switch page to
+            'shop' before scrolling - see openGuided/openAdvanced/
+            openProductPage/goShop above). */}
+        {page === 'home' && (
+        <>
         <section className="hero shell qs18-hero">
           <div className="hero-copy">
             <span className="eyebrow">Joint X Quick Solution Café · Location 001</span>
@@ -313,10 +384,18 @@ export default function App() {
 
         <WorkedWithStrip/>
 
-        <ProofGallery/>
+        <ProofGallery onExploreCollection={goToQuickPoints}/>
 
         <HelpCta/>
+        </>
+        )}
 
+        {/* QS-18A: Shop = browsing + Product Hub + the configurator, all
+            reused exactly as QS-16/QS-17/QS-18 already built them - only
+            now gated to page === 'shop' instead of always stacked below
+            Home. */}
+        {page === 'shop' && (
+        <>
         <section id="shop" ref={shopRef} className="shell section services-section">
           <div className="section-heading">
             <div><span className="eyebrow">Shop</span><h2>See what we can make.</h2></div>
@@ -434,7 +513,7 @@ export default function App() {
           </section>
         )}
 
-        <section id="quick-points" className="shell section quick-point-section">
+        <section id="quick-points" ref={quickPointsRef} className="shell section quick-point-section">
           <div className="quick-copy">
             <span className="eyebrow">Joint X Quick Points</span>
             <h2>Order online.<br/>Collect locally.</h2>
@@ -478,6 +557,8 @@ export default function App() {
             <div><Icon name="store"/><strong>One price source</strong><span>Website, POS, quote and invoice use the same rules.</span></div>
           </div>
         </section>
+        </>
+        )}
       </main>
       <OrderBasket
         items={cart}
