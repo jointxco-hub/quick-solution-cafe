@@ -925,27 +925,26 @@ export default function App() {
           />
         </div>
 
-        {/* QS-21 section 10: a compact, verified-true trust/payment strip -
-            every claim here already exists elsewhere in the real checkout
-            flow (OrderBasket.jsx's PayFast/collection/delivery fulfilment
-            options, GuidedOrder.jsx's "Quick Solution can request artwork
-            before production" copy) - nothing invented, no fabricated
-            badges or logos. */}
-        <section className="shell qs21-trust-strip">
-          <div><Icon name="checkCircle" size={18}/><span><strong>Secure checkout</strong><small>Pay safely through PayFast</small></span></div>
-          <div><Icon name="store" size={18}/><span><strong>Collect locally</strong><small>Quick Solution Café or a nearby Quick Point</small></span></div>
-          <div><Icon name="truck" size={18}/><span><strong>Courier or delivery</strong><small>Price confirmed before payment</small></span></div>
-          <div><Icon name="document" size={18}/><span><strong>Artwork checked</strong><small>Reviewed before production, not just accepted</small></span></div>
-        </section>
+        {/* QS-21.3: the separate full 4-card trust strip that used to sit
+            here was removed - ProductHub's own compact trust row
+            (.product-hub-trust-compact, in the PDP info column) already
+            makes the exact same 4 verified-true claims once per page;
+            this was a straight duplicate a few hundred pixels below it. */}
 
         <section id="configure" ref={configureRef} className="configurator-section">
           <div className="shell">
+            {/* QS-21.3 section 2/5: shortened - "Start with Guided mode
+                for the simplest route..." repeated what the mode-toggle's
+                own labels below already say ("Guided is recommended" /
+                "Full options gives precise control"). Product context
+                (which product, a way back to it) is the only thing this
+                intro needs to convey that isn't shown anywhere else on
+                this page. */}
             <div className="qs10-config-intro">
               <div>
                 <span className="eyebrow">Ready to order? · {resolveProductDisplayName(selectedProduct, languageMode)}</span>
                 <h2>Configure your order.</h2>
               </div>
-              <p>Start with Guided mode for the simplest route. Switch to Full options only when you already know the exact production specs.</p>
               <button type="button" className="qs16-view-product-link" onClick={scrollToProductHub}>
                 <Icon name="arrowUpRight" size={15}/> View product
               </button>

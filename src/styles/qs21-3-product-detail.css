@@ -1,0 +1,263 @@
+/* QS-21.3 — Product Detail simplification + sticky gallery + brand
+   summary card. Loads after qs16/qs17/qs21-navigation.css, so these
+   rules intentionally override/replace what they defined for the old
+   copy-left/media-right hero and the pure-black summary cards, rather
+   than duplicating a second design language. No pricing/config/cart/
+   checkout logic anywhere in this file - layout and colour only. */
+
+/* ── 1/3 — PDP layout: sticky media left, info right ──────────────── */
+.product-hub-pdp {
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: 48px;
+  align-items: start;
+}
+.product-hub-pdp-media {
+  min-width: 0;
+}
+.product-hub-pdp-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 961px) {
+  /* Sticks while the (now taller, since "Good to know"/"Choices you
+     will make" moved up here) info column scrolls past it, and
+     releases naturally the moment .product-hub-pdp's own bottom edge
+     is reached - a plain CSS sidebar-sticky, no scroll listener. That
+     edge sits well before the Presets rail, the configurator and the
+     footer, so there is nothing to overlap by construction. */
+  .product-hub-pdp-media {
+    position: sticky;
+    top: 92px; /* 76px header + 16px, matches #product's own scroll-margin-top */
+  }
+}
+
+/* ── Media frame: lightbox affordance ──────────────────────────────── */
+.product-hub-media-frame.has-lightbox {
+  cursor: zoom-in;
+  position: relative;
+}
+.product-hub-media-frame.has-lightbox:focus-visible {
+  outline: 3px solid var(--lilac);
+  outline-offset: 2px;
+}
+.product-hub-media-zoom {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: rgba(17, 17, 15, .62);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 750;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .18s ease, transform .18s ease;
+  pointer-events: none;
+}
+.product-hub-media-frame.has-lightbox:hover .product-hub-media-zoom,
+.product-hub-media-frame.has-lightbox:focus-visible .product-hub-media-zoom {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (max-width: 720px) {
+  /* No hover on touch - show the affordance plainly instead of hiding
+     behind a hover state nothing will ever trigger. */
+  .product-hub-media-zoom { opacity: 1; transform: none; }
+}
+
+/* ── 2 — Compact "Good to know" (was a bulleted icon-per-row list) ─── */
+.product-hub-quickfacts {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.product-hub-quickfacts li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: #f3f3ef;
+  font-size: 12px;
+  font-weight: 700;
+  color: #4c4c47;
+}
+.product-hub-quickfacts svg { color: var(--green); flex: 0 0 auto; }
+
+/* ── Compact "Choices you will make" (was a full grid of one block +
+   a wrapped chip row PER field) - one line per field now. ──────────── */
+.product-hub-quickchoices {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #ecece6;
+}
+.product-hub-quickchoices > strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #81817a;
+  margin-bottom: 8px;
+}
+.product-hub-quickchoices ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+.product-hub-quickchoices li {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #6b6b65;
+}
+.product-hub-quickchoices li span {
+  font-weight: 750;
+  color: var(--ink);
+}
+
+@media (max-width: 960px) {
+  .product-hub-pdp { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .product-hub-pdp { gap: 24px; }
+}
+
+/* ── 4 — Lightbox ──────────────────────────────────────────────────── */
+.qs21-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(10, 10, 9, .88);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  animation: qs21FadeIn .18s ease both;
+}
+.qs21-lightbox-dialog {
+  position: relative;
+  max-width: min(1100px, 92vw);
+  max-height: 88vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qs21-lightbox-image {
+  max-width: 100%;
+  max-height: 88vh;
+  border-radius: 14px;
+  object-fit: contain;
+  background: #fff;
+  animation: qs21SheetIn .2s ease both;
+}
+.qs21-lightbox-close {
+  position: absolute;
+  top: -46px;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .25);
+  background: rgba(255, 255, 255, .1);
+  color: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.qs21-lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, .25);
+  background: rgba(17, 17, 15, .5);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.qs21-lightbox-prev { left: -18px; }
+.qs21-lightbox-next { right: -18px; }
+.qs21-lightbox-count {
+  position: absolute;
+  bottom: -38px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, .8);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+@media (max-width: 720px) {
+  .qs21-lightbox-backdrop { padding: 16px; }
+  .qs21-lightbox-close { top: -40px; right: -4px; }
+  .qs21-lightbox-prev { left: 4px; }
+  .qs21-lightbox-next { right: 4px; }
+  .qs21-lightbox-nav { width: 38px; height: 38px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qs21-lightbox-backdrop, .qs21-lightbox-image { animation: none; }
+}
+
+/* ── 5 — Configurator: tighter spacing above it ───────────────────── */
+.configurator-section {
+  padding-top: 44px;
+}
+.qs10-config-intro {
+  margin-bottom: 18px;
+  padding-bottom: 18px;
+}
+
+/* ── 6 — Summary/price card: brand-tinted, not pure black ─────────── */
+/* Deep green chosen over deep lilac-charcoal: it reads as an extension
+   of --green (the one colour already carrying "price/checkout/secure"
+   meaning across the app - the trust rows, the mode-toggle's Guided
+   accent, .soft-green), so the summary card feels like the same brand
+   system rather than an unrelated dark tone. A subtle radial highlight
+   (same technique as .hero-visual:before, app.css) keeps it from
+   reading as a flat block - restrained, not decorative. */
+.price-card,
+.guided-summary {
+  background: linear-gradient(165deg, #0e2e28 0%, #0a211d 62%, #0a211d 100%);
+  position: relative;
+  overflow: hidden;
+}
+.price-card::before,
+.guided-summary::before {
+  content: '';
+  position: absolute;
+  inset: auto -80px -100px auto;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 139, 114, .35), rgba(0, 139, 114, 0) 70%);
+  pointer-events: none;
+}
+.price-card > *,
+.guided-summary > * {
+  position: relative;
+}
+/* .price-lines only ever renders inside .price-card/.guided-summary
+   (both dark) - .review-list is a DIFFERENT element that renders inside
+   .guided-main (light background) and must keep its existing light
+   border colour, so it is deliberately not touched here. */
+.price-lines {
+  border-color: rgba(255, 255, 255, .12);
+}
