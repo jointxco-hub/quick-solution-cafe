@@ -15,14 +15,26 @@ import LanguageModePrompt from './components/LanguageModePrompt.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
 import OrderBasket from './components/OrderBasket.jsx'
 import OfferCard from './components/OfferCard.jsx'
+import QuickConfigureSheet from './components/QuickConfigureSheet.jsx'
 import { loadCart, saveCart } from './lib/cartStore.js'
 import { guidedJourneys, heroOutcomes, offers as defaultOffers, products as defaultProducts } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
 import { resolveProductDisplayName, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
 import { loadLanguageMode, saveLanguageMode, hasSeenLanguageModePrompt, markLanguageModePromptSeen } from './lib/languageMode.js'
-import { DEFAULT_PAGE, resolveHeroOutcomeNavigation } from './lib/navigation.js'
+import {
+  DEFAULT_PAGE,
+  resolveHeroOutcomeNavigation,
+  resolveQuickConfigureEligibility,
+  buildOfferChangeContext,
+  resolveOfferContextCartTag,
+  buildHistoryState,
+  resolveHistoryAction,
+  resolvePopStateNavigation,
+  resolveOfferContextAfterHistoryRestore
+} from './lib/navigation.js'
 import { resolveActiveOffers, resolveOffersForCategory, resolveOfferDisplayName } from './lib/offers.js'
+import { deriveRelatedOffers } from './lib/relatedContent.js'
 
 export default function App() {
   const [catalog, setCatalog] = useState(() => loadCatalog(defaultProducts))
@@ -47,7 +59,24 @@ export default function App() {
   // (admin vs storefront), so this is deliberately a separate state
   // rather than overloading it. Home always renders first (DEFAULT_PAGE,
   // src/lib/navigation.js).
+  //
+  // QS-21: page gains a third value, 'product' - a real, dedicated
+  // Product Detail view (ProductHub + configuration + related content).
+  // The Shop grid does not exist in that page's render tree at all, not
+  // merely scrolled away - this is the actual navigation/context fix
+  // this pass is for (see the QS-21 report's transition-map audit).
   const [page, setPage] = useState(DEFAULT_PAGE)
+  // QS-21: which product's Quick Configure sheet is open, if any (a
+  // small overlay, not a page transition - see QuickConfigureSheet.jsx).
+  const [quickConfigureProduct, setQuickConfigureProduct] = useState(null)
+  // QS-20.1: a small, short-lived, presentation-only marker - see
+  // buildOfferChangeContext()/resolveOfferContextCartTag()
+  // (src/lib/navigation.js) for its full lifecycle contract. Set only
+  // by an Offer's "Change" action; consumed (and cleared) by the next
+  // successful add-to-cart for that same product; cleared by any other
+  // navigation (a different product, Back, Home, Shop). Never read by
+  // pricing, never sent to the server.
+  const [productViewContext, setProductViewContext] = useState(null)
   // QS-18: languageMode is presentation-only (see src/lib/languageMode.js
   // and resolveDisplayLabel()/productContent.js) - it never touches
   // product ids, config, pricing or the backend payload. shopFilter
@@ -64,16 +93,98 @@ export default function App() {
   // selectHeroOutcome below) so "Get my business ready" etc. surface
   // the relevant combo first, per the QS-20 brief.
   const [shopMode, setShopMode] = useState('products')
+  // QS-21: productHubRef now anchors the TOP of the Product Detail page
+  // (opening a product scrolls/lands there); configureRef anchors the
+  // configuration section WITHIN that same product's page - a within-
+  // page hop is fine (the brief's own "configuration should belong to
+  // that product context"), the fix was removing the Shop catalogue
+  // from around it, not removing scrolling entirely. quickPointsRef now
+  // anchors the restored Quick Points band on Home (QS-21 section 8).
   const configureRef = useRef(null)
   const productHubRef = useRef(null)
   const shopRef = useRef(null)
   const quickPointsRef = useRef(null)
+  // QS-21 final pass: History API support. historyMountedRef guards the
+  // one-time replaceState-not-pushState initial entry (brief section 2);
+  // lastHistoryStateRef holds the canonical state object the browser's
+  // CURRENT history entry actually reflects - resolveHistoryAction()
+  // diffs against it to decide push/replace/none. Both are refs, not
+  // state, deliberately: writing them must never itself trigger a
+  // render or re-run either effect below.
+  const historyMountedRef = useRef(false)
+  const lastHistoryStateRef = useRef(null)
 
   useEffect(() => {
     const onHash = () => setView(window.location.hash === '#admin' ? 'admin' : 'storefront')
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
+
+  // QS-21 final pass: the ONE central place that ever calls
+  // history.pushState/replaceState (see buildHistoryState()/
+  // resolveHistoryAction(), src/lib/navigation.js, for the actual
+  // decisions) - no other function in this file touches history
+  // directly. It only watches the small navigation shape itself
+  // (page/selectedId/shopFilter/shopMode), so switching Guided<->Full
+  // options, picking a preset, changing taskContext, or opening/closing
+  // Quick Configure can never reach this effect at all - none of those
+  // are in its dependency array, which is what makes them correctly
+  // create zero history entries (brief sections 5/6) without any
+  // special-casing here.
+  useEffect(() => {
+    const nextState = buildHistoryState(page, { selectedProductId: selectedId, shopFilter, shopMode })
+    if (!historyMountedRef.current) {
+      historyMountedRef.current = true
+      window.history.replaceState(nextState, '')
+      lastHistoryStateRef.current = nextState
+      return
+    }
+    const action = resolveHistoryAction(lastHistoryStateRef.current, nextState)
+    if (action === 'push') window.history.pushState(nextState, '')
+    else if (action === 'replace') window.history.replaceState(nextState, '')
+    lastHistoryStateRef.current = nextState
+  }, [page, selectedId, shopFilter, shopMode])
+
+  // QS-21 final pass: the one popstate listener (brief section 4).
+  // Restores page/selectedProductId/shopFilter/shopMode from the event,
+  // falling back safely to Home when the entry is missing/malformed
+  // (resolvePopStateNavigation) or points at a product that no longer
+  // exists in the current catalog (checked here, since the pure
+  // resolver has no catalog access) - then always replaceState()s the
+  // CURRENT entry to match exactly what was actually restored, so a
+  // once-invalid entry self-heals instead of re-falling-back on every
+  // future visit. Never calls pushState here - a popstate is the
+  // browser moving its OWN stack pointer; adding a new entry in
+  // response would fight that, not follow it. Also, per section 6/7:
+  // always closes Quick Configure (it is an overlay, never a route) and
+  // clears a stale Offer "Change" context unless the restored state is
+  // still Product Detail for that exact product.
+  useEffect(() => {
+    const onPopState = (event) => {
+      const resolved = resolvePopStateNavigation(event.state)
+      const productStillExists = resolved.page !== 'product' || catalog.some((product) => product.id === resolved.selectedProductId)
+      const finalState = productStillExists
+        ? resolved
+        : buildHistoryState('shop', { shopFilter: resolved.shopFilter, shopMode: resolved.shopMode })
+
+      window.history.replaceState(finalState, '')
+      lastHistoryStateRef.current = finalState
+
+      setPage(finalState.page)
+      setSelectedId((current) => (finalState.page === 'product' && finalState.selectedProductId ? finalState.selectedProductId : current))
+      setShopFilter(finalState.shopFilter)
+      setShopMode(finalState.shopMode)
+      setQuickConfigureProduct(null)
+      setProductViewContext((current) => resolveOfferContextAfterHistoryRestore(current, finalState))
+
+      window.setTimeout(() => {
+        if (finalState.page === 'shop') shopRef.current?.scrollIntoView({ block: 'start' })
+        else window.scrollTo({ top: 0 })
+      }, 40)
+    }
+    window.addEventListener('popstate', onPopState)
+    return () => window.removeEventListener('popstate', onPopState)
+  }, [catalog])
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return
@@ -128,40 +239,53 @@ export default function App() {
     [activeOffers, shopFilter]
   )
 
+  // QS-21: relevant Offers (this product is one of the offer's own real
+  // items) for Product Detail's "Related Offers" section - pure,
+  // deterministic, reuse-only lookup (deriveRelatedOffers, see
+  // src/lib/relatedContent.js). ProductHub already derives and renders
+  // its own "related products" internally (same-category, existing
+  // QS-16 behaviour) - this is only the Offers half, not a duplicate.
+  // No recommendation engine.
+  const relatedOffers = useMemo(
+    () => deriveRelatedOffers(selectedProduct, activeOffers, 3),
+    [selectedProduct, activeOffers]
+  )
+
   const scrollToConfigure = () => window.setTimeout(() => configureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   const scrollToProductHub = () => window.setTimeout(() => productHubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   const scrollToShop = () => window.setTimeout(() => shopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   const scrollToQuickPoints = () => window.setTimeout(() => quickPointsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
 
-  // QS-18A: Shop/Product Hub/the configurator only exist in the Shop
-  // page's render tree now (see the JSX below) - every existing entry
-  // point that ends up showing one of them (openAdvanced/openGuided/
-  // continueFromAdvanced/openProductPage) must switch page to 'shop'
-  // first, or the matching scrollIntoView() would silently find nothing
-  // to scroll to. goHome()/goShop() are the two direct nav actions the
-  // header exposes.
+  // QS-21: Home/Shop/Product Detail are three distinct render trees now
+  // (see the JSX below) - goHome()/goShop() are the two direct nav
+  // actions the header exposes; opening a product is openProductDetail()
+  // further down, near the rest of the product-navigation functions.
   const goHome = () => {
     setPage('home')
     setCartOpen(false)
+    setProductViewContext(null)
     window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 40)
   }
 
   const goShop = () => {
     setPage('shop')
+    setProductViewContext(null)
     scrollToShop()
   }
 
+  // QS-21: Quick Points moved from Shop to Home (section 8) - this now
+  // scrolls within Home instead of switching to Shop first.
   const goToQuickPoints = () => {
-    setPage('shop')
+    setPage('home')
     scrollToQuickPoints()
   }
 
   // Header's bag-button ("Start order") - same target it already had
   // (#configure, for whatever selectedProduct currently is), just now
-  // needs page switched to 'shop' first since #configure only exists in
-  // that branch.
+  // needs page switched to 'product' first since the configuration
+  // section only exists within Product Detail.
   const goToConfigure = () => {
-    setPage('shop')
+    setPage('product')
     scrollToConfigure()
   }
 
@@ -181,6 +305,13 @@ export default function App() {
     setShowLanguagePrompt(false)
   }
 
+  // QS-20.1: if productViewContext is active AND still points at THIS
+  // exact product (see resolveOfferContextCartTag()/navigation.js), tag
+  // the new cart item with the same offerId/offerName addOfferToCart()
+  // already uses for basket grouping - restoring Offer identity for a
+  // line the customer edited via "Change". Consumed exactly once: the
+  // context is cleared the moment it's used, so a second, unrelated add
+  // for the same product never inherits a stale tag.
   const addToCart = ({ product, config, file, files, total = 0, summary = '', quoteRequired = false }) => {
     const cartId = globalThis.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(36).slice(2)}`
     const normalizedFiles = Array.isArray(files)
@@ -190,6 +321,8 @@ export default function App() {
         : file
           ? [file]
           : []
+    const contextTag = resolveOfferContextCartTag(productViewContext, product.id)
+    const offerName = contextTag ? resolveOfferDisplayName(defaultOffers.find((offer) => offer.id === contextTag.offerId), languageMode) : null
     setCart((items) => [...items, {
       cartId,
       productId: product.id,
@@ -200,8 +333,10 @@ export default function App() {
       file: normalizedFiles[0] || null,
       total: Number(total || 0),
       summary,
-      quoteRequired: Boolean(quoteRequired)
+      quoteRequired: Boolean(quoteRequired),
+      ...(contextTag ? { offerId: contextTag.offerId, offerName } : {})
     }])
+    if (contextTag) setProductViewContext(null)
     setCartNotice(`${product.name} added to your order`)
     window.setTimeout(() => setCartNotice(''), 2200)
   }
@@ -262,20 +397,34 @@ export default function App() {
   const continueShopping = () => {
     setCartOpen(false)
     setPage('shop')
+    setProductViewContext(null)
     scrollToShop()
   }
 
-  const openAdvanced = (product, nextPreset = {}) => {
-    setPage('shop')
+  // QS-21: productViewContext is preserved ONLY when this call targets
+  // the SAME product the context was built for (e.g. toggling Guided /
+  // Full options back and forth while editing an Offer's line) - it is
+  // cleared the moment a DIFFERENT product is targeted, which is the
+  // normal case for every call site except OfferCard's "Change" handler
+  // (the only one that ever passes a real offerContext argument).
+  const preserveOrClearOfferContext = (product, offerContext) => (current) => {
+    if (offerContext) return offerContext
+    if (current && current.productId === product.id) return current
+    return null
+  }
+
+  const openAdvanced = (product, nextPreset = {}, offerContext = null) => {
+    setPage('product')
     setSelectedId(product.id)
     setPreset(nextPreset)
     setOrderMode('advanced')
     setTaskContext(null)
+    setProductViewContext(preserveOrClearOfferContext(product, offerContext))
     scrollToConfigure()
   }
 
-  const openGuided = (product, nextJourneyId, nextPreset = {}, task = null) => {
-    setPage('shop')
+  const openGuided = (product, nextJourneyId, nextPreset = {}, task = null, offerContext = null) => {
+    setPage('product')
     setSelectedId(product.id)
     setPreset(nextPreset)
     setJourneyId(nextJourneyId || product.guidedJourneyId)
@@ -283,11 +432,12 @@ export default function App() {
     setGuidedInitialFile(null)
     setOrderMode('guided')
     setTaskContext(task)
+    setProductViewContext(preserveOrClearOfferContext(product, offerContext))
     scrollToConfigure()
   }
 
   const continueFromAdvanced = (product, config, file) => {
-    setPage('shop')
+    setPage('product')
     setSelectedId(product.id)
     setPreset(config)
     setJourneyId(product.guidedJourneyId)
@@ -295,6 +445,7 @@ export default function App() {
     setGuidedInitialFile(file || null)
     setGuidedStartStep('fulfilment')
     setOrderMode('guided')
+    setProductViewContext(preserveOrClearOfferContext(product, null))
     scrollToConfigure()
   }
 
@@ -306,35 +457,68 @@ export default function App() {
     openAdvanced(product, nextPreset)
   }
 
-  // QS-16: a normal visual product-card click opens the Product Hub
-  // (sales/context layer) rather than dropping straight into a
-  // configurator. Reuses the same selectedId state everything else
-  // already reads from - the Hub's own Configure/Guided CTAs then call
-  // openAdvanced/openGuided/openPreferred (unchanged) exactly as a card
-  // click used to.
+  // QS-16/QS-21: a normal visual product-card click (or a related-
+  // product click) opens Product Detail - now a real, dedicated page
+  // (page:'product'), not a scroll target inside a long Shop document.
+  // Reuses the same selectedId state everything else already reads
+  // from - Product Detail's own Configure/Guided CTAs then call
+  // openAdvanced/openGuided/openPreferred (unchanged) exactly as before.
   //
   // Resets preset/taskContext/guidedStartStep/guidedInitialFile exactly
-  // like openAdvanced/openGuided already do - #configure is ALWAYS
-  // rendered for whatever selectedProduct currently is (not only after
-  // an explicit Configure/Guided click), and GuidedOrder/ProductConfigurator
-  // are keyed on `${selectedProduct.id}-...-${JSON.stringify(preset)}`,
-  // so switching products without clearing preset would remount a fresh
-  // configurator for the NEW product but seed it from the OLD product's
-  // leftover config (getDefaultConfig merges {...defaults, ...preset} -
-  // any matching field id, e.g. a shared 'width'/'artwork' field, would
-  // leak a stale value in). Reproducible before this fix: configure
-  // product A, click a related product on the new Hub (or any product
-  // card) without first clicking that Hub's own Configure/Guided button,
-  // then scroll to #configure - it would show product B pre-filled with
-  // product A's answers.
-  const openProductPage = (product) => {
-    setPage('shop')
+  // like openAdvanced/openGuided already do, and always clears
+  // productViewContext (QS-20.1) - opening a product FRESH (as opposed
+  // to toggling Guided/Full options on the one already open) is always
+  // a genuine "leave whatever I was editing" moment. GuidedOrder/
+  // ProductConfigurator are keyed on
+  // `${selectedProduct.id}-...-${JSON.stringify(preset)}`, so switching
+  // products without clearing preset would remount a fresh configurator
+  // for the NEW product but seed it from the OLD product's leftover
+  // config (getDefaultConfig merges {...defaults, ...preset} - any
+  // matching field id, e.g. a shared 'width'/'artwork' field, would
+  // leak a stale value in). Reproducible before this fix (QS-16):
+  // configure product A, click a related product without first clicking
+  // that product's own Configure/Guided button - it would show product
+  // B pre-filled with product A's answers.
+  const openProductDetail = (product) => {
+    setPage('product')
     setSelectedId(product.id)
     setPreset({})
     setTaskContext(null)
     setGuidedStartStep(null)
     setGuidedInitialFile(null)
-    scrollToProductHub()
+    setProductViewContext(null)
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 40)
+  }
+
+  const goBackToShop = () => {
+    setPage('shop')
+    setProductViewContext(null)
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 40)
+  }
+
+  // QS-21: Quick Configure is a small overlay, not a page transition -
+  // resolveQuickConfigureEligibility() (src/lib/navigation.js) decides
+  // whether it is safe for this product at all (see that function's own
+  // comment for exactly which real products/strategies this affects);
+  // when it is not, Configure sends the customer straight to Product
+  // Detail's configuration step instead, per the QS-21 brief's own
+  // allowance for that fallback.
+  const openQuickConfigure = (product) => {
+    if (resolveQuickConfigureEligibility(product)) {
+      setQuickConfigureProduct(product)
+      return
+    }
+    openPreferred(product)
+  }
+
+  const closeQuickConfigure = () => setQuickConfigureProduct(null)
+
+  // "Full options" inside the Quick Configure sheet - hands over
+  // whatever the customer already chose there as the starting preset,
+  // then opens the real Advanced configurator on Product Detail.
+  const openFullOptionsFromQuickConfigure = (product, config) => {
+    closeQuickConfigure()
+    openAdvanced(product, config)
   }
 
   // QS-18/QS-18A hero outcome actions: resolveHeroOutcomeNavigation()
@@ -410,12 +594,11 @@ export default function App() {
       />
       {showLanguagePrompt && <LanguageModePrompt onChoose={chooseLanguageMode} onDismiss={dismissLanguagePrompt}/>}
       <main>
-        {/* QS-18A: Home = outcome-first landing only. Shop/Product Hub/
-            configurator never render here - they only exist in the Shop
-            branch below, reached via an outcome action, the header's
-            Shop link, or Send documents (all of which switch page to
-            'shop' before scrolling - see openGuided/openAdvanced/
-            openProductPage/goShop above). */}
+        {/* QS-21: Home = outcome-first landing only. Shop (catalogue) and
+            Product Detail (ProductHub + configuration) are separate page
+            values below, reached via an outcome action, the header's
+            Shop link, Send documents, or opening a product - see
+            openGuided/openAdvanced/openProductDetail/goShop above. */}
         {page === 'home' && (
         <>
         <section className="hero shell qs18-hero">
@@ -474,14 +657,67 @@ export default function App() {
 
         <ProofGallery onExploreCollection={goToQuickPoints}/>
 
+        {/* QS-21 section 8: Quick Points restored to Home as a compact
+            credibility/utility band (not the old full-page section) -
+            answers "why use Quick Solution", using only real, existing
+            functionality (the same three claims the former standalone
+            promise-band already made, truthfully, plus one about
+            Simple/Pro guided ordering) and the real nearby-collection
+            listing data already fetched into fulfilmentPoints. Shop no
+            longer carries this section at all - it stays a lean
+            catalogue (section 7). */}
+        <section id="quick-points" ref={quickPointsRef} className="shell section qs21-quickpoints-band">
+          <div className="section-heading">
+            <div><span className="eyebrow">Why Quick Solution</span><h2>Built for how you actually order.</h2></div>
+          </div>
+          <div className="qs21-quickpoints-benefits">
+            <div><Icon name="upload"/><strong>Upload from your phone</strong><span>No app, no account - send a file or photo straight from wherever you are.</span></div>
+            <div><Icon name="clock"/><strong>Order before you arrive</strong><span>Less waiting and fewer back-and-forth messages.</span></div>
+            <div><Icon name="truck"/><strong>Collect where it suits you</strong><span>Café, Quick Point, delivery or courier.</span></div>
+            <div><Icon name="store"/><strong>One price source</strong><span>Website, POS, quote and invoice use the same rules.</span></div>
+          </div>
+          <div className="qs21-quickpoints-locations">
+            <div className="quick-copy">
+              <strong>Nearby collection</strong>
+              <span>Powered by Easy Locate</span>
+            </div>
+            <div className="location-card">
+              {(fulfilmentPoints.length ? fulfilmentPoints : [
+                { id: 'demo-cafe', name: 'Quick Solution Café', kind: 'cafe', services: ['Full service location'] },
+                { id: 'demo-point', name: 'Partner Quick Point', kind: 'quick_point', services: ['Collection point'], demo: true }
+              ]).slice(0, 4).map((point) => {
+                const business = point.easyLocateLink?.business || {}
+                const area = [business.locationArea || point.address?.area || point.address?.city, business.locationExtension || point.address?.line1].filter(Boolean).join(' · ')
+                const categories = Array.isArray(business.categories) ? business.categories.slice(0, 2).join(' · ') : ''
+                const listingUrl = point.easyLocateLink?.canonicalUrl
+                return (
+                  <div className="location-row qs07-location-row" key={point.id}>
+                    <div>
+                      <strong>{point.name}</strong>
+                      <span>{[area, categories || (point.kind === 'cafe' ? 'Full service location' : 'Collection point')].filter(Boolean).join(' · ')}</span>
+                    </div>
+                    <div className="location-row-actions">
+                      <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Quick Solution café' : point.easyLocateLink ? 'Easy Locate verified' : 'Quick Point'}</span>
+                      {listingUrl ? <a href={listingUrl} target="_blank" rel="noreferrer">View listing <Icon name="external" size={13}/></a> : null}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </section>
+
         <HelpCta/>
         </>
         )}
 
-        {/* QS-18A: Shop = browsing + Product Hub + the configurator, all
-            reused exactly as QS-16/QS-17/QS-18 already built them - only
-            now gated to page === 'shop' instead of always stacked below
-            Home. */}
+        {/* QS-21: Shop is now a lean catalogue only - grid/offers/filters
+            and the "coming soon" teaser. ProductHub, the configurator,
+            Quick Points and the promise-band claims all moved out (Quick
+            Points + those claims are now on Home, section 8 above;
+            ProductHub + configuration are now their own page:'product'
+            tree below) - Shop no longer scrolls into a configurator
+            living in the same document. */}
         {page === 'shop' && (
         <>
         <section id="shop" ref={shopRef} className="shell section services-section">
@@ -489,7 +725,7 @@ export default function App() {
             <div><span className="eyebrow">Shop</span><h2>See what we can make.</h2></div>
             <p>{shopMode === 'offers'
               ? 'Ready-made setups built from real products - choose one, or customise it first.'
-              : 'Browse visually, then configure. Every product starts in Guided mode, with Full options available when you already know the exact specs.'}</p>
+              : 'Browse visually, then open a product for the full details, or jump straight to Configure.'}</p>
           </div>
 
           {/* QS-20: Quick (ready-made Offers) vs Build your own (browse
@@ -528,9 +764,9 @@ export default function App() {
                     products={catalog}
                     mode={languageMode}
                     onChooseThis={(result) => addOfferToCart(offer, result)}
-                    onCustomiseLine={(line) => {
-                      const product = catalog.find((item) => item.id === line.productId)
-                      if (product) openAdvanced(product, line.config)
+                    onCustomiseLine={(line, item) => {
+                      const product = catalog.find((entry) => entry.id === line.productId)
+                      if (product) openAdvanced(product, line.config, buildOfferChangeContext(offer, item))
                     }}
                   />
                 ))}
@@ -541,7 +777,18 @@ export default function App() {
             </>
           ) : (
             <>
-              <div className="product-grid">{filteredShopProducts.map((product) => <ProductCard key={product.id} product={product} mode={languageMode} active={selectedProduct?.id === product.id} onConfigure={openProductPage}/>)}</div>
+              <div className="product-grid">
+                {filteredShopProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    mode={languageMode}
+                    active={selectedProduct?.id === product.id}
+                    onViewProduct={openProductDetail}
+                    onQuickConfigure={resolveQuickConfigureEligibility(product) ? openQuickConfigure : undefined}
+                  />
+                ))}
+              </div>
               {filteredShopProducts.length === 0 && (
                 <p className="qs18-shop-empty">Nothing in this category yet — try “All” or WhatsApp us and we will help directly.</p>
               )}
@@ -549,147 +796,162 @@ export default function App() {
           )}
         </section>
 
-        {selectedProduct && (
-          <div ref={productHubRef} className="qs16-product-hub-anchor">
-            {/* QS-17: onConfigure/onGuided now optionally forward a
-                preset config (from the Presets section's "Choose
-                this"/"Customise") straight into the EXISTING
-                openAdvanced/openGuided nextPreset argument - the same
-                mechanism QS-16 already used for related-product/
-                continue-from-advanced handoffs. No new state. */}
-            <ProductHub
-              product={selectedProduct}
-              catalog={customerProducts}
-              mode={languageMode}
-              onConfigure={(presetConfig) => openAdvanced(selectedProduct, presetConfig || {})}
-              onGuided={selectedJourney ? (presetConfig) => openGuided(selectedProduct, selectedJourney.id, presetConfig || {}) : null}
-              onSelectRelated={openProductPage}
-            />
-          </div>
+        <ComingSoonRail liveProductIds={customerProducts.map((product) => product.id)} />
+        </>
         )}
 
-        <ComingSoonRail liveProductIds={customerProducts.map((product) => product.id)} />
+        {/* QS-21: Product Detail - a real, dedicated page (ProductHub +
+            configuration + related content), reached only via
+            openProductDetail()/openPreferred() (never a scroll target
+            inside Shop). The context rail below is the "customer must
+            always know which product they are configuring" requirement
+            (brief section 4/5) - it is the same product-switcher Shop's
+            old configure-toolbar used to bury inline, now the page's own
+            top-level orientation device, restyled with restraint (see
+            qs21-navigation.css's .qs21-context-rail). */}
+        {page === 'product' && selectedProduct && (
+        <>
+        <section className="shell qs21-product-detail-nav">
+          <button type="button" className="qs21-back-to-shop" onClick={goBackToShop}>
+            <Icon name="arrowLeft" size={15}/> Back to Shop
+          </button>
+          <div className="qs21-context-rail" role="tablist" aria-label="Choose a product to configure">
+            {customerProducts.map((product) => (
+              <button
+                role="tab"
+                aria-selected={selectedProduct.id === product.id}
+                key={product.id}
+                className={`qs21-context-tab ${selectedProduct.id === product.id ? 'active' : ''}`}
+                onClick={() => openPreferred(product)}
+                type="button"
+              >{product.shortName}</button>
+            ))}
+          </div>
+        </section>
 
-        {selectedProduct && (
-          <section id="configure" ref={configureRef} className="configurator-section">
-            <div className="shell">
-              <div className="qs10-config-intro">
-                <div>
-                  <span className="eyebrow">Ready to order? · {resolveProductDisplayName(selectedProduct, languageMode)}</span>
-                  <h2>Configure your order.</h2>
-                </div>
-                <p>Start with Guided mode for the simplest route. Switch to Full options only when you already know the exact production specs.</p>
-                <button type="button" className="qs16-view-product-link" onClick={scrollToProductHub}>
-                  <Icon name="arrowUpRight" size={15}/> View product
-                </button>
+        <div ref={productHubRef} className="qs16-product-hub-anchor">
+          {/* QS-17: onConfigure/onGuided now optionally forward a
+              preset config (from the Presets section's "Choose
+              this"/"Customise") straight into the EXISTING
+              openAdvanced/openGuided nextPreset argument - the same
+              mechanism QS-16 already used for related-product/
+              continue-from-advanced handoffs. No new state. */}
+          <ProductHub
+            product={selectedProduct}
+            catalog={customerProducts}
+            mode={languageMode}
+            onConfigure={(presetConfig) => openAdvanced(selectedProduct, presetConfig || {})}
+            onGuided={selectedJourney ? (presetConfig) => openGuided(selectedProduct, selectedJourney.id, presetConfig || {}) : null}
+            onSelectRelated={openProductDetail}
+          />
+        </div>
+
+        {/* QS-21 section 10: a compact, verified-true trust/payment strip -
+            every claim here already exists elsewhere in the real checkout
+            flow (OrderBasket.jsx's PayFast/collection/delivery fulfilment
+            options, GuidedOrder.jsx's "Quick Solution can request artwork
+            before production" copy) - nothing invented, no fabricated
+            badges or logos. */}
+        <section className="shell qs21-trust-strip">
+          <div><Icon name="checkCircle" size={18}/><span><strong>Secure checkout</strong><small>Pay safely through PayFast</small></span></div>
+          <div><Icon name="store" size={18}/><span><strong>Collect locally</strong><small>Quick Solution Café or a nearby Quick Point</small></span></div>
+          <div><Icon name="truck" size={18}/><span><strong>Courier or delivery</strong><small>Price confirmed before payment</small></span></div>
+          <div><Icon name="document" size={18}/><span><strong>Artwork checked</strong><small>Reviewed before production, not just accepted</small></span></div>
+        </section>
+
+        <section id="configure" ref={configureRef} className="configurator-section">
+          <div className="shell">
+            <div className="qs10-config-intro">
+              <div>
+                <span className="eyebrow">Ready to order? · {resolveProductDisplayName(selectedProduct, languageMode)}</span>
+                <h2>Configure your order.</h2>
               </div>
-              <div className="configure-toolbar">
-                <div className="configure-switcher" role="tablist" aria-label="Choose a product to configure">
-                  {customerProducts.map((product) => (
-                    <button
-                      role="tab"
-                      aria-selected={selectedProduct.id === product.id}
-                      key={product.id}
-                      className={selectedProduct.id === product.id ? 'active' : ''}
-                      onClick={() => openPreferred(product)}
-                      type="button"
-                    >{product.shortName}</button>
-                  ))}
-                </div>
-                {selectedProduct.channels?.guided !== false && selectedProduct.guidedJourneyId && selectedProduct.channels?.advanced !== false && (
-                  <div className="mode-choice">
-                    <div className="mode-choice-copy">
-                      <span>Order mode</span>
-                      <strong>{orderMode === 'guided' ? 'Guided is recommended' : 'Full options gives precise control'}</strong>
-                    </div>
-                    <div className="mode-toggle" aria-label="Ordering mode">
-                      <button type="button" className={orderMode === 'guided' ? 'active' : ''} onClick={() => openGuided(selectedProduct, selectedProduct.guidedJourneyId, preset, taskContext)}>
-                        <span>Guided</span><small>Recommended</small>
-                      </button>
-                      <button type="button" className={`${orderMode === 'advanced' ? 'active' : ''} full-options-button`} onClick={() => { setOrderMode('advanced'); setTaskContext(null) }}>
-                        <span>Full options</span><small>Exact specs</small>
-                      </button>
-                    </div>
+              <p>Start with Guided mode for the simplest route. Switch to Full options only when you already know the exact production specs.</p>
+              <button type="button" className="qs16-view-product-link" onClick={scrollToProductHub}>
+                <Icon name="arrowUpRight" size={15}/> View product
+              </button>
+            </div>
+            <div className="configure-toolbar">
+              {selectedProduct.channels?.guided !== false && selectedProduct.guidedJourneyId && selectedProduct.channels?.advanced !== false && (
+                <div className="mode-choice">
+                  <div className="mode-choice-copy">
+                    <span>Order mode</span>
+                    <strong>{orderMode === 'guided' ? 'Guided is recommended' : 'Full options gives precise control'}</strong>
                   </div>
-                )}
-              </div>
-
-              {orderMode === 'guided' && selectedJourney ? (
-                <GuidedOrder
-                  key={`${selectedProduct.id}-${selectedJourney.id}-${JSON.stringify(preset)}`}
-                  product={selectedProduct}
-                  journey={selectedJourney}
-                  preset={preset}
-                  task={taskContext}
-                  mode={languageMode}
-                  fulfilmentPoints={fulfilmentPoints}
-                  initialStepId={guidedStartStep}
-                  initialFile={guidedInitialFile}
-                  onAdvanced={() => setOrderMode('advanced')}
-                  onAddToCart={addToCart}
-                />
-              ) : (
-                <ProductConfigurator
-                  key={`${selectedProduct.id}-${JSON.stringify(preset)}`}
-                  product={selectedProduct}
-                  preset={preset}
-                  mode={languageMode}
-                  onGuided={selectedJourney ? () => openGuided(selectedProduct, selectedJourney.id, preset) : null}
-                  onContinue={({ config, file }) => continueFromAdvanced(selectedProduct, config, file)}
-                  onAddToCart={addToCart}
-                />
+                  <div className="mode-toggle" aria-label="Ordering mode">
+                    <button type="button" className={orderMode === 'guided' ? 'active' : ''} onClick={() => openGuided(selectedProduct, selectedProduct.guidedJourneyId, preset, taskContext)}>
+                      <span>Guided</span><small>Recommended</small>
+                    </button>
+                    <button type="button" className={`${orderMode === 'advanced' ? 'active' : ''} full-options-button`} onClick={() => { setOrderMode('advanced'); setTaskContext(null) }}>
+                      <span>Full options</span><small>Exact specs</small>
+                    </button>
+                  </div>
+                </div>
               )}
+            </div>
+
+            {orderMode === 'guided' && selectedJourney ? (
+              <GuidedOrder
+                key={`${selectedProduct.id}-${selectedJourney.id}-${JSON.stringify(preset)}`}
+                product={selectedProduct}
+                journey={selectedJourney}
+                preset={preset}
+                task={taskContext}
+                mode={languageMode}
+                fulfilmentPoints={fulfilmentPoints}
+                initialStepId={guidedStartStep}
+                initialFile={guidedInitialFile}
+                onAdvanced={() => setOrderMode('advanced')}
+                onAddToCart={addToCart}
+              />
+            ) : (
+              <ProductConfigurator
+                key={`${selectedProduct.id}-${JSON.stringify(preset)}`}
+                product={selectedProduct}
+                preset={preset}
+                mode={languageMode}
+                onGuided={selectedJourney ? () => openGuided(selectedProduct, selectedJourney.id, preset) : null}
+                onContinue={({ config, file }) => continueFromAdvanced(selectedProduct, config, file)}
+                onAddToCart={addToCart}
+              />
+            )}
+          </div>
+        </section>
+
+        {relatedOffers.length > 0 && (
+          <section className="shell section qs21-related-offers">
+            <div className="section-heading">
+              <div><span className="eyebrow">Also useful</span><h2>Ready-made setups that include this.</h2></div>
+            </div>
+            <div className="qs20-offer-grid">
+              {relatedOffers.map((offer) => (
+                <OfferCard
+                  key={offer.id}
+                  offer={offer}
+                  products={catalog}
+                  mode={languageMode}
+                  onChooseThis={(result) => addOfferToCart(offer, result)}
+                  onCustomiseLine={(line, item) => {
+                    const product = catalog.find((entry) => entry.id === line.productId)
+                    if (product) openAdvanced(product, line.config, buildOfferChangeContext(offer, item))
+                  }}
+                />
+              ))}
             </div>
           </section>
         )}
-
-        <section id="quick-points" ref={quickPointsRef} className="shell section quick-point-section">
-          <div className="quick-copy">
-            <span className="eyebrow">Joint X Quick Points</span>
-            <h2>Order online.<br/>Collect locally.</h2>
-            <p>Upload from home, configure your order, and collect when it is ready. Quick Points extend Joint X convenience through trusted local businesses.</p>
-            <a className="button dark" href="#top">Explore nearby points <Icon name="arrowRight" size={17}/></a>
-          </div>
-          <div className="location-card">
-            <div className="location-map">
-              <div className="map-pin"><Icon name="pin" size={30}/></div>
-              <strong>Nearby collection</strong>
-              <span>Powered by Easy Locate</span>
-            </div>
-            {(fulfilmentPoints.length ? fulfilmentPoints : [
-              { id: 'demo-cafe', name: 'Quick Solution Café', kind: 'cafe', services: ['Full service location'] },
-              { id: 'demo-point', name: 'Partner Quick Point', kind: 'quick_point', services: ['Collection point'], demo: true }
-            ]).slice(0, 4).map((point) => {
-              const business = point.easyLocateLink?.business || {}
-              const area = [business.locationArea || point.address?.area || point.address?.city, business.locationExtension || point.address?.line1].filter(Boolean).join(' · ')
-              const categories = Array.isArray(business.categories) ? business.categories.slice(0, 2).join(' · ') : ''
-              const listingUrl = point.easyLocateLink?.canonicalUrl
-              return (
-                <div className="location-row qs07-location-row" key={point.id}>
-                  <div>
-                    <strong>{point.name}</strong>
-                    <span>{[area, categories || (point.kind === 'cafe' ? 'Full service location' : 'Collection point')].filter(Boolean).join(' · ')}</span>
-                  </div>
-                  <div className="location-row-actions">
-                    <span>{point.demo ? 'Coming soon' : point.kind === 'cafe' ? 'Quick Solution café' : point.easyLocateLink ? 'Easy Locate verified' : 'Quick Point'}</span>
-                    {listingUrl ? <a href={listingUrl} target="_blank" rel="noreferrer">View listing <Icon name="external" size={13}/></a> : null}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-
-        <section className="promise-band">
-          <div className="shell promise-grid">
-            <div><Icon name="clock"/><strong>Order before you arrive</strong><span>Less waiting and fewer back-and-forth messages.</span></div>
-            <div><Icon name="truck"/><strong>Collect where it suits you</strong><span>Café, Quick Point, delivery or courier.</span></div>
-            <div><Icon name="store"/><strong>One price source</strong><span>Website, POS, quote and invoice use the same rules.</span></div>
-          </div>
-        </section>
         </>
         )}
       </main>
+      {quickConfigureProduct && (
+        <QuickConfigureSheet
+          product={quickConfigureProduct}
+          mode={languageMode}
+          onClose={closeQuickConfigure}
+          onAddToCart={addToCart}
+          onFullOptions={(config) => openFullOptionsFromQuickConfigure(quickConfigureProduct, config)}
+        />
+      )}
       <OrderBasket
         items={cart}
         open={cartOpen}
