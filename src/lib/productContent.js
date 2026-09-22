@@ -13,6 +13,14 @@
 // call calculateProductPrice()/getDefaultConfig() from ./pricing.js
 // directly — pricing.js remains the single frontend pricing authority
 // and nothing here duplicates or reimplements it.
+//
+// QS-21.1: resolveProductPriceCue() below is the one exception that
+// actually calls into pricing.js - it does not reimplement pricing, it
+// just centralizes the exact same calculateProductPrice()/
+// getDefaultConfig() call ProductHub's hero already made inline, so a
+// second caller (the sticky Configure affordance) never has to
+// duplicate it.
+import { calculateProductPrice, getDefaultConfig } from './pricing.js'
 
 // The pre-QS-16 hardcoded image map, moved here from ProductCard.jsx
 // (was a local const in that file) so ProductCard.jsx and ProductHub.jsx
@@ -27,10 +35,12 @@ export const LEGACY_IMAGE_FALLBACK = {
   'business-cards': '/qs11/product-business-cards-clean.webp',
   'printed-tshirt': '/qs11/product-tshirt-clean.webp',
   'media-services': '/qs12/product-photography-video.webp',
-  // Flags has no dedicated product photography yet — falls back to the
-  // existing generic ProductScene illustration rather than reusing an
-  // unrelated image.
-  gazebos: '/qs11/event-gazebo.webp',
+  // QS-21.1: flags/gazebos now both set product.media.hero directly
+  // (src/data/products.js) with real photography, which resolveProductMedia()
+  // reads BEFORE this map - these two legacy entries are dead in normal
+  // operation and kept only as a last-resort safety net if media.hero
+  // were ever cleared.
+  gazebos: '/qs21/gazebo-hero-kit.webp',
   'photo-session': '/qs12/product-photography-video.webp'
 }
 
@@ -163,6 +173,27 @@ export function resolveStartingPriceEligibility(product) {
   if (product.pricing?.strategy === 'ENQUIRY') return { mode: 'quote' }
   if (product.productPage?.showStartingPrice === true) return { mode: 'amount' }
   return { mode: 'none' }
+}
+
+// QS-21.1: the SAME "From R..." / "Get a quote" cue ProductHub's hero
+// already computed inline, lifted here so the new sticky/floating
+// Configure affordance (App.jsx) can show the identical price without a
+// second pricing computation living outside pricing.js. Still only ever
+// calls calculateProductPrice()/getDefaultConfig() - never re-derives or
+// caches a number itself. Returns null when resolveStartingPriceEligibility
+// says there is nothing to show (mode: 'none') or the calculation throws.
+export function resolveProductPriceCue(product) {
+  const eligibility = resolveStartingPriceEligibility(product)
+  if (eligibility.mode === 'quote') return { quoteRequired: true }
+  if (eligibility.mode === 'amount') {
+    try {
+      const result = calculateProductPrice(product, getDefaultConfig(product, {}))
+      return { quoteRequired: false, total: result.total }
+    } catch {
+      return null
+    }
+  }
+  return null
 }
 
 // Correction: whether the Hub's Guided/Advanced CTAs should render as

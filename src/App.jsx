@@ -20,7 +20,8 @@ import { loadCart, saveCart } from './lib/cartStore.js'
 import { guidedJourneys, heroOutcomes, offers as defaultOffers, products as defaultProducts } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
-import { resolveProductDisplayName, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
+import { resolveProductDisplayName, resolveProductPriceCue, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
+import { formatMoney } from './lib/pricing.js'
 import { loadLanguageMode, saveLanguageMode, hasSeenLanguageModePrompt, markLanguageModePromptSeen } from './lib/languageMode.js'
 import {
   DEFAULT_PAGE,
@@ -31,7 +32,8 @@ import {
   buildHistoryState,
   resolveHistoryAction,
   resolvePopStateNavigation,
-  resolveOfferContextAfterHistoryRestore
+  resolveOfferContextAfterHistoryRestore,
+  resolveStickyConfigureVisibility
 } from './lib/navigation.js'
 import { resolveActiveOffers, resolveOffersForCategory, resolveOfferDisplayName } from './lib/offers.js'
 import { deriveRelatedOffers } from './lib/relatedContent.js'
@@ -69,6 +71,13 @@ export default function App() {
   // QS-21: which product's Quick Configure sheet is open, if any (a
   // small overlay, not a page transition - see QuickConfigureSheet.jsx).
   const [quickConfigureProduct, setQuickConfigureProduct] = useState(null)
+  // QS-21.1 section 4: whether the configurator section is currently
+  // in the viewport - drives the desktop sticky/floating Configure
+  // affordance (shown only while false, i.e. the customer is still
+  // above it). Starts false: on a fresh Product Detail landing the
+  // configurator is below the fold, so the affordance should be visible
+  // immediately rather than waiting for the first observer callback.
+  const [configureInView, setConfigureInView] = useState(false)
   // QS-20.1: a small, short-lived, presentation-only marker - see
   // buildOfferChangeContext()/resolveOfferContextCartTag()
   // (src/lib/navigation.js) for its full lifecycle contract. Set only
@@ -186,6 +195,27 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState)
   }, [catalog])
 
+  // QS-21.1 section 4: drives the desktop sticky/floating Configure
+  // affordance - true exactly while the real configurator section is
+  // at least partially on screen, so the affordance can hide itself
+  // once it would be redundant. Only observes while page is 'product'
+  // (configureRef is null otherwise); re-attaches on selectedId changes
+  // since switching product via the context rail keeps page:'product'
+  // but the observed section's content changes under the same node.
+  useEffect(() => {
+    if (page !== 'product' || !configureRef.current) {
+      setConfigureInView(false)
+      return
+    }
+    const node = configureRef.current
+    const observer = new IntersectionObserver(
+      ([entry]) => setConfigureInView(entry.isIntersecting),
+      { rootMargin: '-76px 0px 0px 0px', threshold: 0 }
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [page, selectedId])
+
   useEffect(() => {
     if (!isSupabaseConfigured()) return
 
@@ -250,6 +280,11 @@ export default function App() {
     () => deriveRelatedOffers(selectedProduct, activeOffers, 3),
     [selectedProduct, activeOffers]
   )
+
+  // QS-21.1 section 4: the sticky Configure affordance's price line -
+  // the exact same cue ProductHub's own hero shows (resolveProductPriceCue,
+  // src/lib/productContent.js), never a second pricing computation.
+  const productDetailPriceCue = useMemo(() => resolveProductPriceCue(selectedProduct), [selectedProduct])
 
   const scrollToConfigure = () => window.setTimeout(() => configureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   const scrollToProductHub = () => window.setTimeout(() => productHubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
@@ -455,6 +490,29 @@ export default function App() {
       return
     }
     openAdvanced(product, nextPreset)
+  }
+
+  // QS-21.1 section 10: the Guided/Full options TOGGLE inside the
+  // already-open configurator must never scroll - the customer is
+  // already looking at it. openGuided()/openAdvanced() are for genuine
+  // entry points (a hero CTA, a preset, Offer "Change", search - all of
+  // which reasonably land the customer here from somewhere ABOVE it)
+  // and always scroll by design; this is deliberately a separate,
+  // lighter path that only ever flips orderMode for the product already
+  // open, never touches page/selectedId/preset/journeyId and never
+  // calls scrollToConfigure(). Fixes a real bug: the Guided tab used to
+  // call openGuided() directly, which scrolled the page on every single
+  // Guided<->Full toggle even though the configurator was already on
+  // screen.
+  const switchOrderMode = (nextMode) => {
+    if (nextMode === 'guided' && selectedJourney) {
+      setOrderMode('guided')
+      setGuidedStartStep(null)
+      setGuidedInitialFile(null)
+      return
+    }
+    setOrderMode('advanced')
+    setTaskContext(null)
   }
 
   // QS-16/QS-21: a normal visual product-card click (or a related-
@@ -811,6 +869,26 @@ export default function App() {
             qs21-navigation.css's .qs21-context-rail). */}
         {page === 'product' && selectedProduct && (
         <>
+        {/* QS-21.1 section 4: desktop-only (hidden on mobile via CSS -
+            ProductHub already has its own mobile sticky CTA, see
+            qs16.css's .product-hub-sticky-cta - showing both would be
+            redundant on a small screen). Visible only while the real
+            configurator is NOT already in view (configureInView, driven
+            by the IntersectionObserver effect above) - never obscures
+            content, never adds a history entry, changes no pricing. */}
+        {resolveStickyConfigureVisibility(page, configureInView) && (
+          <button type="button" className="qs21-sticky-configure" onClick={scrollToConfigure}>
+            <span className="qs21-sticky-configure-copy">
+              <small>Configure</small>
+              <strong>
+                {productDetailPriceCue == null
+                  ? resolveProductDisplayName(selectedProduct, languageMode)
+                  : productDetailPriceCue.quoteRequired ? 'Quote required' : `From ${formatMoney(productDetailPriceCue.total)}`}
+              </strong>
+            </span>
+            <span className="qs21-sticky-configure-action"><Icon name="arrowRight" size={15}/> Configure order</span>
+          </button>
+        )}
         <section className="shell qs21-product-detail-nav">
           <button type="button" className="qs21-back-to-shop" onClick={goBackToShop}>
             <Icon name="arrowLeft" size={15}/> Back to Shop
@@ -843,6 +921,7 @@ export default function App() {
             onConfigure={(presetConfig) => openAdvanced(selectedProduct, presetConfig || {})}
             onGuided={selectedJourney ? (presetConfig) => openGuided(selectedProduct, selectedJourney.id, presetConfig || {}) : null}
             onSelectRelated={openProductDetail}
+            onQuickConfigure={openQuickConfigure}
           />
         </div>
 
@@ -879,10 +958,10 @@ export default function App() {
                     <strong>{orderMode === 'guided' ? 'Guided is recommended' : 'Full options gives precise control'}</strong>
                   </div>
                   <div className="mode-toggle" aria-label="Ordering mode">
-                    <button type="button" className={orderMode === 'guided' ? 'active' : ''} onClick={() => openGuided(selectedProduct, selectedProduct.guidedJourneyId, preset, taskContext)}>
+                    <button type="button" className={orderMode === 'guided' ? 'active' : ''} onClick={() => switchOrderMode('guided')}>
                       <span>Guided</span><small>Recommended</small>
                     </button>
-                    <button type="button" className={`${orderMode === 'advanced' ? 'active' : ''} full-options-button`} onClick={() => { setOrderMode('advanced'); setTaskContext(null) }}>
+                    <button type="button" className={`${orderMode === 'advanced' ? 'active' : ''} full-options-button`} onClick={() => switchOrderMode('advanced')}>
                       <span>Full options</span><small>Exact specs</small>
                     </button>
                   </div>

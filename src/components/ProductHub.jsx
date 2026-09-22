@@ -2,19 +2,22 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
 import { fulfilmentOptions } from '../data/products.js'
-import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
+import { calculateProductPrice, formatMoney } from '../lib/pricing.js'
 import {
   resolveProductMedia,
   resolveProductPageContent,
   resolveConfigPreviewFields,
   resolveArtworkGuidance,
   deriveRelatedProducts,
-  resolveStartingPriceEligibility,
+  resolveProductPriceCue,
   resolveHubAvailability,
   resolveProductPresets,
   composeVariantSummary,
+  resolveProductDisplayName,
   buildShareLinks
 } from '../lib/productContent.js'
+import { resolveQuickConfigureEligibility } from '../lib/navigation.js'
+import { resolveRelatedDisclosureState } from '../lib/relatedContent.js'
 
 // QS-16 — generic Product Hub / Product Detail page.
 //
@@ -41,13 +44,20 @@ import {
 // a `nextPreset` argument (used since QS-16 for related-product/
 // continue-from-advanced handoffs), so passing a preset's config through
 // these same two existing props reuses that exact mechanism.
-export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated }) {
+export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated, onQuickConfigure }) {
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [mediaFailed, setMediaFailed] = useState(false)
+  // QS-21.1: which related-product row (if any) is expanded into its
+  // local disclosure preview - see resolveRelatedDisclosureState()
+  // (src/lib/relatedContent.js) for the "only one at a time" rule. Reset
+  // on product change so switching products never leaves a stale card
+  // expanded for a related list that's about to be replaced.
+  const [expandedRelatedId, setExpandedRelatedId] = useState(null)
 
   useEffect(() => {
     setGalleryIndex(0)
     setMediaFailed(false)
+    setExpandedRelatedId(null)
   }, [product?.id])
 
   const media = useMemo(() => resolveProductMedia(product), [product])
@@ -64,22 +74,10 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
   // configuration is not necessarily its cheapest valid one, so merely
   // having a pricing object is not enough to justify a starting-price
   // claim. ENQUIRY products always get "Get a quote" - see
-  // resolveStartingPriceEligibility() (src/lib/productContent.js) for
-  // the full reasoning. The actual number, when eligible, still comes
-  // from calculateProductPrice()/getDefaultConfig() only.
-  const priceEligibility = useMemo(() => resolveStartingPriceEligibility(product), [product])
-  const priceCue = useMemo(() => {
-    if (priceEligibility.mode === 'quote') return { quoteRequired: true }
-    if (priceEligibility.mode === 'amount') {
-      try {
-        const result = calculateProductPrice(product, getDefaultConfig(product, {}))
-        return { quoteRequired: false, total: result.total }
-      } catch {
-        return null
-      }
-    }
-    return null
-  }, [priceEligibility, product])
+  // resolveProductPriceCue() (src/lib/productContent.js) for the full
+  // reasoning. QS-21.1: also reused, unchanged, by App.jsx's sticky
+  // Configure affordance - one shared computation, not two.
+  const priceCue = useMemo(() => resolveProductPriceCue(product), [product])
 
   // QS-17: resolveProductPresets() already guarantees every entry here
   // is both structurally safe and semantically valid against this
@@ -157,6 +155,19 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
               <Icon name="message" size={16}/> WhatsApp help
             </a>
           </div>
+
+          {/* QS-21.1 section 7: a compact trust row right next to the
+              primary configure actions - the SAME 4 verified-true claims
+              App.jsx's full trust strip makes lower down the page
+              (.qs21-trust-strip, near the configurator itself), just a
+              single condensed line here so the two never feel like
+              repeated blocks. */}
+          <ul className="product-hub-trust-compact">
+            <li><Icon name="checkCircle" size={14}/> Secure checkout</li>
+            <li><Icon name="store" size={14}/> Collect locally</li>
+            <li><Icon name="truck" size={14}/> Courier or delivery</li>
+            <li><Icon name="document" size={14}/> Artwork checked</li>
+          </ul>
         </div>
 
         {/* 2 — Media */}
@@ -331,39 +342,82 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
         </div>
 
         <aside className="product-hub-side">
-          {/* 8 — Related products */}
+          {/* 8 — Related products. QS-21.1: the row itself no longer
+              navigates on click (was abrupt - straight to another
+              Product Detail page, top of page, no warning) - it toggles
+              a local disclosure preview instead (thumbnail, short
+              description, View product, Quick configure where
+              eligible). Only "View product" navigates; only one related
+              item can be expanded at a time (resolveRelatedDisclosureState,
+              src/lib/relatedContent.js). Expanding/collapsing never
+              touches page/history state - see App.jsx's history-sync
+              effect, which this never reaches. */}
           {related.length > 0 && (
             <div className="product-hub-block product-hub-related">
               <h3>Related products</h3>
               <div className="product-hub-related-list">
-                {related.map((item) => (
-                  <button key={item.id} type="button" onClick={() => onSelectRelated?.(item)}>
-                    <span>{item.name}</span>
-                    <Icon name="arrowRight" size={15}/>
-                  </button>
-                ))}
+                {related.map((item) => {
+                  const isExpanded = expandedRelatedId === item.id
+                  const itemMedia = resolveProductMedia(item)
+                  const quickConfigEligible = resolveQuickConfigureEligibility(item)
+                  return (
+                    <div key={item.id} className={`product-hub-related-row${isExpanded ? ' expanded' : ''}`}>
+                      <button
+                        type="button"
+                        className="product-hub-related-toggle"
+                        aria-expanded={isExpanded}
+                        onClick={() => setExpandedRelatedId((current) => resolveRelatedDisclosureState(current, item.id))}
+                      >
+                        <span>{resolveProductDisplayName(item, mode)}</span>
+                        <Icon name={isExpanded ? 'arrowUpRight' : 'arrowRight'} size={15}/>
+                      </button>
+                      {isExpanded && (
+                        <div className="product-hub-related-preview">
+                          <div className="product-hub-related-preview-media">
+                            {itemMedia.hero ? (
+                              <img src={itemMedia.hero} alt="" loading="lazy"/>
+                            ) : (
+                              <ProductScene productId={item.id}/>
+                            )}
+                          </div>
+                          <div className="product-hub-related-preview-copy">
+                            {item.description && <p>{item.description}</p>}
+                            <div className="product-hub-related-preview-actions">
+                              <button type="button" className="button ghost" onClick={() => onSelectRelated?.(item)}>
+                                View product
+                              </button>
+                              {quickConfigEligible && onQuickConfigure && (
+                                <button type="button" className="button dark" onClick={() => onQuickConfigure(item)}>
+                                  Quick configure
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
 
-          {/* 9 — Share Kit placeholder */}
-          <div className="product-hub-block product-hub-share">
-            <h3>Share this product</h3>
-            <p className="product-hub-share-note">Brochures, spec sheets and artwork templates can be added here later.</p>
-            <div className="product-hub-share-links">
-              {/* Correction: this app has no routing for /products/:id or
-                  /configure/:id yet, so shareLinks.productPageUrl/
-                  configureUrl do not resolve to anything if opened -
-                  never exposed as copyable/clickable. A single compact
-                  status line replaces what used to be two disabled
-                  full-width rows. buildShareLinks() still computes both
-                  URLs (kept for tests/future use). WhatsApp is the one
-                  primary, actionable row. */}
-              <p className="product-hub-share-status">Direct product and configure links are coming soon.</p>
-              <a href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer" className="product-hub-share-primary">
-                <Icon name="send" size={16}/> Share on WhatsApp
-              </a>
-            </div>
+          {/* 9 — Share, collapsed to a slim utility row (QS-21.1 section
+              8 audit): QS-21 added real page/selectedProductId browser-
+              history STATE, but never a visible URL (path or query never
+              change - only history.state does), so a copied address bar
+              link still cannot restore a specific product. Deep links
+              are therefore still genuinely unavailable, not just
+              unbuilt - shareLinks.productPageUrl/configureUrl remain
+              unexposed. This used to be a full bordered card with a
+              filler note for content that does not exist yet; now it is
+              one line, WhatsApp is the only real action, and the "coming
+              soon" copy is kept but de-emphasised rather than removed. */}
+          <div className="product-hub-share-compact">
+            <a href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer" className="product-hub-share-primary">
+              <Icon name="send" size={16}/> Share on WhatsApp
+            </a>
+            <span className="product-hub-share-status">Direct product links coming soon</span>
           </div>
         </aside>
       </div>

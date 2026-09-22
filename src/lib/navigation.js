@@ -47,6 +47,17 @@ export function resolveHeroOutcomeNavigation(outcome) {
 // an identity function pretending to be a decision.
 export const PRODUCT_DETAIL_PAGE = 'product'
 
+// QS-21.1 section 4: whether the desktop sticky/floating Configure
+// affordance should render - only on Product Detail itself, and only
+// while the real configurator section is not already on screen
+// (App.jsx's IntersectionObserver effect owns computing configureInView
+// itself; this is just the small, testable DECISION built from it, kept
+// out of the JSX condition so it has a name and a test rather than
+// being an inline boolean expression).
+export function resolveStickyConfigureVisibility(page, configureInView) {
+  return page === PRODUCT_DETAIL_PAGE && !configureInView
+}
+
 // A product's pricing strategy decides whether a minimal Quick Configure
 // sheet is SAFE to offer at all - not every product has a config whose
 // DEFAULT state is a real, priceable choice, and not every product's
