@@ -264,6 +264,112 @@ export function resolveSelectControlChange(rawDomValue) {
   return rawDomValue === '' ? null : rawDomValue
 }
 
+// ── QS-17D: deriving Guided axis selections from config.variant ──────
+// Root cause of the bug this fixes: for SUPPLIER_MARGIN products (Flags,
+// Gazebos), GuidedOrder.jsx renders SupplierVariantConfigurator.jsx,
+// whose axis <select>s read their displayed value from dedicated
+// `config.variantAxis_<axisId>` keys (e.g. `variantAxis_style`) - NOT
+// from `config.variant` itself. Those keys only ever get written by the
+// user interacting with the axis dropdowns (SupplierVariantConfigurator's
+// own chooseAxis()); nothing ever backfills them from an incoming
+// `config.variant`. A preset's config only ever sets {variant, quantity,
+// artwork} (see the Product Presets section above - a preset composes a
+// real variant id, it does not know or store per-axis breakdowns), so
+// getDefaultConfig(product, preset) produces a config where `variant` is
+// correctly the preset's chosen id, but every `variantAxis_*` key is
+// simply absent. calculateProductPrice()/priceSupplierMargin() (pricing.js)
+// reads `config.variant` directly and prices correctly - that is why the
+// price and summary were already right - but SupplierVariantConfigurator
+// never looks at `config.variant` for its own display, so every axis
+// <select> renders its empty "Choose ..." placeholder regardless.
+//
+// Fix: derive the axis breakdown FROM config.variant (the single
+// pricing-authority field) and use that purely to HYDRATE the display
+// keys at the moments state is (re)built - preset load, product/journey
+// switch (see GuidedOrder.jsx's config initialization) - never as a
+// second, independently-maintained state system. Once the customer
+// touches an axis dropdown, SupplierVariantConfigurator's existing
+// chooseAxis() already keeps variantAxis_* and variant in sync by
+// recomposing the variant id on every change - this only had to cover
+// the "config arrived with a variant but no axis keys yet" gap.
+//
+// Structurally safe by construction, not a naive hyphen split: some
+// axis option ids themselves contain hyphens (gazebo size options
+// "3x3-standard", "3x3-deluxe", "3x4.5-deluxe", "3x6-deluxe"), so
+// `variantId.split('-')` cannot be trusted to align with axis
+// boundaries. Instead this walks product.pricing.variantTemplate
+// (e.g. "{frame}-{size}-{kit}") left to right, and at each `{axisId}`
+// placeholder tries that axis's REAL, KNOWN option ids (longest first,
+// to prefer "3x3-standard" over a hypothetical shorter clash) against
+// the remaining string, backtracking if a locally-plausible match makes
+// a later axis unresolvable. The result is only ever returned if it
+// recomposes back to the exact given variantId AND that id is a real,
+// existing key in product.pricing.variants - a plausible-looking but
+// nonexistent or malformed combination always yields null.
+function matchVariantTemplate(template, variantId, axesById) {
+  const tokenPattern = /\{([a-zA-Z0-9_]+)\}/g
+  const tokens = []
+  let lastIndex = 0
+  let match
+  while ((match = tokenPattern.exec(template))) {
+    tokens.push({ axisId: match[1], literalBefore: template.slice(lastIndex, match.index) })
+    lastIndex = tokenPattern.lastIndex
+  }
+  const trailingLiteral = template.slice(lastIndex)
+  if (!tokens.length) return null
+
+  function resolve(tokenIndex, remaining, acc) {
+    if (tokenIndex === tokens.length) {
+      return remaining === trailingLiteral ? acc : null
+    }
+    const { axisId, literalBefore } = tokens[tokenIndex]
+    if (!remaining.startsWith(literalBefore)) return null
+    const afterLiteral = remaining.slice(literalBefore.length)
+    const axis = axesById.get(axisId)
+    if (!axis || !Array.isArray(axis.options)) return null
+
+    const candidateIds = axis.options
+      .map((axisOption) => axisOption?.id)
+      .filter((id) => typeof id === 'string' && id.length > 0)
+      .sort((a, b) => b.length - a.length)
+
+    for (const id of candidateIds) {
+      if (!afterLiteral.startsWith(id)) continue
+      const next = resolve(tokenIndex + 1, afterLiteral.slice(id.length), { ...acc, [axisId]: id })
+      if (next) return next
+    }
+    return null
+  }
+
+  return resolve(0, variantId, {})
+}
+
+// Derives { [axisId]: optionId, ... } from a real variant id, using
+// product.pricing.variantAxes/variantTemplate - or null if the product
+// has no axis metadata, the variantId isn't a string, it doesn't
+// structurally match the template, or it doesn't name a real entry in
+// product.pricing.variants. Pure and read-only: never mutates config,
+// never computes a price, never invents a variant.
+export function deriveVariantAxisValues(product, variantId) {
+  const axes = product?.pricing?.variantAxes
+  const template = product?.pricing?.variantTemplate
+  if (!Array.isArray(axes) || axes.length === 0 || !template) return null
+  if (typeof variantId !== 'string' || !variantId) return null
+  if (!product.pricing.variants || !product.pricing.variants[variantId]) return null
+
+  const axesById = new Map(axes.filter((axis) => axis?.id).map((axis) => [axis.id, axis]))
+  const result = matchVariantTemplate(template, variantId, axesById)
+  if (!result) return null
+
+  // Every axis the product declares must be present in the result - a
+  // partial match is not safe to hydrate from.
+  for (const axis of axes) {
+    if (!(axis.id in result)) return null
+  }
+
+  return result
+}
+
 // Validates a preset's config against the product's REAL field/option/
 // accessory catalog - semantic validity, not just shape. Mirrors the
 // same client-side-validation-before-trusting-the-server convention

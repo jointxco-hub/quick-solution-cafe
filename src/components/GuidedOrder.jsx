@@ -6,10 +6,34 @@ import SupplierVariantConfigurator from './SupplierVariantConfigurator.jsx'
 import PhotoDeliverablesField from './PhotoDeliverablesField.jsx'
 import DocumentPrintPlan from './DocumentPrintPlan.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
+import { deriveVariantAxisValues } from '../lib/productContent.js'
 import { fulfilmentOptions } from '../data/products.js'
 import { beginQuickSolutionPayment, createQuickSolutionOrder, createQuickSolutionServiceRequest, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
 import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from '../lib/trackingSession.js'
+
+// QS-17D fix: SupplierVariantConfigurator.jsx's axis <select>s (Style/
+// Size/Sides/Kit, Frame/Size/Kit) read their displayed value from
+// dedicated `config.variantAxis_<axisId>` keys, not from `config.variant`
+// itself - so a config that arrives with a real `variant` already set
+// (a Quick Preset, or any other future producer of a ready-made variant
+// id) but no variantAxis_* keys renders every axis dropdown blank, even
+// though pricing (which reads config.variant directly) is already
+// correct. This derives those display keys FROM config.variant, once,
+// at the moments GuidedOrder (re)builds its config - config.variant
+// remains the only pricing-authority value; these are a read-model
+// refreshed from it, never an independent, driftable state. Once the
+// customer touches an axis dropdown, SupplierVariantConfigurator's own
+// chooseAxis() keeps variant and variantAxis_* in sync from then on.
+function hydrateVariantAxisConfig(product, config) {
+  const axes = product?.pricing?.variantAxes
+  if (!Array.isArray(axes) || axes.length === 0) return config
+  const derived = deriveVariantAxisValues(product, config.variant)
+  if (!derived) return config
+  const patch = {}
+  for (const axis of axes) patch[`variantAxis_${axis.id}`] = derived[axis.id]
+  return { ...config, ...patch }
+}
 
 function optionLabel(product, fieldId, value) {
   const field = product.fields.find((item) => item.id === fieldId)
@@ -138,7 +162,7 @@ export default function GuidedOrder({
   initialFile = null,
   onAddToCart
 }) {
-  const [config, setConfig] = useState(() => getDefaultConfig(product, preset))
+  const [config, setConfig] = useState(() => hydrateVariantAxisConfig(product, getDefaultConfig(product, preset)))
   const [file, setFile] = useState(initialFile)
   const [fulfilment, setFulfilment] = useState('cafe')
   const [selectedPointId, setSelectedPointId] = useState('')
@@ -167,7 +191,7 @@ export default function GuidedOrder({
   const [itemAdded, setItemAdded] = useState(false)
 
   useEffect(() => {
-    setConfig(getDefaultConfig(product, preset))
+    setConfig(hydrateVariantAxisConfig(product, getDefaultConfig(product, preset)))
     setFile(initialFile)
     setFulfilment('cafe')
     setSelectedPointId('')

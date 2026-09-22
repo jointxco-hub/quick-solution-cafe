@@ -5,9 +5,10 @@ import {
   validatePresetConfig,
   resolveStartingPriceEligibility,
   resolveSelectControlState,
-  resolveSelectControlChange
+  resolveSelectControlChange,
+  deriveVariantAxisValues
 } from '../src/lib/productContent.js'
-import { calculateProductPrice, getVariantQuantityRule, accessoryCompatible } from '../src/lib/pricing.js'
+import { calculateProductPrice, getVariantQuantityRule, accessoryCompatible, getDefaultConfig } from '../src/lib/pricing.js'
 import { products } from '../src/data/products.js'
 
 // Real catalogue data, not synthetic fixtures — this is the direct way
@@ -398,4 +399,152 @@ test('resolveSelectControlState/resolveSelectControlChange round-trip: null -> D
   assert.equal(selectValue, '')
   assert.equal(isUnanswered, true)
   assert.equal(resolveSelectControlChange(selectValue), null)
+})
+
+// ── QS-17D: deriving Guided axis selections from config.variant ──────
+// Root cause: SupplierVariantConfigurator.jsx's axis <select>s read
+// config.variantAxis_<axisId>, never config.variant - so a preset
+// (which only ever sets {variant, quantity, artwork}) priced correctly
+// but left every Guided axis dropdown showing its blank "Choose ..."
+// placeholder. deriveVariantAxisValues() is the pure fix: it walks
+// product.pricing.variantTemplate against the REAL, KNOWN axis option
+// ids (never a naive hyphen split, which would break on gazebo size
+// ids like "3x3-standard" that contain their own hyphen) and returns
+// the axis breakdown, or null if anything doesn't structurally and
+// genuinely resolve to a real product.pricing.variants entry.
+
+test('deriveVariantAxisValues: telescopic-3m-ss-full resolves to all four flag axes correctly', () => {
+  assert.deepEqual(deriveVariantAxisValues(flagsProduct, 'telescopic-3m-ss-full'), {
+    style: 'telescopic', size: '3m', sides: 'ss', kit: 'full'
+  })
+})
+
+test('deriveVariantAxisValues: telescopic-3m-ds-full resolves correctly (double-sided, not single-sided)', () => {
+  assert.deepEqual(deriveVariantAxisValues(flagsProduct, 'telescopic-3m-ds-full'), {
+    style: 'telescopic', size: '3m', sides: 'ds', kit: 'full'
+  })
+})
+
+test('deriveVariantAxisValues: aluminium-3x3-standard-full resolves to all three gazebo axes correctly, despite "3x3-standard" itself containing a hyphen', () => {
+  assert.deepEqual(deriveVariantAxisValues(gazebosProduct, 'aluminium-3x3-standard-full'), {
+    frame: 'aluminium', size: '3x3-standard', kit: 'full'
+  })
+})
+
+test('deriveVariantAxisValues: aluminium-3x3-deluxe-full resolves correctly (deluxe, not standard) - proves the resolver does not just grab the first matching size prefix', () => {
+  assert.deepEqual(deriveVariantAxisValues(gazebosProduct, 'aluminium-3x3-deluxe-full'), {
+    frame: 'aluminium', size: '3x3-deluxe', kit: 'full'
+  })
+})
+
+test('deriveVariantAxisValues: variant ids whose axis value contains its own hyphen (3x4.5-deluxe, 3x6-deluxe) still resolve as a single size token, not split apart', () => {
+  assert.deepEqual(deriveVariantAxisValues(gazebosProduct, 'aluminium-3x4.5-deluxe-full'), {
+    frame: 'aluminium', size: '3x4.5-deluxe', kit: 'full'
+  })
+  assert.deepEqual(deriveVariantAxisValues(gazebosProduct, 'aluminium-3x6-deluxe-full'), {
+    frame: 'aluminium', size: '3x6-deluxe', kit: 'full'
+  })
+})
+
+test('deriveVariantAxisValues: steel-2x2-full (simplest gazebo variant) resolves correctly', () => {
+  assert.deepEqual(deriveVariantAxisValues(gazebosProduct, 'steel-2x2-full'), {
+    frame: 'steel', size: '2x2', kit: 'full'
+  })
+})
+
+test('deriveVariantAxisValues: a malformed/nonexistent variant id returns null, not a partial or guessed result', () => {
+  assert.equal(deriveVariantAxisValues(flagsProduct, 'not-a-real-variant'), null)
+  assert.equal(deriveVariantAxisValues(flagsProduct, ''), null)
+  assert.equal(deriveVariantAxisValues(flagsProduct, null), null)
+  assert.equal(deriveVariantAxisValues(flagsProduct, undefined), null)
+})
+
+test('deriveVariantAxisValues: a variant id with an unknown/invented axis option is rejected (null), even though it structurally looks plausible', () => {
+  // "turbo" is not a real kit option (only full/reprint exist) - the
+  // resolver must not accept it just because the first three segments
+  // matched real axis options.
+  assert.equal(deriveVariantAxisValues(flagsProduct, 'telescopic-3m-ss-turbo'), null)
+})
+
+test('deriveVariantAxisValues: a product with no variantAxes/variantTemplate (e.g. vinyl-stickers) safely returns null, never throws', () => {
+  assert.equal(deriveVariantAxisValues(vinylProduct, 'anything'), null)
+  assert.equal(deriveVariantAxisValues(null, 'anything'), null)
+  assert.equal(deriveVariantAxisValues(flagsProduct, {}), null)
+})
+
+// hydrateVariantAxisConfig mirrors the small, component-local helper
+// GuidedOrder.jsx uses to refresh variantAxis_* display keys from
+// config.variant at the moments its config is (re)built (preset load,
+// product/journey switch) - reimplemented here, over the same exported
+// deriveVariantAxisValues(), so this proves the actual hydration
+// behavior without importing a .jsx component into this plain
+// Node --test suite (see the "Advanced-mode artwork <select>" section
+// above for why this repo's tests stay .jsx-free).
+function hydrateVariantAxisConfig(product, config) {
+  const axes = product?.pricing?.variantAxes
+  if (!Array.isArray(axes) || axes.length === 0) return config
+  const derived = deriveVariantAxisValues(product, config.variant)
+  if (!derived) return config
+  const patch = {}
+  for (const axis of axes) patch[`variantAxis_${axis.id}`] = derived[axis.id]
+  return { ...config, ...patch }
+}
+
+test('hydrateVariantAxisConfig: a preset-loaded flags config (variant only, no axis keys) hydrates to all four visible axis values, matching the QS-17D bug report exactly (3m Telescopic Complete kit)', () => {
+  const preset = resolveProductPresets(flagsProduct).find((entry) => entry.id === 'flag-3m-telescopic-full')
+  const config = hydrateVariantAxisConfig(flagsProduct, getDefaultConfig(flagsProduct, preset.config))
+  assert.equal(config.variantAxis_style, 'telescopic')
+  assert.equal(config.variantAxis_size, '3m')
+  assert.equal(config.variantAxis_sides, 'ss')
+  assert.equal(config.variantAxis_kit, 'full')
+  assert.equal(config.quantity, 2)
+  assert.equal(config.artwork, null, 'artwork must stay unanswered - hydrating axes must never touch/convert it')
+  const result = calculateProductPrice(flagsProduct, config)
+  assert.equal(result.total, 2380)
+})
+
+test('hydrateVariantAxisConfig: gazebo presets hydrate correctly too (steel-2x2-full, aluminium-3x3-deluxe-full)', () => {
+  const preset2x2 = resolveProductPresets(gazebosProduct).find((entry) => entry.id === 'gazebo-2x2-steel-full')
+  const config2x2 = hydrateVariantAxisConfig(gazebosProduct, getDefaultConfig(gazebosProduct, preset2x2.config))
+  assert.deepEqual(
+    { frame: config2x2.variantAxis_frame, size: config2x2.variantAxis_size, kit: config2x2.variantAxis_kit },
+    { frame: 'steel', size: '2x2', kit: 'full' }
+  )
+
+  const presetDeluxe = resolveProductPresets(gazebosProduct).find((entry) => entry.id === 'gazebo-3x3-aluminium-deluxe-full')
+  const configDeluxe = hydrateVariantAxisConfig(gazebosProduct, getDefaultConfig(gazebosProduct, presetDeluxe.config))
+  assert.deepEqual(
+    { frame: configDeluxe.variantAxis_frame, size: configDeluxe.variantAxis_size, kit: configDeluxe.variantAxis_kit },
+    { frame: 'aluminium', size: '3x3-deluxe', kit: 'full' }
+  )
+})
+
+test('hydrateVariantAxisConfig: switching from a flags preset to "Build your own" gazebos never leaks flags axis keys into the fresh gazebo config', () => {
+  const flagsPreset = resolveProductPresets(flagsProduct).find((entry) => entry.id === 'flag-2m-telescopic-full')
+  const flagsConfig = hydrateVariantAxisConfig(flagsProduct, getDefaultConfig(flagsProduct, flagsPreset.config))
+  assert.ok(flagsConfig.variantAxis_style, 'sanity check: flags config really did hydrate first')
+
+  // "Build your own" / a fresh product switch always rebuilds config
+  // from getDefaultConfig(product, {}) - a brand-new object, not a
+  // patch on the previous one - so a differently-shaped product (no
+  // "style"/"sides" axes at all) cannot inherit stale flags keys.
+  const freshGazeboConfig = hydrateVariantAxisConfig(gazebosProduct, getDefaultConfig(gazebosProduct, {}))
+  assert.equal(freshGazeboConfig.variantAxis_style, undefined)
+  assert.equal(freshGazeboConfig.variantAxis_sides, undefined)
+})
+
+test('hydrateVariantAxisConfig: switching from one flags preset to another does not carry over the first preset\'s axis values', () => {
+  const preset2m = resolveProductPresets(flagsProduct).find((entry) => entry.id === 'flag-2m-telescopic-full')
+  const config2m = hydrateVariantAxisConfig(flagsProduct, getDefaultConfig(flagsProduct, preset2m.config))
+  assert.equal(config2m.variantAxis_size, '2m')
+
+  const presetDouble = resolveProductPresets(flagsProduct).find((entry) => entry.id === 'flag-3m-telescopic-double-full')
+  // Simulates GuidedOrder's actual reset: config is rebuilt from scratch
+  // via getDefaultConfig(product, preset) every time, never patched onto
+  // the previous config object - so the stale '2m'/'ss' from the first
+  // preset cannot survive into the second preset's hydrated config.
+  const configDouble = hydrateVariantAxisConfig(flagsProduct, getDefaultConfig(flagsProduct, presetDouble.config))
+  assert.equal(configDouble.variantAxis_size, '3m')
+  assert.equal(configDouble.variantAxis_sides, 'ds')
+  assert.notEqual(configDouble.variantAxis_size, config2m.variantAxis_size)
 })
