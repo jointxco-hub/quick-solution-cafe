@@ -739,7 +739,12 @@ export default function App() {
               <strong>Nearby collection</strong>
               <span>Powered by Easy Locate</span>
             </div>
-            <div className="location-card">
+            {/* QS-21.4 section 3: same subtle Quick Points/Easy Locate map
+                background as Product Detail's Collection/delivery block
+                (qs21-4-polish.css) - reinforces "local, mapped" here too,
+                applied to the actual card (not the surrounding heading
+                text) so it reads as the card's own surface. */}
+            <div className="location-card qs21-map-surface">
               {(fulfilmentPoints.length ? fulfilmentPoints : [
                 { id: 'demo-cafe', name: 'Quick Solution Café', kind: 'cafe', services: ['Full service location'] },
                 { id: 'demo-point', name: 'Partner Quick Point', kind: 'quick_point', services: ['Collection point'], demo: true }

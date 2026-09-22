@@ -12,7 +12,6 @@ import {
   resolveProductPriceCue,
   resolveHubAvailability,
   resolveProductPresets,
-  composeVariantSummary,
   resolveProductDisplayName,
   buildShareLinks
 } from '../lib/productContent.js'
@@ -272,7 +271,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
               <ul>
                 {previewFields.map((field) => (
                   <li key={field.id}>
-                    <span>{field.label}</span> — {field.options.map((option) => option.label).join(', ')}
+                    <span>{field.label}</span> — {field.options.map((option) => option.label).join(' / ')}
                   </li>
                 ))}
               </ul>
@@ -293,18 +292,23 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
           <div className="product-hub-preset-grid">
             {presets.map((preset) => {
               const price = presetPrices[preset.id]
-              // QS-18: a generic, mode-aware spec line composed straight
-              // from product.pricing.variantAxes (see composeVariantSummary()/
-              // productContent.js) - e.g. "Telescopic — 3.0m — Printed on
-              // both sides — Complete kit" (Simple) vs "... — Double-sided
-              // — Full kit" (Pro). Never changes preset.name/description,
-              // never a second copy of the variant's spec.
-              const specLine = composeVariantSummary(product, preset.config?.variant, mode)
               return (
                 <div key={preset.id} className="product-hub-preset-card">
-                  <strong>{preset.name}</strong>
-                  {specLine && <small className="product-hub-preset-spec">{specLine}</small>}
-                  {preset.description && <p>{preset.description}</p>}
+                  {/* QS-21.4: a quick-option card now shows only ONE
+                      support line (preset.shortDescription) - the full
+                      variant spec (composeVariantSummary, e.g. "Steel —
+                      2m × 2m — Full kit (print + system + carry bag +
+                      toolkit)") and the full sentence description used
+                      to BOTH render here at once, on top of the title -
+                      the "detailed wording" now lives only in the
+                      product detail content above and the configurator
+                      itself, per this pass's brief. shortName/
+                      shortDescription are curated per preset (see
+                      resolveProductPresets, productContent.js) and fall
+                      back to the existing name/description for any
+                      preset without a short form. */}
+                  <strong>{preset.shortName}</strong>
+                  {preset.shortDescription && <p>{preset.shortDescription}</p>}
                   {price != null && <p className="product-hub-preset-price">{formatMoney(price)}</p>}
                   <div className="product-hub-preset-actions">
                     {/* "Choose this": the fast path - Guided when
@@ -372,8 +376,12 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </div>
           )}
 
-          {/* 5 — Fulfilment */}
-          <div className="product-hub-block">
+          {/* 5 — Fulfilment. QS-21.4 section 3: a subtle Quick Points/
+              Easy Locate map background (very low opacity, faded, behind
+              the content only) so this reads as "local, mapped,
+              location-aware" rather than a plain text list - see
+              qs21-4-polish.css for the actual opacity/fade treatment. */}
+          <div className="product-hub-block product-hub-fulfilment-block qs21-map-surface">
             <h3>Collection or delivery</h3>
             <div className="product-hub-fulfilment">
               {fulfilmentOptions.map((option) => (

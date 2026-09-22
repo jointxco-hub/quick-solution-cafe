@@ -21,8 +21,13 @@ const workedWith = [
 
 export default function WorkedWithStrip() {
   return (
-    <section className="qs18-worked-with shell" aria-label="Worked with">
-      <span className="qs18-worked-with-label">Worked with</span>
+    <section className="qs18-worked-with shell" aria-label="Works well for">
+      {/* QS-21.4 section 7: renamed from "Worked with" (read like an
+          eyebrow/code label at a glance - it used the exact same all-
+          caps, wide-tracked treatment as every other structural eyebrow
+          on the site) to "Works well for", styled distinctly as a
+          natural sentence-case lead-in rather than a category tag. */}
+      <span className="qs18-worked-with-label">Works well for</span>
       <div className="qs18-worked-with-list">
         {workedWith.map((name) => (
           <span key={name} className="qs18-worked-with-item">{name}</span>

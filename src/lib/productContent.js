@@ -114,12 +114,22 @@ export function resolveConfigPreviewFields(product) {
         && field.options.length > 1
         && field.options.length <= PREVIEW_FALLBACK_MAX_OPTIONS)
 
+  // QS-21.4: shortLabel is preferred over the full field label here -
+  // label is the full conversational question asked inside the real
+  // configurator ("What is happening with the design?"), shortLabel is
+  // the same compact word GuidedOrder's own review step already prefers
+  // for the exact same "this needs to fit on one line" reason (see
+  // ReviewRows in GuidedOrder.jsx: `field.shortLabel || field.label`).
+  // This preview was the one place still reading it the other way
+  // around - options now get the same treatment, via a NEW
+  // option.shortLabel field (additive only - option.label/fee/id, which
+  // pricing.js and the real dropdown both still read, are untouched).
   return source.map((field) => ({
     id: field.id,
-    label: field.label || field.shortLabel || field.id,
+    label: field.shortLabel || field.label || field.id,
     options: (field.options || []).map((option) => ({
       id: option.id,
-      label: option.label || option.id,
+      label: option.shortLabel || option.label || option.id,
       helper: option.helper || ''
     }))
   }))
@@ -500,7 +510,18 @@ export function resolveProductPresets(product) {
     .map((preset) => ({
       id: preset.id,
       name: preset.name,
+      // QS-21.4: shortName/shortDescription are optional, additive
+      // fields for the "quick option" card specifically (see
+      // ProductHub.jsx) - a curated, short form so that card can show
+      // ONE support line instead of stacking name + full variant spec +
+      // a full sentence description. Falls back to the existing
+      // name/description for any preset that has not been given a short
+      // form yet, so nothing regresses to blank.
+      shortName: typeof preset.shortName === 'string' && preset.shortName ? preset.shortName : preset.name,
       description: typeof preset.description === 'string' ? preset.description : '',
+      shortDescription: typeof preset.shortDescription === 'string' && preset.shortDescription
+        ? preset.shortDescription
+        : (typeof preset.description === 'string' ? preset.description : ''),
       config: { ...preset.config }
     }))
     .filter((preset) => validatePresetConfig(product, preset).valid)

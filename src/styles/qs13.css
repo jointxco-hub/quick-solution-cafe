@@ -125,7 +125,18 @@
 
 
 /* QS-13.4 · document batch uploads */
-.upload-field-multiple{display:grid;gap:10px}
+/* QS-21.4 fix: this shares the .upload-field class with the single-file
+   picker (app.css), which sets grid-template-columns:44px 1fr auto for
+   ITS OWN direct icon/copy/action children. .upload-field-multiple's
+   real children are .upload-picker/.upload-file-summary/.upload-file-list
+   (each meant to be one full-width row), but without its own
+   grid-template-columns this container silently inherited that 3-column
+   template, so .upload-picker (auto-placed into the first, 44px-wide
+   column) was squeezed to ~42px wide - the icon rendered alone with
+   nothing next to it and a large dead dashed box below/around it,
+   exactly the "genuinely broken" mobile screenshot. One explicit column
+   here fixes it at every width, not just mobile. */
+.upload-field-multiple{display:grid;grid-template-columns:1fr;gap:10px}
 .upload-picker{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;cursor:pointer}
 .upload-file-list{display:grid;gap:7px;width:100%}
 .upload-file-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid rgba(17,17,15,.09);border-radius:12px;background:#fff}
