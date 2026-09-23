@@ -691,3 +691,109 @@ html.qs217-header-hidden .qs217-config-context {
     transition: none;
   }
 }
+
+
+/* QS-21.7A — mobile QA corrections */
+
+/* Product context follows the header instead of colliding with it. */
+.qs217-config-context {
+  top: 70px;
+  transition: top .2s ease;
+}
+
+html.qs217-header-hidden .qs217-config-context {
+  top: 8px;
+}
+
+@media (max-width: 620px) {
+
+  /*
+   * The product context remains the one sticky orientation device.
+   * The step/price row returns to normal document flow so the two
+   * surfaces can never stack on top of one another.
+   */
+  .guided-topline {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+    margin: 0 0 10px !important;
+    padding: 2px 2px 10px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+
+  .qs217-config-context {
+    top: 68px;
+    margin-bottom: 10px;
+  }
+
+  html.qs217-header-hidden .qs217-config-context {
+    top: 8px;
+  }
+
+  /*
+   * A deliberate visual swipe rail: one option dominates, while the
+   * next card peeks into view so horizontal interaction is obvious.
+   */
+  .qs217-visual-axis {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .qs217-visual-axis-grid {
+    display: flex !important;
+    grid-template-columns: none !important;
+    gap: 12px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 15% 8px 1px;
+    scroll-padding-inline: 1px;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .qs217-visual-axis-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .qs217-visual-option {
+    flex: 0 0 84%;
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+
+  .qs217-visual-option-copy strong,
+  .qs217-visual-option-copy small {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * Do not float Back / Continue over unfinished form controls.
+   * It stays in normal flow after the current step's fields.
+   */
+  .guided-actions {
+    position: static !important;
+    inset: auto !important;
+    bottom: auto !important;
+    z-index: auto !important;
+    margin: 24px -6px -6px !important;
+    padding: 16px 6px 6px !important;
+    background: #fff !important;
+  }
+
+  .guided-main {
+    overflow: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qs217-config-context {
+    transition: none;
+  }
+}

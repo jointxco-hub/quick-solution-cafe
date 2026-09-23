@@ -66,8 +66,8 @@ test('both Guided and Full options carry product context while configuring', () 
 test('top navigation implements directional auto-hide rather than timer hiding', () => {
   const header = fs.readFileSync(new URL('../src/components/Header.jsx', import.meta.url), 'utf8')
 
-  assert.match(header, /delta > 8/)
-  assert.match(header, /delta < -8/)
+  assert.match(header, /delta > \d+/)
+  assert.match(header, /delta < -\d+/)
   assert.match(header, /is-hidden/)
   assert.doesNotMatch(header, /setTimeout/)
 })

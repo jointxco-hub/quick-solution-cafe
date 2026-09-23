@@ -1,22 +1,37 @@
 import React, { useEffect, useState } from 'react'
 import Icon from './Icon.jsx'
-import { resolveProductDisplayName } from '../lib/productContent.js'
+import { LEGACY_IMAGE_FALLBACK, resolveProductDisplayName } from '../lib/productContent.js'
 import { resolveConfiguratorPreviewDetail, resolveConfiguratorPreviewImage } from '../lib/configuratorVisuals.js'
 
 export default function ConfiguratorProductContext({ product, config = {}, mode = 'simple' }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const image = resolveConfiguratorPreviewImage(product, config)
+  const fallbackImage = LEGACY_IMAGE_FALLBACK[product?.id] || null
+  const [displayImage, setDisplayImage] = useState(image)
   const detail = resolveConfiguratorPreviewDetail(product, config)
   const name = resolveProductDisplayName(product, mode)
 
   useEffect(() => setLightboxOpen(false), [product?.id])
 
+  useEffect(() => {
+    setDisplayImage(image)
+  }, [image])
+
+  const handleImageError = () => {
+    if (fallbackImage && displayImage !== fallbackImage) {
+      setDisplayImage(fallbackImage)
+      return
+    }
+    setDisplayImage(null)
+    setLightboxOpen(false)
+  }
+
   return (
     <>
       <div className="qs217-config-context">
-        {image ? (
+        {displayImage ? (
           <button type="button" className="qs217-config-thumb" onClick={() => setLightboxOpen(true)}>
-            <img src={image} alt=""/>
+            <img src={displayImage} alt="" onError={handleImageError}/>
             <span><Icon name="search" size={12}/></span>
           </button>
         ) : null}
@@ -31,7 +46,7 @@ export default function ConfiguratorProductContext({ product, config = {}, mode 
         <div className="qs217-config-lightbox" onClick={() => setLightboxOpen(false)}>
           <div className="qs217-config-lightbox-card" onClick={(event) => event.stopPropagation()}>
             <button type="button" className="qs217-config-lightbox-close" onClick={() => setLightboxOpen(false)}>×</button>
-            <img src={image} alt={name}/>
+            <img src={displayImage} alt={name} onError={handleImageError}/>
           </div>
         </div>
       ) : null}
