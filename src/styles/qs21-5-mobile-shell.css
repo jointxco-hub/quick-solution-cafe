@@ -529,6 +529,7 @@
 
 @media (max-width: 620px) {
   .product-card {
+    min-width: 0;
     min-height: 0;
     gap: 8px;
     padding: 14px;
@@ -540,6 +541,9 @@
     border-radius: 15px;
     padding: 6px;
   }
+  .product-card-media.has-photo img {
+    min-height: 0;
+  }
   .product-card-copy { margin-top: 10px; }
   .product-card h3 { margin-bottom: 5px; font-size: 20px; }
   .product-card p { margin: 0; line-height: 1.45; }
@@ -547,8 +551,16 @@
 }
 
 /* QS-21.7 — configurator orientation + visual selection. */
-.qs217-auto-header { transition: transform .24s ease; will-change: transform; }
-.qs217-auto-header.is-hidden { transform: translateY(calc(-100% - 2px)); }
+.qs217-auto-header {
+  transition: transform .24s ease, border-color .24s ease;
+  will-change: transform;
+}
+.qs217-auto-header.is-hidden {
+  height: 0;
+  overflow: hidden;
+  border-bottom-width: 0;
+  transform: translateY(calc(-100% - 2px));
+}
 .qs217-auto-header:focus-within,
 .qs217-auto-header:hover { transform: translateY(0); }
 

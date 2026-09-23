@@ -770,12 +770,8 @@ export default function App() {
               <strong>Nearby collection</strong>
               <span>Powered by Easy Locate</span>
             </div>
-            {/* QS-21.4 section 3: same subtle Quick Points/Easy Locate map
-                background as Product Detail's Collection/delivery block
-                (qs21-4-polish.css) - reinforces "local, mapped" here too,
-                applied to the actual card (not the surrounding heading
-                text) so it reads as the card's own surface. */}
-            <div className="location-card qs21-map-surface">
+            <div className="qs217-easy-locate-panels">
+              <div className="location-card">
               {(fulfilmentPoints.length ? fulfilmentPoints : [
                 { id: 'demo-cafe', name: 'Quick Solution Café', kind: 'cafe', services: ['Full service location'] },
                 { id: 'demo-point', name: 'Partner Quick Point', kind: 'quick_point', services: ['Collection point'], demo: true }
@@ -797,6 +793,17 @@ export default function App() {
                   </div>
                 )
               })}
+              </div>
+              <div className="qs217-easy-locate-visual" aria-hidden="true">
+                <img className="qs217-easy-locate-map" src="/qs21/easy-locate-quick-points-bg.png" alt=""/>
+                <div className="qs217-easy-locate-mark">
+                  <img src="/qs21/easy-locate-pin.svg" alt=""/>
+                </div>
+                <div className="qs217-easy-locate-overlay">
+                  <span>Easy Locate</span>
+                  <strong>Everything local.<br/>Easier to find.</strong>
+                </div>
+              </div>
             </div>
           </div>
         </section>
