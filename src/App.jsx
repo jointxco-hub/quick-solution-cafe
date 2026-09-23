@@ -11,7 +11,6 @@ import ProofGallery from './components/ProofGallery.jsx'
 import ComingSoonRail from './components/ComingSoonRail.jsx'
 import WorkedWithStrip from './components/WorkedWithStrip.jsx'
 import HelpCta from './components/HelpCta.jsx'
-import LanguageModePrompt from './components/LanguageModePrompt.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
 import OrderBasket from './components/OrderBasket.jsx'
 import OfferCard from './components/OfferCard.jsx'
@@ -22,7 +21,6 @@ import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
 import { resolveProductDisplayName, resolveProductPriceCue, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
 import { formatMoney } from './lib/pricing.js'
-import { loadLanguageMode, saveLanguageMode, hasSeenLanguageModePrompt, markLanguageModePromptSeen } from './lib/languageMode.js'
 import {
   DEFAULT_PAGE,
   resolveHeroOutcomeNavigation,
@@ -42,6 +40,7 @@ import {
   BUSINESS_TAGLINE,
   BUSINESS_ADDRESS_LINES,
   LOCATION_DISPLAY_NAME,
+  resolveFulfilmentPointDisplayName,
   WHATSAPP_DISPLAY,
   buildWhatsappUrl
 } from './lib/businessInfo.js'
@@ -101,9 +100,13 @@ export default function App() {
   // product ids, config, pricing or the backend payload. shopFilter
   // drives the Shop section's category chips; a hero outcome action can
   // set it before scrolling there (see selectHeroOutcome below).
-  const [languageMode, setLanguageMode] = useState(() => loadLanguageMode())
-  const [showLanguagePrompt, setShowLanguagePrompt] = useState(() => !hasSeenLanguageModePrompt())
+  // QS-21.6: the global language preference and prompt are retired.
+  // Keep the customer-friendly vocabulary as the single display mode;
+  // Guided/Full options remains the ordering-mode choice.
+  const languageMode = 'simple'
   const [shopFilter, setShopFilter] = useState('All')
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false)
+  const [documentEntryRequest, setDocumentEntryRequest] = useState(0)
   // QS-20: Shop gains a lightweight Products|Offers toggle - reuses the
   // exact same shopFilter category chips for both (offer.category uses
   // the same SHOP_CATEGORIES vocabulary as a product's), no second
@@ -132,6 +135,22 @@ export default function App() {
   // render or re-run either effect below.
   const historyMountedRef = useRef(false)
   const lastHistoryStateRef = useRef(null)
+
+  // Run after React commits the configurator tree, including repeated use.
+  useEffect(() => {
+    if (!documentEntryRequest) return
+    if (page !== 'product' || selectedId !== 'a4-print' || orderMode !== 'guided') return
+    configureRef.current?.scrollIntoView({ block: 'start' })
+  }, [documentEntryRequest, page, selectedId, orderMode])
+
+  useEffect(() => {
+    if (!categoryMenuOpen) return
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setCategoryMenuOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [categoryMenuOpen])
 
   useEffect(() => {
     const onHash = () => setView(window.location.hash === '#admin' ? 'admin' : 'storefront')
@@ -325,30 +344,9 @@ export default function App() {
     scrollToQuickPoints()
   }
 
-  // Header's bag-button ("Start order") - same target it already had
-  // (#configure, for whatever selectedProduct currently is), just now
-  // needs page switched to 'product' first since the configuration
-  // section only exists within Product Detail.
-  const goToConfigure = () => {
-    setPage('product')
-    scrollToConfigure()
-  }
-
   useEffect(() => {
     saveCart(cart)
   }, [cart])
-
-  const chooseLanguageMode = (mode) => {
-    setLanguageMode(mode)
-    saveLanguageMode(mode)
-    markLanguageModePromptSeen()
-    setShowLanguagePrompt(false)
-  }
-
-  const dismissLanguagePrompt = () => {
-    markLanguageModePromptSeen()
-    setShowLanguagePrompt(false)
-  }
 
   // QS-20.1: if productViewContext is active AND still points at THIS
   // exact product (see resolveOfferContextCartTag()/navigation.js), tag
@@ -615,17 +613,29 @@ export default function App() {
       scrollToShop()
       return
     }
+    if (nav.productId === 'a4-print' && nav.journeyId === 'document-guided') {
+      openDocumentPrinting()
+      return
+    }
     const product = catalog.find((item) => item.id === nav.productId)
     if (product) openGuided(product, nav.journeyId, nav.preset)
   }
 
-  // QS-18: document printing must be reachable immediately from anywhere
-  // (header action) - opens the SAME existing Guided document flow the
-  // "Print something" hero outcome already uses, never a second upload
-  // implementation.
+  // Canonical entry for the header icon, Home outcome and footer. Commit
+  // the full shell first; the effect above then lands at its top.
   const openDocumentPrinting = () => {
     const product = catalog.find((item) => item.id === 'a4-print')
-    if (product) openGuided(product, 'document-guided', {})
+    if (!product) return
+    setPage('product')
+    setSelectedId(product.id)
+    setPreset({})
+    setJourneyId('document-guided')
+    setGuidedStartStep(null)
+    setGuidedInitialFile(null)
+    setOrderMode('guided')
+    setTaskContext(null)
+    setProductViewContext(null)
+    setDocumentEntryRequest((request) => request + 1)
   }
 
   const submitSearch = (event) => {
@@ -652,15 +662,11 @@ export default function App() {
   return (
     <div id="top">
       <Header
-        mode={languageMode}
-        onModeChange={chooseLanguageMode}
         onSendDocuments={openDocumentPrinting}
         onGoHome={goHome}
         onGoShop={goShop}
         onGoQuickPoints={goToQuickPoints}
-        onStartOrder={goToConfigure}
       />
-      {showLanguagePrompt && <LanguageModePrompt onChoose={chooseLanguageMode} onDismiss={dismissLanguagePrompt}/>}
       <main>
         {/* QS-21: Home = outcome-first landing only. Shop (catalogue) and
             Product Detail (ProductHub + configuration) are separate page
@@ -677,6 +683,7 @@ export default function App() {
                 src/lib/businessInfo.js, the single source for this and
                 the other real business details this pass adds). */}
             <span className="eyebrow">Joint X Quick Solution Café · {LOCATION_DISPLAY_NAME}</span>
+            <span className="eyebrow qs21-home-location">Quick Solution {'\u00b7'} {LOCATION_DISPLAY_NAME}</span>
             <h1>Printing, branding<br/>&amp; <em>everyday solutions.</em></h1>
 
             <form className="search-wrap" onSubmit={submitSearch}>
@@ -771,7 +778,7 @@ export default function App() {
                 return (
                   <div className="location-row qs07-location-row" key={point.id}>
                     <div>
-                      <strong>{point.name}</strong>
+                      <strong>{resolveFulfilmentPointDisplayName(point)}</strong>
                       <span>{[area, categories || (point.kind === 'cafe' ? 'Full service location' : 'Collection point')].filter(Boolean).join(' · ')}</span>
                     </div>
                     <div className="location-row-actions">
@@ -819,6 +826,17 @@ export default function App() {
             </button>
           </div>
 
+          <button
+            type="button"
+            className="qs21-mobile-category-trigger"
+            aria-haspopup="dialog"
+            aria-expanded={categoryMenuOpen}
+            onClick={() => setCategoryMenuOpen(true)}
+          >
+            <span>{shopFilter === 'All' ? 'All categories' : shopFilter}</span>
+            <Icon name="arrowRight" size={15} className="qs21-category-chevron"/>
+          </button>
+
           <div className="qs18-shop-filters" role="tablist" aria-label="Filter by category">
             {SHOP_CATEGORIES.map((category) => (
               <button
@@ -831,6 +849,35 @@ export default function App() {
               >{category}</button>
             ))}
           </div>
+
+          {categoryMenuOpen && (
+            <div className="qs21-category-backdrop" role="presentation" onClick={() => setCategoryMenuOpen(false)}>
+              <div className="qs21-category-sheet" role="dialog" aria-modal="true" aria-label="Categories" onClick={(event) => event.stopPropagation()}>
+                <div className="qs21-category-sheet-head">
+                  <strong>Categories</strong>
+                  <button type="button" onClick={() => setCategoryMenuOpen(false)} aria-label="Close categories">×</button>
+                </div>
+                <div role="listbox" aria-label="Shop category">
+                  {SHOP_CATEGORIES.map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      role="option"
+                      aria-selected={shopFilter === category}
+                      className={shopFilter === category ? 'active' : ''}
+                      onClick={() => {
+                        setShopFilter(category)
+                        setCategoryMenuOpen(false)
+                      }}
+                    >
+                      <span aria-hidden="true">{shopFilter === category ? '✓' : ''}</span>
+                      {category === 'All' ? 'All' : category}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {shopMode === 'offers' ? (
             <>
@@ -943,6 +990,7 @@ export default function App() {
             onSelectRelated={openProductDetail}
             onQuickConfigure={openQuickConfigure}
             configureInView={configureInView}
+            overlayOpen={Boolean(quickConfigureProduct || cartOpen)}
           />
         </div>
 

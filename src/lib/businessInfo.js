@@ -82,3 +82,11 @@ export const RETURNS_POLICY_TEXT = "Because many items are made or printed to or
 // codebase. Per the brief's own explicit fallback for exactly this case:
 // conservative wording, PayFast brand only, no method-level claims.
 export const PAYMENT_TRUST_TEXT = 'Secure checkout via PayFast'
+// Public fulfilment-point payloads retain stable internal names/IDs.
+// Café rows are customer-facing through this resolver so an internal
+// tenant label such as "Location 001" can never leak into the storefront.
+export function resolveFulfilmentPointDisplayName(point) {
+  if (!point) return ''
+  if (point.kind === 'cafe') return `Quick Solution Caf\u00e9 \u00b7 ${LOCATION_DISPLAY_NAME}`
+  return point.name || 'Quick Point'
+}

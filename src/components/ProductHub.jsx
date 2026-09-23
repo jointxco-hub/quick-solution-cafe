@@ -52,7 +52,7 @@ import { resolveNextGalleryIndex, resolvePrevGalleryIndex } from '../lib/gallery
 // section - see the QS-21.3 report for the before/after). Also adds
 // lightbox behavior for the existing gallery - no new pricing/config
 // logic anywhere in this pass.
-export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated, onQuickConfigure, configureInView = false }) {
+export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated, onQuickConfigure, configureInView = false, overlayOpen = false }) {
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [mediaFailed, setMediaFailed] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -62,6 +62,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
   // on product change so switching products never leaves a stale card
   // expanded for a related list that's about to be replaced.
   const [expandedRelatedId, setExpandedRelatedId] = useState(null)
+  const [ctaRegionInView, setCtaRegionInView] = useState(true)
 
   useEffect(() => {
     setGalleryIndex(0)
@@ -70,6 +71,19 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
     setLightboxOpen(false)
   }, [product?.id])
 
+
+  // Keep the fixed mobile CTA inside the primary PDP region. It leaves
+  // before Quick options, support and related content can pass beneath it.
+  useEffect(() => {
+    const node = document.querySelector('.product-hub-pdp')
+    if (!node || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(
+      ([entry]) => setCtaRegionInView(entry.isIntersecting),
+      { rootMargin: '-68px 0px -18% 0px', threshold: 0 }
+    )
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [product?.id])
   const media = useMemo(() => resolveProductMedia(product), [product])
   const content = useMemo(() => resolveProductPageContent(product), [product])
   const previewFields = useMemo(() => resolveConfigPreviewFields(product), [product])
@@ -471,7 +485,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
           screen, exactly like the desktop one already did. Not
           aria-hidden when rendered: it holds real, focusable buttons on
           the viewports where it's actually visible. */}
-      {!configureInView && (
+      {!configureInView && !overlayOpen && !lightboxOpen && ctaRegionInView && (
         <div className="product-hub-sticky-cta">
           {hasGuided ? (
             <button type="button" className="button dark" onClick={() => onGuided()}>

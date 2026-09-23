@@ -36,6 +36,7 @@ export const LEGACY_IMAGE_FALLBACK = {
   'business-cards': '/qs11/product-business-cards-clean.webp',
   'printed-tshirt': '/qs11/product-tshirt-clean.webp',
   'media-services': '/qs12/product-photography-video.webp',
+  flags: '/qs21/flags-hero-single.webp',
   // QS-21.1: flags/gazebos now both set product.media.hero directly
   // (src/data/products.js) with real photography, which resolveProductMedia()
   // reads BEFORE this map - these two legacy entries are dead in normal
@@ -58,7 +59,7 @@ export function resolveProductMedia(product, legacyImageMap = LEGACY_IMAGE_FALLB
   const hero = product?.media?.hero || product?.image || legacyImageMap[product?.id] || null
   const gallery = Array.isArray(product?.media?.gallery)
     ? product.media.gallery.filter((src) => typeof src === 'string' && src.length > 0)
-    : []
+    : (LEGACY_GALLERY_FALLBACK[product?.id] || [])
   return { hero, gallery }
 }
 
@@ -638,4 +639,11 @@ export function filterProductsByShopCategory(products, filter) {
   const list = Array.isArray(products) ? products : []
   if (!filter || filter === 'All') return list
   return list.filter((product) => resolveShopCategory(product) === filter)
+}
+export const LEGACY_GALLERY_FALLBACK = {
+  flags: [
+    '/qs21/flags-lineup-sizes.webp',
+    '/qs21/flags-shark-fin-pair.webp',
+    '/qs21/flags-hero-single-alt.webp'
+  ]
 }

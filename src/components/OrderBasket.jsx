@@ -269,7 +269,7 @@ export default function OrderBasket({
 
   return (
     <div className="qs-cart-backdrop" role="presentation" onClick={onClose}>
-      <aside className="qs-cart-sheet" role="dialog" aria-modal="true" aria-label="Your order" onClick={(event) => event.stopPropagation()}>
+      <aside className={`qs-cart-sheet ${phase === 'basket' && items.length === 0 ? 'is-empty' : ''}`} role="dialog" aria-modal="true" aria-label="Your order" onClick={(event) => event.stopPropagation()}>
         <div className="qs-cart-head">
           <div>
             <span className="eyebrow">{phase === 'basket' ? 'Your order' : 'Checkout'}</span>
@@ -281,6 +281,13 @@ export default function OrderBasket({
         {phase === 'basket' ? (
           <>
             <div className="qs-cart-items">
+            {items.length === 0 && (
+              <div className="qs-cart-empty">
+                <Icon name="bag" size={24}/>
+                <h3>Your basket is empty</h3>
+                <p>Choose a product or service to start building your order.</p>
+              </div>
+            )}
               {groupCartItemsByOffer(items).map((group, groupIndex) => (
                 <div key={group.offerId ? `offer-${group.offerId}-${groupIndex}` : group.items[0].cartId} className={group.offerId ? 'qs20-cart-offer-group' : undefined}>
                   {group.offerId && (
@@ -313,13 +320,15 @@ export default function OrderBasket({
               ))}
             </div>
 
-            <div className="qs-cart-total">
-              <span>Current basket</span>
-              <strong>{formatMoney(total)}</strong>
-            </div>
+            {items.length > 0 && (
+              <div className="qs-cart-total">
+                <span>Current basket</span>
+                <strong>{formatMoney(total)}</strong>
+              </div>
+            )}
 
             <div className="qs-cart-actions">
-              <button className="button ghost" type="button" onClick={onContinueShopping}>Continue shopping</button>
+              <button className="button ghost" type="button" onClick={onContinueShopping}>{items.length === 0 ? 'Browse products' : 'Continue shopping'}</button>
               <button className="button dark" type="button" disabled={items.length === 0} onClick={() => setPhase('checkout')}>Checkout</button>
             </div>
           </>
