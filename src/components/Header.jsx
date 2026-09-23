@@ -14,7 +14,7 @@ import Icon from './Icon.jsx'
 // onGoHome/onGoShop/onGoQuickPoints/onStartOrder. All props are optional
 // so Header keeps rendering even before App.jsx wires them up (falls
 // back to the old plain-anchor behavior in that case).
-export default function Header({ mode = 'simple', onModeChange, onSendDocuments, onGoHome, onGoShop, onGoQuickPoints, onStartOrder }) {
+export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickPoints }) {
   const homePrefix = window.location.pathname === '/' ? '' : '/'
   const handleGoHome = (event) => {
     if (!onGoHome) return
@@ -39,12 +39,6 @@ export default function Header({ mode = 'simple', onModeChange, onSendDocuments,
         <a href="/track"><Icon name="search" size={15}/> Track order</a>
       </nav>
       <div className="qs18-header-actions">
-        {onModeChange && (
-          <div className="qs18-mode-toggle" role="group" aria-label="Language mode">
-            <button type="button" className={mode === 'simple' ? 'active' : ''} onClick={() => onModeChange('simple')} aria-pressed={mode === 'simple'}>Simple</button>
-            <button type="button" className={mode === 'pro' ? 'active' : ''} onClick={() => onModeChange('pro')} aria-pressed={mode === 'pro'}>Pro</button>
-          </div>
-        )}
         {onSendDocuments && (
           <button type="button" className="qs18-send-docs" onClick={onSendDocuments} aria-label="Send documents">
             <Icon name="document" size={16}/>
@@ -52,9 +46,6 @@ export default function Header({ mode = 'simple', onModeChange, onSendDocuments,
             <span className="qs18-send-docs-mobile">Send docs</span>
           </button>
         )}
-        {onStartOrder
-          ? <button type="button" className="bag-button" onClick={onStartOrder} aria-label="Start an order"><Icon name="bag" size={18}/><span>Start order</span></button>
-          : <a className="bag-button" href={`${homePrefix}#configure`} aria-label="Start an order"><Icon name="bag" size={18}/><span>Start order</span></a>}
       </div>
     </header>
   )
