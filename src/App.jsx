@@ -37,6 +37,16 @@ import {
 } from './lib/navigation.js'
 import { resolveActiveOffers, resolveOffersForCategory, resolveOfferDisplayName } from './lib/offers.js'
 import { deriveRelatedOffers } from './lib/relatedContent.js'
+import {
+  BUSINESS_NAME,
+  BUSINESS_TAGLINE,
+  BUSINESS_ADDRESS_LINES,
+  LOCATION_DISPLAY_NAME,
+  WHATSAPP_DISPLAY,
+  buildWhatsappUrl
+} from './lib/businessInfo.js'
+import Footer from './components/Footer.jsx'
+import MobileBottomNav from './components/MobileBottomNav.jsx'
 
 export default function App() {
   const [catalog, setCatalog] = useState(() => loadCatalog(defaultProducts))
@@ -661,7 +671,12 @@ export default function App() {
         <>
         <section className="hero shell qs18-hero">
           <div className="hero-copy">
-            <span className="eyebrow">Joint X Quick Solution Café · Location 001</span>
+            {/* QS-21.5: "Location 001" was the internal tenant/location
+                label - never customer-facing. Kite Cres, Riverside View
+                is the real, displayable location name (see
+                src/lib/businessInfo.js, the single source for this and
+                the other real business details this pass adds). */}
+            <span className="eyebrow">Joint X Quick Solution Café · {LOCATION_DISPLAY_NAME}</span>
             <h1>Printing, branding<br/>&amp; <em>everyday solutions.</em></h1>
 
             <form className="search-wrap" onSubmit={submitSearch}>
@@ -671,7 +686,7 @@ export default function App() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   aria-label="Tell Quick Solution what you need"
-                  placeholder="Try “print my CV”, “banner”, “headshot”, “video shoot”..."
+                  placeholder="Try “banner”, “CV”, “stickers”..."
                 />
                 <button type="submit">Guide me</button>
               </div>
@@ -927,6 +942,7 @@ export default function App() {
             onGuided={selectedJourney ? (presetConfig) => openGuided(selectedProduct, selectedJourney.id, presetConfig || {}) : null}
             onSelectRelated={openProductDetail}
             onQuickConfigure={openQuickConfigure}
+            configureInView={configureInView}
           />
         </div>
 
@@ -1045,13 +1061,41 @@ export default function App() {
         onOrderCreated={() => setCart([])}
       />
       {cartNotice ? <div className="qs-cart-toast" role="status"><Icon name="bag" size={16}/><span>{cartNotice}</span></div> : null}
+      {/* QS-21.5: hidden on mobile via CSS once the bottom nav is
+          present (its "Order" destination now covers this same "open my
+          basket" purpose there) - still the real floating affordance on
+          desktop, where there is no bottom nav. */}
       {cart.length > 0 && !cartOpen ? (
         <button className="qs-cart-floating" type="button" onClick={() => setCartOpen(true)}>
           <span><strong>{cart.length} item{cart.length === 1 ? '' : 's'}</strong><small>View order</small></span>
           <Icon name="bag" size={18}/>
         </button>
       ) : null}
-      <footer className="shell footer"><strong>Joint X Quick Solution Café</strong><span>Location 001 · Built on XOS · {catalogSource === 'supabase' ? 'Live staging catalogue' : 'Local fallback'} · <a href="#admin">Product Admin</a></span></footer>
+      {/* QS-21.5: hidden while actively configuring (same configureInView
+          the mobile sticky Configure CTA already hides on - see
+          resolveStickyConfigureVisibility, navigation.js) - the
+          configurator's own Back/Continue bar (.guided-actions) becomes
+          the relevant persistent bottom action at that point, and
+          measuring both bars on screen together found a real overlap
+          (the sticky Continue bar covering the document upload's
+          "Choose files" button) before this fix. */}
+      {!configureInView && (
+        <MobileBottomNav
+          page={page}
+          cartOpen={cartOpen}
+          cartCount={cart.length}
+          onGoHome={goHome}
+          onGoShop={goShop}
+          onGoQuickPoints={goToQuickPoints}
+          onOpenOrder={() => setCartOpen(true)}
+        />
+      )}
+      <Footer
+        onGoHome={goHome}
+        onGoShop={goShop}
+        onGoQuickPoints={goToQuickPoints}
+        onSendDocuments={openDocumentPrinting}
+      />
     </div>
   )
 }

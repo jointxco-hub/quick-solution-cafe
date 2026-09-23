@@ -11,6 +11,7 @@ import { fulfilmentOptions } from '../data/products.js'
 import { beginQuickSolutionPayment, createQuickSolutionOrder, createQuickSolutionServiceRequest, getQuickSolutionPaymentStatus, isSupabaseConfigured, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
 import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from '../lib/trackingSession.js'
+import { buildWhatsappUrl } from '../lib/businessInfo.js'
 
 // QS-17D fix: SupplierVariantConfigurator.jsx's axis <select>s (Style/
 // Size/Sides/Kit, Frame/Size/Kit) read their displayed value from
@@ -627,7 +628,7 @@ export default function GuidedOrder({
               setUploadError(nextUploadError?.message || 'File upload failed again.')
             }
           }}>Retry secure upload</button>}
-          {file && uploadError && <a className="button ghost" href={`https://wa.me/27754534646?text=${whatsappText}`} target="_blank" rel="noreferrer">Use WhatsApp instead</a>}
+          {file && uploadError && <a className="button ghost" href={buildWhatsappUrl(whatsappText)} target="_blank" rel="noreferrer">Use WhatsApp instead</a>}
           <a className="button dark" href={trackingHref}><Icon name="search" size={16}/> Track this order</a>
           <button className="button ghost" type="button" onClick={resetOrder}>Start another order</button>
         </div>
@@ -904,7 +905,7 @@ export default function GuidedOrder({
           ))}
         </div>
         <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? (isPricedServiceRequest ? 'This is the approved price for what you have chosen. Payment is not requested here — Quick Solution still confirms your booking before anything is charged.' : 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.') : 'The backend recalculates the price before saving the order, so the browser cannot invent its own total.'}</span></div>
-        <a className="help-link" href="https://wa.me/27754534646" target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
+        <a className="help-link" href={buildWhatsappUrl()} target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
       </aside>
     </div>
   )

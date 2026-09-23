@@ -21,6 +21,7 @@
 // second caller (the sticky Configure affordance) never has to
 // duplicate it.
 import { calculateProductPrice, getDefaultConfig } from './pricing.js'
+import { WHATSAPP_NUMBER } from './businessInfo.js'
 
 // The pre-QS-16 hardcoded image map, moved here from ProductCard.jsx
 // (was a local const in that file) so ProductCard.jsx and ProductHub.jsx
@@ -536,11 +537,11 @@ export function resolveProductPresets(product) {
 // ProductHub itself no longer exposes them as working copy actions (see
 // the correction in ProductHub.jsx: those two Share Kit buttons are now
 // disabled/"coming soon" rather than copying a non-navigable URL). The
-// WhatsApp number/format matches the one already used everywhere else in
-// this app (App.jsx, GuidedOrder.jsx, ProductConfigurator.jsx,
-// TrackOrder.jsx, PaymentReturn.jsx, ComingSoonRail.jsx) rather than
-// inventing a new one, and stays fully functional.
-export function buildShareLinks(product, { origin = '', whatsappNumber = '27754534646' } = {}) {
+// WhatsApp number defaults to the real business number (QS-21.5,
+// src/lib/businessInfo.js) - the one shared source every other WhatsApp
+// link in the app now also imports, rather than each file hardcoding
+// its own copy (which is exactly how this number drifted before).
+export function buildShareLinks(product, { origin = '', whatsappNumber = WHATSAPP_NUMBER } = {}) {
   if (!product) return { productPageUrl: '', configureUrl: '', whatsappUrl: '' }
   const base = origin.replace(/\/$/, '')
   const message = `Hi Quick Solution, I'm interested in ${product.name}.`

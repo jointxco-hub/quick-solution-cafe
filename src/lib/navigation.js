@@ -58,6 +58,33 @@ export function resolveStickyConfigureVisibility(page, configureInView) {
   return page === PRODUCT_DETAIL_PAGE && !configureInView
 }
 
+// QS-21.5 section 4 — the SAME decision now also gates the MOBILE sticky
+// Configure CTA (ProductHub.jsx's .product-hub-sticky-cta), fixing a
+// real bug: that element previously had zero state-awareness at all (a
+// static always-visible-on-mobile div, unlike the desktop
+// .qs21-sticky-configure which was already correctly gated) - so
+// "Start guided order" stayed pinned over content even while the
+// customer was actively inside the Guided/Full configurator. Reusing
+// resolveStickyConfigureVisibility() directly (not a second function)
+// for both keeps them mechanically unable to disagree - ProductHub is
+// only ever mounted while page is already 'product', so App.jsx passes
+// page='product' down for this call unconditionally.
+
+// QS-21.5 section 3 — bottom nav "which destination is current" - a
+// small, honest mapping given the app's REAL page state (only
+// 'home'/'shop'/'product' exist; there is no dedicated Quick Points
+// page, since it is a scroll-anchor within Home, not a page value) and
+// the basket being a modal (cartOpen), not a page. Order takes priority
+// when the basket is open (it is the thing actually on screen);
+// otherwise Shop covers both the catalogue and Product Detail (reached
+// only from Shop); Home is the fallback, including for Quick Points'
+// current scroll-anchor-only implementation.
+export function resolveBottomNavActiveId(page, cartOpen) {
+  if (cartOpen) return 'order'
+  if (page === 'shop' || page === PRODUCT_DETAIL_PAGE) return 'shop'
+  return 'home'
+}
+
 // A product's pricing strategy decides whether a minimal Quick Configure
 // sheet is SAFE to offer at all - not every product has a config whose
 // DEFAULT state is a real, priceable choice, and not every product's

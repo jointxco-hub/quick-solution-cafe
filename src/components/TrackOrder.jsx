@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Header from './Header.jsx'
 import Icon from './Icon.jsx'
 import { getQuickSolutionTracking } from '../lib/supabaseApi.js'
+import { buildWhatsappUrl } from '../lib/businessInfo.js'
 
 function money(value) {
   return new Intl.NumberFormat('en-ZA', {
@@ -363,7 +364,7 @@ export default function TrackOrder() {
                   {copied ? 'Tracking link copied' : 'Copy secure tracking link'}
                 </button>
               ) : null}
-              <a className="button ghost" href={`https://wa.me/27754534646?text=${whatsappText}`} target="_blank" rel="noreferrer">
+              <a className="button ghost" href={buildWhatsappUrl(whatsappText)} target="_blank" rel="noreferrer">
                 <Icon name="message" size={16}/> Need help?
               </a>
               <button className="button ghost" type="button" onClick={() => {

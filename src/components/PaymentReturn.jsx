@@ -7,6 +7,7 @@ import {
   readQuickSolutionPaymentSession
 } from '../lib/paymentSession.js'
 import { buildQuickSolutionTrackingHref, readQuickSolutionTrackingSession } from '../lib/trackingSession.js'
+import { buildWhatsappUrl } from '../lib/businessInfo.js'
 
 function money(value) {
   return new Intl.NumberFormat('en-ZA', {
@@ -165,7 +166,7 @@ export default function PaymentReturn() {
             )}
             <a className="button primary-green" href={trackingHref}><Icon name="search" size={16}/> Track this order</a>
             <a className="button ghost" href="/">Back to Quick Solution</a>
-            <a className="button ghost" href="https://wa.me/27754534646" target="_blank" rel="noreferrer">
+            <a className="button ghost" href={buildWhatsappUrl()} target="_blank" rel="noreferrer">
               Need help? WhatsApp us
             </a>
           </div>
