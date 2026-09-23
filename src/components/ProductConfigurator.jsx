@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
 import { resolveProductDisplayName } from '../lib/productContent.js'
+import { buildWhatsappUrl } from '../lib/businessInfo.js'
 import Icon from './Icon.jsx'
 import FieldControl from './FieldControl.jsx'
 
@@ -116,7 +117,7 @@ export default function ProductConfigurator({
         >
           Save as quote · coming soon
         </button>
-        <a className="help-link" href="https://wa.me/27754534646" target="_blank" rel="noreferrer">
+        <a className="help-link" href={buildWhatsappUrl()} target="_blank" rel="noreferrer">
           <Icon name="message" size={17}/> Need help? WhatsApp us
         </a>
         <small className="price-note">QS-02 prototype rates. Pricing rules are versioned and the calculation is snapshotted for each future order.</small>

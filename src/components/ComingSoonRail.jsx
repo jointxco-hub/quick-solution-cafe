@@ -1,5 +1,6 @@
 import React from 'react'
 import Icon from './Icon.jsx'
+import { buildWhatsappUrl } from '../lib/businessInfo.js'
 
 const comingSoonItems = [
   {
@@ -61,7 +62,7 @@ export default function ComingSoonRail({ liveProductIds = [] }) {
           </div>
         ))}
       </div>
-      <a className="qs14-coming-soon-link" href={`https://wa.me/27754534646?text=${whatsappText}`} target="_blank" rel="noreferrer">
+      <a className="qs14-coming-soon-link" href={buildWhatsappUrl(whatsappText)} target="_blank" rel="noreferrer">
         <Icon name="message" size={16}/> Ask about one of these on WhatsApp
       </a>
     </section>

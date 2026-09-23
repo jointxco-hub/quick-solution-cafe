@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
-import { fulfilmentOptions } from '../data/products.js'
+import ProductSupportInfo from './ProductSupportInfo.jsx'
 import { calculateProductPrice, formatMoney } from '../lib/pricing.js'
 import {
   resolveProductMedia,
@@ -52,7 +52,7 @@ import { resolveNextGalleryIndex, resolvePrevGalleryIndex } from '../lib/gallery
 // section - see the QS-21.3 report for the before/after). Also adds
 // lightbox behavior for the existing gallery - no new pricing/config
 // logic anywhere in this pass.
-export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated, onQuickConfigure }) {
+export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated, onQuickConfigure, configureInView = false }) {
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [mediaFailed, setMediaFailed] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -368,34 +368,17 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
 
       <div className="product-hub-grid">
         <div className="product-hub-main">
-          {/* 4 — Artwork */}
-          {artwork.help && (
-            <div className="product-hub-block">
-              <h3>Artwork</h3>
-              <p className="product-hub-artwork-note"><Icon name="upload" size={17}/> {artwork.help}</p>
-            </div>
-          )}
-
-          {/* 5 — Fulfilment. QS-21.4 section 3: a subtle Quick Points/
-              Easy Locate map background (very low opacity, faded, behind
-              the content only) so this reads as "local, mapped,
-              location-aware" rather than a plain text list - see
-              qs21-4-polish.css for the actual opacity/fade treatment. */}
-          <div className="product-hub-block product-hub-fulfilment-block qs21-map-surface">
-            <h3>Collection or delivery</h3>
-            <div className="product-hub-fulfilment">
-              {fulfilmentOptions.map((option) => (
-                <div key={option.id} className="product-hub-fulfilment-option">
-                  <Icon name={option.icon} size={19}/>
-                  <div>
-                    <strong>{option.label}</strong>
-                    <span>{option.helper}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="product-hub-fulfilment-note">You will choose collection or delivery when you configure your order.</p>
-          </div>
+          {/* 4 — Collection & delivery / Payment / Returns / Artwork.
+              QS-21.5 section 14: consolidates what used to be two
+              separate standalone blocks here (a plain "Artwork" block
+              and a "Collection or delivery" block duplicating the exact
+              same fulfilmentOptions list every OTHER product's
+              configurator step already shows) into one compact
+              accordion, plus genuinely new Payment/Returns content this
+              pass adds. Still reuses the same real fulfilmentOptions
+              facts (via DELIVERY_INFO, src/lib/businessInfo.js) - never
+              a second, conflicting data source. */}
+          <ProductSupportInfo artworkHelp={artwork.help}/>
         </div>
 
         <aside className="product-hub-side">
@@ -476,24 +459,35 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
         </aside>
       </div>
 
-      {/* Mobile sticky Configure CTA — hidden on desktop via CSS. Not
-          aria-hidden: it holds real, focusable buttons on the
-          viewports where it's actually visible. */}
-      <div className="product-hub-sticky-cta">
-        {hasGuided ? (
-          <button type="button" className="button dark" onClick={() => onGuided()}>
-            Start guided order <Icon name="arrowRight" size={17}/>
-          </button>
-        ) : hasAdvanced ? (
-          <button type="button" className="button dark" onClick={() => onConfigure()}>
-            Configure <Icon name="arrowUpRight" size={16}/>
-          </button>
-        ) : (
-          <a className="button dark" href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer">
-            <Icon name="message" size={16}/> WhatsApp help
-          </a>
-        )}
-      </div>
+      {/* Mobile sticky Configure CTA — hidden on desktop via CSS (kept
+          separate from .qs21-sticky-configure, which is desktop-only).
+          QS-21.5 section 4 fix: this used to be a static, always-visible
+          div with zero state awareness, so "Start guided order" stayed
+          pinned over content even while the customer was already
+          actively inside the Guided/Full configurator. Now gated by the
+          SAME configureInView App.jsx already computes for the desktop
+          sticky CTA (resolveStickyConfigureVisibility, navigation.js) -
+          disappears the moment the real configurator section is on
+          screen, exactly like the desktop one already did. Not
+          aria-hidden when rendered: it holds real, focusable buttons on
+          the viewports where it's actually visible. */}
+      {!configureInView && (
+        <div className="product-hub-sticky-cta">
+          {hasGuided ? (
+            <button type="button" className="button dark" onClick={() => onGuided()}>
+              Start guided order {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowRight" size={17}/>
+            </button>
+          ) : hasAdvanced ? (
+            <button type="button" className="button dark" onClick={() => onConfigure()}>
+              Configure {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowUpRight" size={16}/>
+            </button>
+          ) : (
+            <a className="button dark" href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer">
+              <Icon name="message" size={16}/> WhatsApp help
+            </a>
+          )}
+        </div>
+      )}
 
       {/* QS-21.3 — lightbox. Same backdrop-click-to-close pattern
           QuickConfigureSheet.jsx already established (role="presentation"

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test tests/pricing-supplier-margin-photography.test.mjs tests/product-hub-content.test.mjs tests/product-presets.test.mjs tests/homepage-shop-language.test.mjs tests/navigation.test.mjs tests/offers.test.mjs tests/qs21-product-detail-navigation.test.mjs tests/qs21-history-navigation.test.mjs tests/qs21-1-product-detail-polish.test.mjs tests/qs21-3-gallery.test.mjs tests/qs21-4-copy-polish.test.mjs"
+    "test": "node --test tests/pricing-supplier-margin-photography.test.mjs tests/product-hub-content.test.mjs tests/product-presets.test.mjs tests/homepage-shop-language.test.mjs tests/navigation.test.mjs tests/offers.test.mjs tests/qs21-product-detail-navigation.test.mjs tests/qs21-history-navigation.test.mjs tests/qs21-1-product-detail-polish.test.mjs tests/qs21-3-gallery.test.mjs tests/qs21-4-copy-polish.test.mjs tests/qs21-5-mobile-shell.test.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

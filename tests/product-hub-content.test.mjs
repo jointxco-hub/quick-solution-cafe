@@ -11,6 +11,7 @@ import {
   buildShareLinks,
   LEGACY_IMAGE_FALLBACK
 } from '../src/lib/productContent.js'
+import { WHATSAPP_NUMBER } from '../src/lib/businessInfo.js'
 
 // Fixture mirrors the real vinyl-stickers product shape added in this
 // same change (src/data/products.js) — customer-facing fields only,
@@ -222,9 +223,9 @@ test('buildShareLinks: builds deterministic product/configure URLs from the give
   assert.equal(links.configureUrl, 'https://example.com/configure/vinyl-stickers')
 })
 
-test('buildShareLinks: WhatsApp link uses the same number already used everywhere else in this app (App.jsx, GuidedOrder.jsx, ProductConfigurator.jsx, ...), not an invented one', () => {
+test('buildShareLinks: WhatsApp link uses the real business number from src/lib/businessInfo.js (QS-21.5) - the same one every other WhatsApp link in this app now imports, not an invented one', () => {
   const links = buildShareLinks(vinylProduct)
-  assert.match(links.whatsappUrl, /^https:\/\/wa\.me\/27754534646\?text=/)
+  assert.match(links.whatsappUrl, new RegExp(`^https://wa\\.me/${WHATSAPP_NUMBER}\\?text=`))
 })
 
 test('buildShareLinks: WhatsApp message mentions the product name and is URL-encoded', () => {
