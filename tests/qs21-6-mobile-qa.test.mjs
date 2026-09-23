@@ -48,5 +48,5 @@ test('all three document entry paths converge on the canonical helper', () => {
   assert.match(app, /onSendDocuments=\{openDocumentPrinting\}/)
   assert.match(app, /nav\.productId === 'a4-print'[\s\S]*openDocumentPrinting\(\)/)
   assert.match(app, /setDocumentEntryRequest\(\(request\) => request \+ 1\)/)
-  assert.match(app, /configureRef\.current\?\.scrollIntoView\(\{ block: 'start' \}\)/)
+  assert.match(app, /scrollToConfigurator\(configureRef\.current\)/)
 })

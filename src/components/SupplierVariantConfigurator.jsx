@@ -1,6 +1,7 @@
 import React from 'react'
 import { getVariantQuantityRule, accessoryCompatible, filterCompatibleAccessories } from '../lib/pricing.js'
 import { resolveDisplayLabel } from '../lib/productContent.js'
+import { resolveVisualAxisOption } from '../lib/configuratorVisuals.js'
 
 // Decomposed style/size/sides/kit configurator for SUPPLIER_MARGIN
 // products (Flags, Gazebos) instead of one long combined dropdown.
@@ -104,6 +105,33 @@ export default function SupplierVariantConfigurator({ product, config, mode = 's
         // where one exists, falling back to today's existing axis.label
         // ("Kit") otherwise - same for each option. Never changes which
         // axis.id/option.id is stored in config.
+        const visuals = options.map((option) => ({ option, visual: resolveVisualAxisOption(product, axis.id, option) }))
+        const visualMode = visuals.length > 1 && visuals.every(({ visual }) => visual?.image)
+
+        if (visualMode) {
+          return (
+            <fieldset className="field field-full qs217-visual-axis" key={axis.id}>
+              <legend>{product.id === 'flags' && axis.id === 'style' ? 'Choose the flag shape' : resolveDisplayLabel(axis, mode)}</legend>
+              <div className="qs217-visual-axis-grid">
+                {visuals.map(({ option, visual }) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    className={`qs217-visual-option ${axisValue(config, axis.id) === option.id ? 'selected' : ''}`}
+                    onClick={() => chooseAxis(axis.id, option.id)}
+                  >
+                    <span className="qs217-visual-option-media"><img src={visual.image} alt=""/></span>
+                    <span className="qs217-visual-option-copy">
+                      <strong>{visual.label}</strong>
+                      {visual.helper ? <small>{visual.helper}</small> : null}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          )
+        }
+
         return (
           <label className="field" key={axis.id}>
             <span>{resolveDisplayLabel(axis, mode)}</span>

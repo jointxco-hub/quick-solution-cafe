@@ -5,6 +5,7 @@ import FieldControl from './FieldControl.jsx'
 import SupplierVariantConfigurator from './SupplierVariantConfigurator.jsx'
 import PhotoDeliverablesField from './PhotoDeliverablesField.jsx'
 import DocumentPrintPlan from './DocumentPrintPlan.jsx'
+import ConfiguratorProductContext from './ConfiguratorProductContext.jsx'
 import { calculateProductPrice, formatMoney, getDefaultConfig } from '../lib/pricing.js'
 import { deriveVariantAxisValues, resolveDisplayLabel, resolveProductDisplayName } from '../lib/productContent.js'
 import { fulfilmentOptions } from '../data/products.js'
@@ -639,6 +640,7 @@ export default function GuidedOrder({
   return (
     <div className="guided-shell">
       <div className="guided-main">
+        <ConfiguratorProductContext product={product} config={config} mode={mode}/>
         <div className="guided-topline">
           <button className="text-button" type="button" onClick={onAdvanced}>Switch to Full options</button>
           <div className="guided-topline-meta">

@@ -47,6 +47,12 @@ import {
 import Footer from './components/Footer.jsx'
 import MobileBottomNav from './components/MobileBottomNav.jsx'
 
+function scrollToConfigurator(node, behavior = 'smooth') {
+  if (!node) return
+  const top = Math.max(0, window.scrollY + node.getBoundingClientRect().top - 12)
+  window.scrollTo({ top, behavior })
+}
+
 export default function App() {
   const [catalog, setCatalog] = useState(() => loadCatalog(defaultProducts))
   const [fulfilmentPoints, setFulfilmentPoints] = useState([])
@@ -140,7 +146,7 @@ export default function App() {
   useEffect(() => {
     if (!documentEntryRequest) return
     if (page !== 'product' || selectedId !== 'a4-print' || orderMode !== 'guided') return
-    configureRef.current?.scrollIntoView({ block: 'start' })
+    scrollToConfigurator(configureRef.current)
   }, [documentEntryRequest, page, selectedId, orderMode])
 
   useEffect(() => {
@@ -315,7 +321,7 @@ export default function App() {
   // src/lib/productContent.js), never a second pricing computation.
   const productDetailPriceCue = useMemo(() => resolveProductPriceCue(selectedProduct), [selectedProduct])
 
-  const scrollToConfigure = () => window.setTimeout(() => configureRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
+  const scrollToConfigure = () => window.setTimeout(() => scrollToConfigurator(configureRef.current), 40)
   const scrollToProductHub = () => window.setTimeout(() => productHubRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   const scrollToShop = () => window.setTimeout(() => shopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
   const scrollToQuickPoints = () => window.setTimeout(() => quickPointsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40)
@@ -683,7 +689,10 @@ export default function App() {
                 src/lib/businessInfo.js, the single source for this and
                 the other real business details this pass adds). */}
             <span className="eyebrow">Joint X Quick Solution Café · {LOCATION_DISPLAY_NAME}</span>
-            <span className="eyebrow qs21-home-location">Quick Solution {'\u00b7'} {LOCATION_DISPLAY_NAME}</span>
+            <span className="eyebrow qs21-home-location">
+              <Icon name="pin" size={13}/>
+              <span>Quick Solution {'\u00b7'} {LOCATION_DISPLAY_NAME}</span>
+            </span>
             <h1>Printing, branding<br/>&amp; <em>everyday solutions.</em></h1>
 
             <form className="search-wrap" onSubmit={submitSearch}>

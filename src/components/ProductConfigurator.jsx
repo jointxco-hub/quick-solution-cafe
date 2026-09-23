@@ -4,6 +4,7 @@ import { resolveProductDisplayName } from '../lib/productContent.js'
 import { buildWhatsappUrl } from '../lib/businessInfo.js'
 import Icon from './Icon.jsx'
 import FieldControl from './FieldControl.jsx'
+import ConfiguratorProductContext from './ConfiguratorProductContext.jsx'
 
 export default function ProductConfigurator({
   product,
@@ -52,6 +53,7 @@ export default function ProductConfigurator({
   return (
     <div className="configurator-grid">
       <div className="config-panel">
+        <ConfiguratorProductContext product={product} config={config} mode={mode}/>
         <div className="config-intro">
           <div>
             <span className="eyebrow">Full options</span>
