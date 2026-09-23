@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 
 // QS-18: mode/onModeChange add the subtle, always-available Simple|Pro
@@ -16,13 +16,38 @@ import Icon from './Icon.jsx'
 // back to the old plain-anchor behavior in that case).
 export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickPoints }) {
   const homePrefix = window.location.pathname === '/' ? '' : '/'
+  const [hidden, setHidden] = useState(false)
+  const lastScrollY = useRef(0)
+
+  useEffect(() => {
+    lastScrollY.current = window.scrollY || 0
+
+    const onScroll = () => {
+      const nextY = Math.max(0, window.scrollY || 0)
+      const delta = nextY - lastScrollY.current
+
+      if (nextY < 40) setHidden(false)
+      else if (delta > 8 && nextY > 96) setHidden(true)
+      else if (delta < -8) setHidden(false)
+
+      lastScrollY.current = nextY
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   const handleGoHome = (event) => {
     if (!onGoHome) return
     event.preventDefault()
     onGoHome()
   }
   return (
-    <header className="site-header">
+    <header
+      className={`site-header qs217-auto-header ${hidden ? 'is-hidden' : ''}`}
+      onMouseEnter={() => setHidden(false)}
+      onFocusCapture={() => setHidden(false)}
+    >
       <a className="brand" href={homePrefix ? '/' : '#top'} aria-label="Joint X Quick Solution Café home" onClick={handleGoHome}>
         <img className="brand-mark-image" src="/jointx-mark.png" alt="" />
         <span>

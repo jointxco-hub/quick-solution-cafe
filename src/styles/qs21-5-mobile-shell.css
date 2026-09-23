@@ -545,3 +545,149 @@
   .product-card p { margin: 0; line-height: 1.45; }
   .product-card-footer { margin-top: 10px; }
 }
+
+/* QS-21.7 — configurator orientation + visual selection. */
+.qs217-auto-header { transition: transform .24s ease; will-change: transform; }
+.qs217-auto-header.is-hidden { transform: translateY(calc(-100% - 2px)); }
+.qs217-auto-header:focus-within,
+.qs217-auto-header:hover { transform: translateY(0); }
+
+.qs21-home-location {
+  width: fit-content;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px !important;
+  padding: 7px 11px;
+  border: 1px solid #dfd4f7;
+  border-radius: 999px;
+  background: #f4efff;
+  color: #654aa5;
+  text-transform: none;
+  letter-spacing: .025em !important;
+}
+
+#configure { scroll-margin-top: 12px; }
+
+.qs217-config-context {
+  position: sticky;
+  top: 10px;
+  z-index: 12;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 9px 10px;
+  border: 1px solid rgba(17,17,15,.08);
+  border-radius: 16px;
+  background: rgba(255,255,255,.94);
+  backdrop-filter: blur(14px);
+}
+
+.qs217-config-thumb {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--canvas);
+}
+.qs217-config-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.qs217-config-context-copy { min-width: 0; display: grid; gap: 2px; }
+.qs217-config-context-copy > span { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.qs217-config-context-copy strong { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.qs217-config-context-copy small { color: #654aa5; font-size: 11px; font-weight: 700; }
+
+.qs217-config-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(17,17,15,.72);
+}
+.qs217-config-lightbox-card {
+  position: relative;
+  width: min(720px, 100%);
+  border-radius: 24px;
+  overflow: hidden;
+  background: white;
+}
+.qs217-config-lightbox-card > img { width: 100%; max-height: 76dvh; object-fit: contain; display: block; }
+.qs217-config-lightbox-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,.94);
+  font-size: 22px;
+}
+
+.qs217-visual-axis { margin: 0; padding: 0; border: 0; }
+.qs217-visual-axis-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.qs217-visual-option { overflow: hidden; padding: 0; border: 1px solid var(--line); border-radius: 16px; background: #fff; text-align: left; }
+.qs217-visual-option.selected { border-color: var(--green); box-shadow: 0 0 0 3px var(--soft-green); }
+.qs217-visual-option-media { display: block; aspect-ratio: 4 / 3; overflow: hidden; background: var(--canvas); }
+.qs217-visual-option-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.qs217-visual-option-copy { display: grid; gap: 3px; padding: 10px; }
+.qs217-visual-option-copy small { color: var(--muted); }
+
+@media (max-width: 620px) {
+  .qs217-config-context { top: 8px; margin-bottom: 12px; padding: 8px; }
+  .qs217-config-thumb { width: 48px; height: 48px; }
+  .qs217-visual-axis-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+/* QS-21.7 final mobile polish */
+.qs217-config-context {
+  top: 76px;
+  transition: top .24s ease;
+}
+
+html.qs217-header-hidden .qs217-config-context {
+  top: 10px;
+}
+
+@media (max-width: 620px) {
+  .qs217-config-context {
+    top: 70px;
+  }
+
+  html.qs217-header-hidden .qs217-config-context {
+    top: 8px;
+  }
+
+  .qs217-visual-axis-grid {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 14% 6px 1px;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .qs217-visual-axis-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .qs217-visual-option {
+    flex: 0 0 78%;
+    scroll-snap-align: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qs217-config-context {
+    transition: none;
+  }
+}
