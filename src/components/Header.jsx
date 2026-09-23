@@ -26,9 +26,9 @@ export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickP
       const nextY = Math.max(0, window.scrollY || 0)
       const delta = nextY - lastScrollY.current
 
-      if (nextY < 40) setHidden(false)
-      else if (delta > 8 && nextY > 96) setHidden(true)
-      else if (delta < -8) setHidden(false)
+      if (nextY < 32) setHidden(false)
+      else if (delta > 2 && nextY > 64) setHidden(true)
+      else if (delta < -4) setHidden(false)
 
       lastScrollY.current = nextY
     }
@@ -36,6 +36,11 @@ export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickP
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('qs217-header-hidden', hidden)
+    return () => document.documentElement.classList.remove('qs217-header-hidden')
+  }, [hidden])
 
   const handleGoHome = (event) => {
     if (!onGoHome) return
