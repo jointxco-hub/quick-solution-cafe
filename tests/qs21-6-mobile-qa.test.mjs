@@ -50,3 +50,13 @@ test('all three document entry paths converge on the canonical helper', () => {
   assert.match(app, /setDocumentEntryRequest\(\(request\) => request \+ 1\)/)
   assert.match(app, /scrollToConfigurator\(configureRef\.current\)/)
 })
+
+test('live Flags media with an empty gallery still resolves the real gallery fallback', () => {
+  const media = resolveProductMedia({ id: 'flags', name: 'Flags', media: { gallery: [] } })
+  assert.equal(media.hero, '/qs21/flags-hero-single.webp')
+  assert.deepEqual(media.gallery, [
+    '/qs21/flags-lineup-sizes.webp',
+    '/qs21/flags-shark-fin-pair.webp',
+    '/qs21/flags-hero-single-alt.webp'
+  ])
+})

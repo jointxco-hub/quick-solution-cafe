@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 120" role="img" aria-labelledby="title">
+  <title id="title">Easy Locate</title>
+  <defs>
+    <linearGradient id="easy-locate-gradient" x1="12" y1="8" x2="84" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8b5cd9"/>
+      <stop offset="1" stop-color="#4a2589"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#easy-locate-gradient)" d="M48 4C24.8 4 6 22.8 6 46c0 31.4 34.2 64.7 40.1 70.1a2.7 2.7 0 0 0 3.8 0C55.8 110.7 90 77.4 90 46 90 22.8 71.2 4 48 4Z"/>
+  <path fill="#faf9f6" fill-rule="evenodd" d="M49 22C32 22 20 34.7 20 51.7 20 69.5 32.6 82 50.7 82c12 0 22.2-5.4 27.4-14.5l-12.2-6.8c-3.1 5-8.2 8-15.2 8-8.4 0-14.2-4.2-16.2-11.6h45.6c.6-2.2.9-4.8.9-7.4C81 34 67 22 49 22Zm0 13.6c7.8 0 13.6 4.2 15.8 11.3H34.5c2.3-7.3 7.2-11.3 14.5-11.3Z"/>
+</svg>

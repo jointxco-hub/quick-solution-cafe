@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import Icon from './Icon.jsx'
-import { LEGACY_IMAGE_FALLBACK, resolveProductDisplayName } from '../lib/productContent.js'
+import { resolveProductDisplayName, resolveProductMedia } from '../lib/productContent.js'
 import { resolveConfiguratorPreviewDetail, resolveConfiguratorPreviewImage } from '../lib/configuratorVisuals.js'
 
 export default function ConfiguratorProductContext({ product, config = {}, mode = 'simple' }) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const image = resolveConfiguratorPreviewImage(product, config)
-  const fallbackImage = LEGACY_IMAGE_FALLBACK[product?.id] || null
+  const fallbackImage = resolveProductMedia(product).hero
   const [displayImage, setDisplayImage] = useState(image)
   const detail = resolveConfiguratorPreviewDetail(product, config)
   const name = resolveProductDisplayName(product, mode)

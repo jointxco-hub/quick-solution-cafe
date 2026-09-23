@@ -57,9 +57,10 @@ export const LEGACY_IMAGE_FALLBACK = {
 //   null                  -> caller renders ProductScene instead
 export function resolveProductMedia(product, legacyImageMap = LEGACY_IMAGE_FALLBACK) {
   const hero = product?.media?.hero || product?.image || legacyImageMap[product?.id] || null
-  const gallery = Array.isArray(product?.media?.gallery)
+  const liveGallery = Array.isArray(product?.media?.gallery)
     ? product.media.gallery.filter((src) => typeof src === 'string' && src.length > 0)
-    : (LEGACY_GALLERY_FALLBACK[product?.id] || [])
+    : []
+  const gallery = liveGallery.length > 0 ? liveGallery : (LEGACY_GALLERY_FALLBACK[product?.id] || [])
   return { hero, gallery }
 }
 
