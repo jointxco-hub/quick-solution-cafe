@@ -528,12 +528,29 @@
 }
 
 @media (max-width: 620px) {
+  /*
+   * Complete the Shop card's shrink chain. Safari can otherwise preserve
+   * a replaced image's intrinsic minimum width inside the nested grid /
+   * flex wrappers, which clips the card action while body-level overflow
+   * masking leaves document.scrollWidth looking healthy.
+   */
+  .services-section .product-grid,
   .product-card {
     min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  .product-card {
     min-height: 0;
     gap: 8px;
     padding: 14px;
     border-radius: 18px;
+  }
+  .product-card-body,
+  .product-card-media {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
   }
   .product-card-media {
     min-height: 112px;
@@ -542,6 +559,9 @@
     padding: 6px;
   }
   .product-card-media.has-photo img {
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
     min-height: 0;
   }
   .product-card-copy { margin-top: 10px; }
