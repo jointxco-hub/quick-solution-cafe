@@ -11,6 +11,7 @@ import ProofGallery from './components/ProofGallery.jsx'
 import ComingSoonRail from './components/ComingSoonRail.jsx'
 import WorkedWithStrip from './components/WorkedWithStrip.jsx'
 import HelpCta from './components/HelpCta.jsx'
+import NotFound from './components/NotFound.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
 import OrderBasket from './components/OrderBasket.jsx'
 import OfferCard from './components/OfferCard.jsx'
@@ -23,6 +24,7 @@ import { resolveProductDisplayName, resolveProductPriceCue, SHOP_CATEGORIES, fil
 import { formatMoney } from './lib/pricing.js'
 import {
   DEFAULT_PAGE,
+  resolveAppRoute,
   resolveHeroOutcomeNavigation,
   resolveQuickConfigureEligibility,
   buildOfferChangeContext,
@@ -54,6 +56,10 @@ function scrollToConfigurator(node, behavior = 'smooth') {
 }
 
 export default function App() {
+  const initialRoute = resolveAppRoute({
+    pathname: window.location.pathname,
+    hash: window.location.hash
+  })
   const [catalog, setCatalog] = useState(() => loadCatalog(defaultProducts))
   const [fulfilmentPoints, setFulfilmentPoints] = useState([])
   const [catalogSource, setCatalogSource] = useState('local')
@@ -68,7 +74,7 @@ export default function App() {
   const [orderMode, setOrderMode] = useState('guided')
   const [journeyId, setJourneyId] = useState('document-guided')
   const [taskContext, setTaskContext] = useState(null)
-  const [view, setView] = useState(() => window.location.hash === '#admin' ? 'admin' : 'storefront')
+  const [view, setView] = useState(initialRoute.view)
   // QS-18A: page splits the storefront into Home (outcome-first, short)
   // and Shop (browsing + Product Hub + configurator) - the smallest
   // top-level addition to the existing state-machine/anchor-scroll
@@ -82,7 +88,7 @@ export default function App() {
   // The Shop grid does not exist in that page's render tree at all, not
   // merely scrolled away - this is the actual navigation/context fix
   // this pass is for (see the QS-21 report's transition-map audit).
-  const [page, setPage] = useState(DEFAULT_PAGE)
+  const [page, setPage] = useState(initialRoute.page || DEFAULT_PAGE)
   // QS-21: which product's Quick Configure sheet is open, if any (a
   // small overlay, not a page transition - see QuickConfigureSheet.jsx).
   const [quickConfigureProduct, setQuickConfigureProduct] = useState(null)
@@ -159,7 +165,10 @@ export default function App() {
   }, [categoryMenuOpen])
 
   useEffect(() => {
-    const onHash = () => setView(window.location.hash === '#admin' ? 'admin' : 'storefront')
+    const onHash = () => setView(resolveAppRoute({
+      pathname: window.location.pathname,
+      hash: window.location.hash
+    }).view)
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
@@ -652,17 +661,21 @@ export default function App() {
     else openAdvanced(product)
   }
 
-  if (window.location.pathname === '/track') {
+  if (view === 'track') {
     return <TrackOrder/>
   }
 
   const paymentMode = new URLSearchParams(window.location.search).get('qs_payment')
-  if (paymentMode === 'return' || paymentMode === 'cancel') {
+  if (view === 'storefront' && (paymentMode === 'return' || paymentMode === 'cancel')) {
     return <PaymentReturn/>
   }
 
   if (view === 'admin') {
     return <AdminProductManager initialProducts={catalog} defaultProducts={defaultProducts} onCatalogChange={setCatalog} onFulfilmentPointsChange={setFulfilmentPoints}/>
+  }
+
+  if (view === 'not-found') {
+    return <NotFound/>
   }
 
   return (
