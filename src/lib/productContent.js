@@ -46,6 +46,14 @@ export const LEGACY_IMAGE_FALLBACK = {
   'photo-session': '/qs12/product-photography-video.webp'
 }
 
+// A stored media value can be syntactically present while still being a
+// deliberate placeholder. Treat those values as absent so the shared
+// resolver can continue to the real product photography below.
+export function isUsableProductMediaSource(src) {
+  return typeof src === 'string' && src.trim().length > 0 &&
+    !/(?:^|[\/_-])(?:image-)?placeholder(?:[._/-]|$)/i.test(src)
+}
+
 // Lookup order for a product's hero image:
 //   product.media?.hero  -> new, optional, backward-compatible field
 //   product.image        -> already present on the live Supabase
@@ -56,12 +64,18 @@ export const LEGACY_IMAGE_FALLBACK = {
 //                            existing product silently loses its image
 //   null                  -> caller renders ProductScene instead
 export function resolveProductMedia(product, legacyImageMap = LEGACY_IMAGE_FALLBACK) {
-  const hero = product?.media?.hero || product?.image || legacyImageMap[product?.id] || null
+  const hero = [product?.media?.hero, product?.image, legacyImageMap[product?.id]]
+    .find(isUsableProductMediaSource) || null
   const liveGallery = Array.isArray(product?.media?.gallery)
-    ? product.media.gallery.filter((src) => typeof src === 'string' && src.length > 0)
+    ? product.media.gallery.filter(isUsableProductMediaSource)
     : []
   const gallery = liveGallery.length > 0 ? liveGallery : (LEGACY_GALLERY_FALLBACK[product?.id] || [])
   return { hero, gallery }
+}
+
+export function resolveProductMediaSequence(media) {
+  return [...new Set([media?.hero, ...(Array.isArray(media?.gallery) ? media.gallery : [])]
+    .filter(isUsableProductMediaSource))]
 }
 
 // Normalizes the optional product.productPage block, with safe fallbacks

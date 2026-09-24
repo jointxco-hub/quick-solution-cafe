@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
 import ProductSupportInfo from './ProductSupportInfo.jsx'
@@ -12,12 +12,13 @@ import {
   resolveProductPriceCue,
   resolveHubAvailability,
   resolveProductPresets,
+  resolveProductMediaSequence,
   resolveProductDisplayName,
   buildShareLinks
 } from '../lib/productContent.js'
-import { resolveQuickConfigureEligibility } from '../lib/navigation.js'
+import { resolveMobilePdpCtaVisibility, resolveQuickConfigureEligibility } from '../lib/navigation.js'
 import { resolveRelatedDisclosureState } from '../lib/relatedContent.js'
-import { resolveNextGalleryIndex, resolvePrevGalleryIndex } from '../lib/gallery.js'
+import { resolveAvailableGalleryImage, resolveNextGalleryIndex, resolvePrevGalleryIndex } from '../lib/gallery.js'
 
 // QS-16 — generic Product Hub / Product Detail page.
 //
@@ -54,7 +55,7 @@ import { resolveNextGalleryIndex, resolvePrevGalleryIndex } from '../lib/gallery
 // logic anywhere in this pass.
 export default function ProductHub({ product, catalog = [], mode = 'simple', onConfigure, onGuided, onSelectRelated, onQuickConfigure, configureInView = false, overlayOpen = false }) {
   const [galleryIndex, setGalleryIndex] = useState(0)
-  const [mediaFailed, setMediaFailed] = useState(false)
+  const [failedMediaSources, setFailedMediaSources] = useState([])
   const [lightboxOpen, setLightboxOpen] = useState(false)
   // QS-21.1: which related-product row (if any) is expanded into its
   // local disclosure preview - see resolveRelatedDisclosureState()
@@ -63,25 +64,37 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
   // expanded for a related list that's about to be replaced.
   const [expandedRelatedId, setExpandedRelatedId] = useState(null)
   const [ctaRegionInView, setCtaRegionInView] = useState(true)
+  const pdpMediaRef = useRef(null)
+  const pdpInfoRef = useRef(null)
 
   useEffect(() => {
     setGalleryIndex(0)
-    setMediaFailed(false)
+    setFailedMediaSources([])
     setExpandedRelatedId(null)
     setLightboxOpen(false)
   }, [product?.id])
 
 
-  // Keep the fixed mobile CTA inside the primary PDP region. It leaves
-  // before Quick options, support and related content can pass beneath it.
+  // Keep the fixed mobile CTA inside the gallery region. It leaves as
+  // soon as the title/details region enters the viewport, before either
+  // that content or Quick options can pass beneath it.
   useEffect(() => {
-    const node = document.querySelector('.product-hub-pdp')
-    if (!node || typeof IntersectionObserver === 'undefined') return
+    const mediaNode = pdpMediaRef.current
+    const infoNode = pdpInfoRef.current
+    if (!mediaNode || !infoNode || typeof IntersectionObserver === 'undefined') return
+    const visibility = { mediaInView: false, infoInView: false }
     const observer = new IntersectionObserver(
-      ([entry]) => setCtaRegionInView(entry.isIntersecting),
-      { rootMargin: '-68px 0px -18% 0px', threshold: 0 }
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.target === mediaNode) visibility.mediaInView = entry.isIntersecting
+          if (entry.target === infoNode) visibility.infoInView = entry.isIntersecting
+        }
+        setCtaRegionInView(resolveMobilePdpCtaVisibility(visibility))
+      },
+      { rootMargin: '-68px 0px 0px 0px', threshold: 0 }
     )
-    observer.observe(node)
+    observer.observe(mediaNode)
+    observer.observe(infoNode)
     return () => observer.disconnect()
   }, [product?.id])
   const media = useMemo(() => resolveProductMedia(product), [product])
@@ -127,8 +140,10 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
 
   if (!product) return null
 
-  const galleryImages = media.hero ? [media.hero, ...media.gallery.filter((src) => src !== media.hero)] : media.gallery
-  const activeImage = !mediaFailed ? (galleryImages[galleryIndex] || galleryImages[0] || null) : null
+  const galleryImages = resolveProductMediaSequence(media)
+  const activeMedia = resolveAvailableGalleryImage(galleryImages, galleryIndex, failedMediaSources)
+  const activeImage = activeMedia?.src || null
+  const activeGalleryIndex = activeMedia?.index ?? galleryIndex
   // Correction: metadata (channels.guided/guidedJourneyId) alone is not
   // enough - App.jsx can pass onGuided=null when no matching local
   // guided journey actually exists, and a button that looks active with
@@ -137,11 +152,10 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
   // never disagree.
   const { hasGuided, hasAdvanced } = resolveHubAvailability(product, { onGuided, onConfigure })
 
-  // Correction: clicking a thumbnail must be able to recover from a
-  // previous image failure - mediaFailed is reset here, before the
-  // index changes, not left stuck true forever once any one image 404s.
+  // A deliberate thumbnail choice gets one fresh load attempt, while a
+  // runtime failure automatically advances to the next real source.
   const selectGalleryImage = (index) => {
-    setMediaFailed(false)
+    setFailedMediaSources((sources) => sources.filter((src) => src !== galleryImages[index]))
     setGalleryIndex(index)
   }
 
@@ -153,8 +167,8 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
   // index, one source of truth.
   const openLightbox = () => { if (activeImage) setLightboxOpen(true) }
   const closeLightbox = () => setLightboxOpen(false)
-  const showNextImage = () => selectGalleryImage(resolveNextGalleryIndex(galleryIndex, galleryImages.length))
-  const showPrevImage = () => selectGalleryImage(resolvePrevGalleryIndex(galleryIndex, galleryImages.length))
+  const showNextImage = () => selectGalleryImage(resolveNextGalleryIndex(activeGalleryIndex, galleryImages.length))
+  const showPrevImage = () => selectGalleryImage(resolvePrevGalleryIndex(activeGalleryIndex, galleryImages.length))
 
   useEffect(() => {
     if (!lightboxOpen) return
@@ -181,7 +195,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
           before the customer can actually act. */}
       <div className="product-hub-pdp">
         {/* 1 — Media / gallery */}
-        <div className="product-hub-pdp-media">
+        <div ref={pdpMediaRef} className="product-hub-pdp-media">
           <div
             className={`product-hub-media-frame${activeImage ? ' has-lightbox' : ''}`}
             role={activeImage ? 'button' : undefined}
@@ -191,7 +205,14 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             onKeyDown={activeImage ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openLightbox() } } : undefined}
           >
             {activeImage ? (
-              <img src={activeImage} alt={product.name} loading="lazy" onError={() => setMediaFailed(true)}/>
+              <img
+                src={activeImage}
+                alt={product.name}
+                loading="lazy"
+                onError={() => setFailedMediaSources((sources) => (
+                  sources.includes(activeImage) ? sources : [...sources, activeImage]
+                ))}
+              />
             ) : (
               <ProductScene productId={product.id} className="product-hub-scene"/>
             )}
@@ -208,8 +229,8 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
                   key={src}
                   type="button"
                   role="tab"
-                  aria-selected={index === galleryIndex}
-                  className={index === galleryIndex ? 'active' : ''}
+                  aria-selected={index === activeGalleryIndex}
+                  className={index === activeGalleryIndex ? 'active' : ''}
                   onClick={() => selectGalleryImage(index)}
                 >
                   <img src={src} alt="" loading="lazy"/>
@@ -220,7 +241,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
         </div>
 
         {/* 2 — Title / price / CTAs / quick facts */}
-        <div className="product-hub-pdp-info">
+        <div ref={pdpInfoRef} className="product-hub-pdp-info">
           <span className="eyebrow">{product.category}</span>
           <h2>{content.headline}</h2>
           <p className="product-hub-intro">{content.intro}</p>

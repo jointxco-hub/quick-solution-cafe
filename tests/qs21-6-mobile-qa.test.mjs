@@ -3,7 +3,9 @@ import fs from 'node:fs'
 import test from 'node:test'
 
 import { resolveFulfilmentPointDisplayName } from '../src/lib/businessInfo.js'
-import { resolveProductMedia } from '../src/lib/productContent.js'
+import { resolveProductMedia, resolveProductMediaSequence } from '../src/lib/productContent.js'
+import { resolveAvailableGalleryImage } from '../src/lib/gallery.js'
+import { resolveMobilePdpCtaVisibility } from '../src/lib/navigation.js'
 
 test('nearby collection resolver replaces the internal cafe label on the real live payload shape', () => {
   const livePoint = {
@@ -59,4 +61,48 @@ test('live Flags media with an empty gallery still resolves the real gallery fal
     '/qs21/flags-shark-fin-pair.webp',
     '/qs21/flags-hero-single-alt.webp'
   ])
+})
+
+test('live Flags placeholder primary resolves real photography as the actual first PDP image', () => {
+  const media = resolveProductMedia({
+    id: 'flags',
+    name: 'Flags',
+    image: '/qs14/flags-placeholder.webp',
+    media: {
+      hero: '/qs14/flags-placeholder.webp',
+      gallery: [
+        '/qs14/flags-placeholder.webp',
+        '/qs21/flags-lineup-sizes.webp',
+        '/qs21/flags-shark-fin-pair.webp',
+        '/qs21/flags-hero-single-alt.webp'
+      ]
+    }
+  })
+  const sequence = resolveProductMediaSequence(media)
+  assert.equal(media.hero, '/qs21/flags-hero-single.webp')
+  assert.equal(sequence[0], '/qs21/flags-hero-single.webp')
+  assert.equal(resolveAvailableGalleryImage(sequence)?.src, '/qs21/flags-hero-single.webp')
+  assert.ok(sequence.every((src) => !src.includes('placeholder')))
+})
+
+test('PDP media runtime failure advances to the next real image instead of the generic scene', () => {
+  const images = ['/broken.webp', '/qs21/flags-lineup-sizes.webp']
+  assert.deepEqual(resolveAvailableGalleryImage(images, 0, ['/broken.webp']), {
+    src: '/qs21/flags-lineup-sizes.webp',
+    index: 1
+  })
+})
+
+test('mobile PDP CTA is limited to media-only visibility and stays off over details and later sections', () => {
+  assert.equal(resolveMobilePdpCtaVisibility({ mediaInView: true, infoInView: false }), true)
+  assert.equal(resolveMobilePdpCtaVisibility({ mediaInView: true, infoInView: true }), false)
+  assert.equal(resolveMobilePdpCtaVisibility({ mediaInView: false, infoInView: true }), false)
+  assert.equal(resolveMobilePdpCtaVisibility({ mediaInView: false, infoInView: false }), false)
+})
+
+test('mobile Shop cards explicitly constrain every nested media shrink boundary', () => {
+  const css = fs.readFileSync(new URL('../src/styles/qs21-5-mobile-shell.css', import.meta.url), 'utf8')
+  assert.match(css, /\.services-section \.product-grid,[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%;[\s\S]*?width: 100%;/)
+  assert.match(css, /\.product-card-body,[\s\S]*?\.product-card-media[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%;/)
+  assert.match(css, /\.product-card-media\.has-photo img[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%;[\s\S]*?width: 100%;/)
 })

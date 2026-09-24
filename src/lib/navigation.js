@@ -58,6 +58,14 @@ export function resolveStickyConfigureVisibility(page, configureInView) {
   return page === PRODUCT_DETAIL_PAGE && !configureInView
 }
 
+// The floating mobile PDP action belongs only to the gallery portion of
+// the page. It disappears as soon as product information enters view and
+// cannot reappear over Quick options or the configurator after the media
+// region has scrolled away.
+export function resolveMobilePdpCtaVisibility({ mediaInView = false, infoInView = false } = {}) {
+  return mediaInView && !infoInView
+}
+
 // QS-21.5 section 4 — the SAME decision now also gates the MOBILE sticky
 // Configure CTA (ProductHub.jsx's .product-hub-sticky-cta), fixing a
 // real bug: that element previously had zero state-awareness at all (a
