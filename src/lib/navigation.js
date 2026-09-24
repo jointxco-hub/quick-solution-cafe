@@ -15,6 +15,38 @@
 // without needing to render <App/>.
 export const DEFAULT_PAGE = 'home'
 
+// Top-level browser-path resolution. The storefront's Home/Shop/Product
+// state remains the existing lightweight state machine below; this only
+// decides which application surface owns an initial browser URL.
+export function normalizeAppPathname(pathname = '/') {
+  const value = typeof pathname === 'string' && pathname ? pathname : '/'
+  const withLeadingSlash = value.startsWith('/') ? value : `/${value}`
+  return withLeadingSlash === '/' ? '/' : withLeadingSlash.replace(/\/+$/, '')
+}
+
+export function resolveAppRoute({ pathname = '/', hash = '' } = {}) {
+  const normalizedPathname = normalizeAppPathname(pathname)
+
+  if (normalizedPathname === '/admin') {
+    return { view: 'admin', page: null, pathname: normalizedPathname }
+  }
+  if (normalizedPathname === '/track' || normalizedPathname.startsWith('/track/')) {
+    return { view: 'track', page: null, pathname: normalizedPathname }
+  }
+  // Retain the original staff bookmark. Tracking keeps precedence, just
+  // as it did when App.jsx checked /track before the old hash-based view.
+  if (hash === '#admin') {
+    return { view: 'admin', page: null, pathname: normalizedPathname }
+  }
+  if (normalizedPathname === '/') {
+    return { view: 'storefront', page: DEFAULT_PAGE, pathname: normalizedPathname }
+  }
+  if (normalizedPathname === '/shop') {
+    return { view: 'storefront', page: 'shop', pathname: normalizedPathname }
+  }
+  return { view: 'not-found', page: null, pathname: normalizedPathname }
+}
+
 // Given one of src/data/products.js's heroOutcomes entries, decides
 // where it should navigate. Mirrors exactly the two kinds heroOutcomes
 // already declares (see products.js's own comment above that array) -

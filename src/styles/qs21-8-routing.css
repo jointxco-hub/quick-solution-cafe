@@ -1,0 +1,128 @@
+/* QS-21.8 — customer-facing unknown-route fallback. */
+.qs218-not-found {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  padding: 24px clamp(18px, 4vw, 56px) 40px;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(215, 191, 255, .34), transparent 32%),
+    radial-gradient(circle at 18% 82%, rgba(0, 139, 114, .09), transparent 28%),
+    var(--canvas, #f6f6f2);
+}
+
+.qs218-not-found-brand {
+  width: max-content;
+}
+
+.qs218-not-found-card {
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 660px);
+  margin: 36px 0 80px;
+  padding: clamp(30px, 7vw, 64px);
+  border: 1px solid rgba(17, 17, 15, .09);
+  border-radius: 32px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 24px 70px rgba(44, 31, 67, .09);
+  text-align: center;
+}
+
+.qs218-not-found-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 24px;
+  border-radius: 28px;
+  background: var(--soft-lilac, #efe8fa);
+  color: #5f399d;
+  overflow: hidden;
+}
+
+.qs218-not-found-mark span {
+  position: relative;
+  z-index: 1;
+  font-size: 25px;
+  font-weight: 900;
+  letter-spacing: -.04em;
+}
+
+.qs218-not-found-mark i {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  right: -13px;
+  bottom: -14px;
+  border-radius: 50%;
+  background: rgba(139, 92, 217, .22);
+}
+
+.qs218-not-found-card h1 {
+  margin: 12px 0 14px;
+  font-size: clamp(42px, 8vw, 64px);
+  line-height: .98;
+  letter-spacing: -.055em;
+}
+
+.qs218-not-found-card > p {
+  max-width: 500px;
+  margin: 0 auto;
+  color: #66665f;
+  line-height: 1.65;
+}
+
+.qs218-not-found-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.qs218-not-found-actions .button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.qs218-not-found-actions .button.dark {
+  background: var(--ink, #11110f);
+  color: #fff;
+}
+
+.qs218-not-found-actions .button.ghost {
+  border: 1px solid #d9d9d1;
+  background: #fff;
+  color: var(--ink, #11110f);
+}
+
+.qs218-not-found-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 22px;
+  color: var(--green, #008b72);
+  font-size: 13px;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+@media (max-width: 620px) {
+  .qs218-not-found {
+    padding: 18px 14px 30px;
+  }
+
+  .qs218-not-found-card {
+    margin: 24px 0 56px;
+    border-radius: 24px;
+  }
+
+  .qs218-not-found-actions {
+    flex-direction: column;
+  }
+}

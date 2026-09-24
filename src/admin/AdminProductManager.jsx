@@ -462,7 +462,7 @@ function AdminSignIn({ onSignedIn }) {
   return (
     <div className="admin-auth-page">
       <div className="admin-auth-card">
-        <a className="brand" href="#top"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
+        <a className="brand" href="/"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
         <span className="eyebrow">Secure staff access</span>
         <h1>Run orders. Control products.</h1>
         <p>Use your XOS / OPPS staff account. Customer ordering stays simple; operational controls stay staff-only.</p>
@@ -472,7 +472,7 @@ function AdminSignIn({ onSignedIn }) {
           {error && <div className="admin-auth-error" role="alert">{error}</div>}
           <button className="button dark admin-auth-submit" type="submit" disabled={state === 'loading'}>{state === 'loading' ? 'Signing in…' : 'Sign in securely'}</button>
         </form>
-        <a className="text-button admin-back-storefront" href="#top">← Back to storefront</a>
+        <a className="text-button admin-back-storefront" href="/">← Back to storefront</a>
       </div>
     </div>
   )
@@ -618,7 +618,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
   return (
     <div className="admin-app">
       <header className="admin-header">
-        <a className="brand" href="#top"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
+        <a className="brand" href="/"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
         <div className="admin-header-actions">
           {activeSection === 'products' ? <span>{activeCount} live products</span> : activeSection === 'quick-points' ? <span>Fulfilment network</span> : <span>Location 001</span>}
           <span className="admin-live-badge"><i/> XOS Staging</span>

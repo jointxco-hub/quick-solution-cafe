@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { DEFAULT_PAGE, resolveHeroOutcomeNavigation } from '../src/lib/navigation.js'
+import fs from 'node:fs'
+import { DEFAULT_PAGE, resolveAppRoute, resolveHeroOutcomeNavigation } from '../src/lib/navigation.js'
 import { heroOutcomes } from '../src/data/products.js'
 import { SHOP_CATEGORIES } from '../src/lib/productContent.js'
 
@@ -81,4 +82,65 @@ test('resolveHeroOutcomeNavigation: an outcome missing/with an unknown "kind" re
 test('resolveHeroOutcomeNavigation: a "shop" outcome with no shopCategory falls back to "All", never an undefined filter', () => {
   const nav = resolveHeroOutcomeNavigation({ kind: 'shop' })
   assert.equal(nav.shopFilter, 'All')
+})
+
+test('resolveAppRoute: root and /shop remain normal storefront routes', () => {
+  assert.deepEqual(resolveAppRoute({ pathname: '/' }), {
+    view: 'storefront',
+    page: 'home',
+    pathname: '/'
+  })
+  assert.deepEqual(resolveAppRoute({ pathname: '/shop' }), {
+    view: 'storefront',
+    page: 'shop',
+    pathname: '/shop'
+  })
+})
+
+test('resolveAppRoute: /admin and /admin/ reach the existing admin surface', () => {
+  assert.equal(resolveAppRoute({ pathname: '/admin' }).view, 'admin')
+  assert.equal(resolveAppRoute({ pathname: '/admin/' }).view, 'admin')
+})
+
+test('resolveAppRoute: legacy #admin compatibility is retained', () => {
+  assert.equal(resolveAppRoute({ pathname: '/', hash: '#admin' }).view, 'admin')
+})
+
+test('resolveAppRoute: /track, its trailing slash and existing nested tracking paths remain valid', () => {
+  assert.equal(resolveAppRoute({ pathname: '/track' }).view, 'track')
+  assert.equal(resolveAppRoute({ pathname: '/track/' }).view, 'track')
+  assert.equal(resolveAppRoute({ pathname: '/track/order-link' }).view, 'track')
+  assert.equal(resolveAppRoute({ pathname: '/track', hash: '#admin' }).view, 'track')
+})
+
+test('resolveAppRoute: an unknown path produces the branded not-found state', () => {
+  assert.deepEqual(resolveAppRoute({ pathname: '/missing-page' }), {
+    view: 'not-found',
+    page: null,
+    pathname: '/missing-page'
+  })
+})
+
+test('admin route resolution grants no authorization and the existing admin component still requires a staff session', () => {
+  const route = resolveAppRoute({ pathname: '/admin' })
+  const adminSource = fs.readFileSync(new URL('../src/admin/AdminProductManager.jsx', import.meta.url), 'utf8')
+  assert.equal('authorized' in route, false)
+  assert.match(adminSource, /const \[session, setSession\] = useState\(\(\) => getAdminSession\(\)\)/)
+  assert.match(adminSource, /if \(!session\) return <AdminSignIn onSignedIn=\{onSignedIn\}\/>/)
+  assert.match(adminSource, /loadQuickSolutionAdminCatalog\(\)/)
+})
+
+test('Vercel sends non-file browser paths to the SPA entry for admin, tracking and branded 404 resolution', () => {
+  const vercel = JSON.parse(fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))
+  assert.deepEqual(vercel.rewrites, [{ source: '/(.*)', destination: '/index.html' }])
+})
+
+test('branded not-found view uses approved copy/actions and the shared WhatsApp helper only', () => {
+  const source = fs.readFileSync(new URL('../src/components/NotFound.jsx', import.meta.url), 'utf8')
+  assert.match(source, /Page not found/)
+  assert.match(source, /We couldn't find that page\. It may have moved, or the link may be out of date\./)
+  assert.match(source, /Back to Quick Solution/)
+  assert.match(source, /Browse products/)
+  assert.match(source, /buildWhatsappUrl/)
+  assert.doesNotMatch(source, /VIEW DOCUMENTATION|COPY DEBUG PROMPT|deployment ID|debug ID/i)
 })
