@@ -271,6 +271,29 @@ export async function recordQuickSolutionCounterPayment({ orderId, method, idemp
   return rpc('record_quick_solution_counter_payment', { p_order_id: orderId, p_method: method, p_idempotency_key: idempotencyKey }, { accessToken })
 }
 
+// CAFE-GUEST-01W - the audited cancelled counter orders (who, when, why), newest first, read-only. It sends NO argument: the server
+// resolves the tenant and the counter channel, answers only an admin or owner, and caps the page.
+export async function loadQuickSolutionCancelledCounterOrders() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('list_quick_solution_cancelled_counter_orders', {}, { accessToken })
+}
+
+// CAFE-GUEST-01V - the server's check for cancelling ONE counter order, read-only: whether THIS caller may cancel it (admin / owner) and
+// whether the order can be cancelled at all. The only argument is the order id. It decides whether the screen offers the action; the
+// server enforces every rule again on the real call.
+export async function loadQuickSolutionCounterOrderCancelCheck(orderId) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_order_cancel_check', { p_order_id: orderId }, { accessToken })
+}
+
+// CAFE-GUEST-01V - cancels ONE never-paid counter order (admin / owner only). The caller supplies only the order id and the reason: the
+// server decides who is allowed, whether the order can still be cancelled, sets the status and writes the audit row (who, when, why)
+// in one transaction. There is no status, tenant, actor or time argument.
+export async function cancelQuickSolutionCounterOrder({ orderId, reason }) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('cancel_quick_solution_counter_order', { p_order_id: orderId, p_reason: reason }, { accessToken })
+}
+
 // CAFE-GUEST-01U - the cash-up for a chosen Cafe business DATE, read-only. The only argument is the calendar date; the server works out
 // the exact day (Africa/Johannesburg), refuses a future or invalid date, and returns the same shape as today's cash-up.
 export async function loadQuickSolutionCounterCashup(businessDate) {

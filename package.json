@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test:sql": "powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/harness/run-local-sql-tests.ps1",
-    "test": "node --test tests/pricing-supplier-margin-photography.test.mjs tests/product-hub-content.test.mjs tests/product-presets.test.mjs tests/homepage-shop-language.test.mjs tests/navigation.test.mjs tests/offers.test.mjs tests/qs21-product-detail-navigation.test.mjs tests/qs21-history-navigation.test.mjs tests/qs21-1-product-detail-polish.test.mjs tests/qs21-3-gallery.test.mjs tests/qs21-4-copy-polish.test.mjs tests/qs21-5-mobile-shell.test.mjs tests/qs21-6-mobile-qa.test.mjs tests/qs21-7-configurator-context.test.mjs tests/cafe-guest-01a-counter-channel.test.mjs tests/cafe-guest-01c-channel-guard.test.mjs tests/cafe-guest-01d-public-catalogue.test.mjs tests/counter-pos-curation.test.mjs tests/per-unit-admin.test.mjs"
+    "test": "node --test tests/pricing-supplier-margin-photography.test.mjs tests/product-hub-content.test.mjs tests/product-presets.test.mjs tests/homepage-shop-language.test.mjs tests/navigation.test.mjs tests/offers.test.mjs tests/qs21-product-detail-navigation.test.mjs tests/qs21-history-navigation.test.mjs tests/qs21-1-product-detail-polish.test.mjs tests/qs21-3-gallery.test.mjs tests/qs21-4-copy-polish.test.mjs tests/qs21-5-mobile-shell.test.mjs tests/qs21-6-mobile-qa.test.mjs tests/qs21-7-configurator-context.test.mjs tests/cafe-guest-01a-counter-channel.test.mjs tests/cafe-guest-01c-channel-guard.test.mjs tests/cafe-guest-01d-public-catalogue.test.mjs tests/counter-pos-curation.test.mjs tests/per-unit-admin.test.mjs tests/db-harness.test.mjs tests/cafe-access.test.mjs"
   },
   "dependencies": {
     "react": "18.3.1",
