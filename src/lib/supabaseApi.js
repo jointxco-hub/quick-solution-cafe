@@ -238,6 +238,35 @@ export async function loadQuickSolutionAdminCatalog() {
   return rpc('admin_get_quick_solution_catalog', { p_tenant_slug: TENANT_SLUG }, { accessToken })
 }
 
+// CAFE-GUEST-01L - the call contract for the server-side counter catalogue. Deliberately UNUSED
+// until the Counter UI exists. It sends NO tenant: the server resolves the Cafe tenant itself
+// and enforces the counter capability and the Cafe module, so nothing here (or in any
+// front-end state) can widen access. The result is { tenant: { slug, name }, products: [...] }
+// in the customer-safe product shape that src/lib/counterCatalogue.js reads.
+export async function loadQuickSolutionCounterCatalog() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_catalog', {}, { accessToken })
+}
+
+// CAFE-GUEST-01M - the call contract for creating ONE counter order. Called only by the Counter page
+// (CAFE-GUEST-01O), once per confirmed sale attempt. The caller supplies only the idempotency key (stable per sale attempt, so a
+// retry returns the original order), the product key, its configuration and optional customer
+// details. There is no tenant, channel, actor, price or payment argument: the server decides the
+// tenant, sets the channel and the creating staff member, prices the item itself, and creates the
+// order unpaid. Authorization is enforced server-side; nothing here can widen it.
+export async function createQuickSolutionCounterOrder({ idempotencyKey, productKey, configuration, customerName, customerEmail, customerPhone }) {
+  const accessToken = await getAdminAccessToken()
+  const body = {
+    p_idempotency_key: idempotencyKey,
+    p_product_key: productKey,
+    p_configuration: configuration
+  }
+  if (customerName) body.p_customer_name = customerName
+  if (customerEmail) body.p_customer_email = customerEmail
+  if (customerPhone) body.p_customer_phone = customerPhone
+  return rpc('create_quick_solution_counter_order', body, { accessToken })
+}
+
 export async function saveQuickSolutionProduct(product) {
   const accessToken = await getAdminAccessToken()
   return rpc('admin_update_quick_solution_product', {
