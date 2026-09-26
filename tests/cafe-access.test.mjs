@@ -228,15 +228,17 @@ test('the SQL test for CAFE-ACCESS-03 proves every member scenario under the rea
   for (const name of ['finance.read', 'products.manage', 'pricing.manage', 'tenant.admin', 'users.manage', 'roles.manage', 'opps.access', 'app.admin']) assert.ok(code.includes(`'${name}'`), name)
 })
 
-test('the migrations are ordered so the primitive exists first: 01 before the Cafe counter work, 02 and 03 after it', cross, () => {
+test('the migrations are ordered so the primitive exists first: 01 before the Cafe counter work, 02, 03 and 04 after it', cross, () => {
   const oppsFiles = fs.readdirSync(opps('supabase/migrations')).filter((name) => /cafe_access_/.test(name)).sort()
-  assert.deepEqual(oppsFiles, ['20260924232724_cafe_access_01_tenant_capability_operations.sql', '20260926190000_cafe_access_02_counter_operate_capability.sql', '20260926200000_cafe_access_03_counter_operate_members.sql'])
+  assert.deepEqual(oppsFiles, ['20260924232724_cafe_access_01_tenant_capability_operations.sql', '20260926190000_cafe_access_02_counter_operate_capability.sql', '20260926200000_cafe_access_03_counter_operate_members.sql', '20260926205000_cafe_access_04_counter_staff_role.sql'])
   const cafeFiles = fs.readdirSync(cafe('supabase/migrations/')).filter((name) => name.endsWith('.sql')).sort()
-  const taken = new Set(['20260924232724', '20260926190000', '20260926200000'])
+  const taken = new Set(['20260924232724', '20260926190000', '20260926200000', '20260926205000'])
   assert.ok(cafeFiles.every((name) => !taken.has(name.slice(0, 14))), 'no version collision across the two repos')
-  // The Cafe migrations that depend on the primitive (01L, 01M, 01P, 01Q, 01S, 01T, 01U) sort after all three access migrations.
+  // CAFE-ACCESS-04 (counter_staff joins the counter arm) sorts after ACCESS-03 and before every Cafe migration that depends on the primitive.
+  // Those Cafe migrations (01L .. 01W) therefore sort after all four access migrations.
   assert.deepEqual(cafeFiles.slice(-9), ['20260926210000_cafe_guest_01l_counter_catalogue_rpc.sql', '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql', '20260926230000_cafe_guest_01p_counter_orders_today_rpc.sql', '20260926240000_cafe_guest_01q_counter_order_detail_and_payment.sql', '20260926250000_cafe_guest_01s_counter_cashup_today_rpc.sql', '20260926260000_cafe_guest_01t_unpaid_counter_orders_rpc.sql', '20260926270000_cafe_guest_01u_dated_counter_cashup.sql', '20260926280000_cafe_guest_01v_cancel_unpaid_counter_order.sql', '20260926290000_cafe_guest_01w_cancelled_counter_orders_rpc.sql'])
-  assert.ok(cafeFiles.at(-9).slice(0, 14) > '20260926200000')
+  assert.ok(cafeFiles.at(-9).slice(0, 14) > '20260926205000', 'the counter migrations come after ACCESS-04')
+  assert.ok(oppsFiles.at(-1).slice(0, 14) === '20260926205000' && oppsFiles.at(-2).slice(0, 14) === '20260926200000', 'ACCESS-04 is the last access migration, directly after ACCESS-03')
   assert.ok(cafeFiles.at(-10).slice(0, 14) < '20260926190000', 'everything before them is independent of the access layer')
 })
 
