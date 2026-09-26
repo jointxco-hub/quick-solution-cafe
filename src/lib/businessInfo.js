@@ -90,3 +90,7 @@ export function resolveFulfilmentPointDisplayName(point) {
   if (point.kind === 'cafe') return `Quick Solution Caf\u00e9 \u00b7 ${LOCATION_DISPLAY_NAME}`
   return point.name || 'Quick Point'
 }
+
+// CAFE-GUEST-01R: how the Café names itself on a printed payment receipt (the same "Joint X Quick Solution Café"
+// used by the storefront header and footer). Address and phone come from the constants above.
+export const BUSINESS_CAFE_NAME = 'Joint X Quick Solution Café'

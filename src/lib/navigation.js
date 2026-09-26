@@ -30,6 +30,11 @@ export function resolveAppRoute({ pathname = '/', hash = '' } = {}) {
   if (normalizedPathname === '/admin') {
     return { view: 'admin', page: null, pathname: normalizedPathname }
   }
+  // CAFE-GUEST-01N: the staff Counter. Resolving the path grants nothing - the screen asks the server
+  // and shows whatever it answers.
+  if (normalizedPathname === '/counter') {
+    return { view: 'counter', page: null, pathname: normalizedPathname }
+  }
   if (normalizedPathname === '/track' || normalizedPathname.startsWith('/track/')) {
     return { view: 'track', page: null, pathname: normalizedPathname }
   }
