@@ -1,3 +1,5 @@
+import { calculatePerUnit } from './perUnitPricing.js'
+
 const money = new Intl.NumberFormat('en-ZA', {
   style: 'currency',
   currency: 'ZAR',
@@ -79,6 +81,23 @@ function pricePages(product, config) {
     ],
     metrics: { pages, copies, printedPages }
   }
+}
+
+// PER_UNIT (CAFE-GUEST-01F): total = units x unitPrice, validated exactly as the
+// server does (see perUnitPricing.js). Invalid input never yields a usable
+// total: it returns 0 flagged metrics.invalid with the server's own message,
+// the way PER_PAGE shows "Page selection needed" instead of a price.
+function priceUnits(product, config) {
+  const result = calculatePerUnit(product.pricing, config)
+  if (!result.ok) {
+    return {
+      total: 0,
+      summary: result.message,
+      lines: [],
+      metrics: { units: null, invalid: true, errorCode: result.code }
+    }
+  }
+  return { total: result.total, summary: result.summary, lines: result.lines, metrics: result.metrics }
 }
 
 function priceTiered(product, config) {
@@ -308,6 +327,7 @@ export function calculateProductPrice(product, config) {
   switch (product.pricing.strategy) {
     case 'PER_AREA': calculation = priceArea(product, config); break
     case 'PER_PAGE': calculation = pricePages(product, config); break
+    case 'PER_UNIT': calculation = priceUnits(product, config); break
     case 'TIERED': calculation = priceTiered(product, config); break
     case 'CONFIGURABLE': calculation = priceConfigurable(product, config); break
     case 'ENQUIRY': calculation = priceEnquiry(product, config); break

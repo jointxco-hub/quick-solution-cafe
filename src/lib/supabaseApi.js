@@ -1,3 +1,5 @@
+import { buildPricingDefinition } from './pricingDefinition.js'
+
 const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
 const SUPABASE_KEY = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '')
 const TENANT_SLUG = String(import.meta.env.VITE_QS_TENANT_SLUG || 'quick-solution')
@@ -219,76 +221,9 @@ export async function uploadQuickSolutionFile({ orderId, orderItemId, uploadToke
   return parseResponse(response, 'File upload failed')
 }
 
-function optionMap(product, fieldId, valueKey) {
-  const field = product.fields?.find((item) => item.id === fieldId)
-  return Object.fromEntries((field?.options || []).map((option) => [option.id, { [valueKey]: Number(option[valueKey] || 0) }]))
-}
-
-export function buildPricingDefinition(product) {
-  const strategy = product?.pricing?.strategy
-  if (strategy === 'PER_AREA') {
-    return {
-      strategy,
-      baseRate: Number(product.pricing.baseRate || 0),
-      minimumBillableArea: Number(product.pricing.minimumBillableArea || 0),
-      materials: optionMap(product, 'material', 'multiplier'),
-      finishing: optionMap(product, 'finishing', 'fee'),
-      artwork: optionMap(product, 'artwork', 'fee'),
-      turnaround: optionMap(product, 'turnaround', 'multiplier')
-    }
-  }
-  if (strategy === 'PER_PAGE') {
-    return {
-      strategy,
-      rates: optionMap(product, 'printMode', 'rate'),
-      sides: optionMap(product, 'sides', 'multiplier'),
-      finishes: optionMap(product, 'finish', 'fee')
-    }
-  }
-  if (strategy === 'TIERED') {
-    return {
-      strategy,
-      quantities: optionMap(product, 'quantity', 'total'),
-      stock: optionMap(product, 'stock', 'multiplier'),
-      finishes: optionMap(product, 'finish', 'fee'),
-      artwork: optionMap(product, 'artwork', 'fee')
-    }
-  }
-  if (strategy === 'CONFIGURABLE') {
-    return {
-      strategy,
-      garments: optionMap(product, 'garment', 'unitFee'),
-      frontPrint: optionMap(product, 'frontPrint', 'unitFee'),
-      backPrint: optionMap(product, 'backPrint', 'unitFee'),
-      artwork: optionMap(product, 'artwork', 'fee')
-    }
-  }
-  if (strategy === 'ENQUIRY') {
-    return {
-      strategy,
-      quoteRequired: true,
-      serviceType: product?.serviceType || 'service'
-    }
-  }
-  if (strategy === 'SUPPLIER_MARGIN' || strategy === 'PHOTOGRAPHY_SESSION') {
-    // These two strategies split pricing into a customer-safe mirror
-    // (product.pricing — selling prices only) and a staff-only
-    // pricing_definition (product.pricingDefinition — reference
-    // prices/margin rate/session rates), unlike every other strategy
-    // above where both are effectively the same numbers. The generic
-    // admin PricingEditor only reads/edits product.pricing and
-    // product.fields[].options[], so it cannot safely edit reference
-    // prices or margin without a dedicated section (not built yet —
-    // see AdminProductManager.jsx). Passing pricingDefinition through
-    // unchanged still lets admins rename/activate-deactivate these
-    // products without corrupting their pricing.
-    if (!product.pricingDefinition) {
-      throw new Error('This product’s rates can only be edited via a database migration until a dedicated admin editor is built for this pricing strategy.')
-    }
-    return product.pricingDefinition
-  }
-  throw new Error(`Unsupported pricing strategy: ${strategy || 'unknown'}`)
-}
+// buildPricingDefinition lives in pricingDefinition.js (pure, so it can be
+// tested; this module reads import.meta.env at load). Re-exported unchanged.
+export { buildPricingDefinition }
 
 function customerDefinitionFromProduct(product) {
   const copy = JSON.parse(JSON.stringify(product))

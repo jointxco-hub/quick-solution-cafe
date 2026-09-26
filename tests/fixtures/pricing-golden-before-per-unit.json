@@ -1,0 +1,346 @@
+{
+  "pvc-banner": [
+    {
+      "preset": {},
+      "total": 810,
+      "summary": "2.00m² actual · 2.00m² billable",
+      "lines": [
+        {
+          "label": "Print + Standard PVC",
+          "value": 700
+        },
+        {
+          "label": "Finishing + artwork",
+          "value": 110
+        },
+        {
+          "label": "Turnaround",
+          "text": "Standard turnaround"
+        }
+      ],
+      "metrics": {
+        "rawArea": 2,
+        "billableArea": 2
+      }
+    },
+    {
+      "preset": {
+        "width": 2,
+        "height": 1.5,
+        "material": "premium",
+        "finishing": "eyelets",
+        "turnaround": "express"
+      },
+      "total": 1641,
+      "summary": "3.00m² actual · 3.00m² billable",
+      "lines": [
+        {
+          "label": "Print + Premium PVC",
+          "value": 1312.5
+        },
+        {
+          "label": "Finishing + artwork",
+          "value": 55
+        },
+        {
+          "label": "Turnaround",
+          "text": "Express — where available"
+        }
+      ],
+      "metrics": {
+        "rawArea": 3,
+        "billableArea": 3
+      }
+    }
+  ],
+  "vinyl-stickers": [
+    {
+      "preset": {},
+      "total": 350,
+      "summary": "1.00m² actual · 1.00m² billable",
+      "lines": [
+        {
+          "label": "Print + White self-adhesive vinyl",
+          "value": 350
+        },
+        {
+          "label": "Finishing + artwork",
+          "value": 0
+        },
+        {
+          "label": "Turnaround",
+          "text": "Standard turnaround"
+        }
+      ],
+      "metrics": {
+        "rawArea": 1,
+        "billableArea": 1
+      }
+    },
+    {
+      "preset": {
+        "width": 0.5,
+        "height": 0.5
+      },
+      "total": 350,
+      "summary": "0.25m² actual · 1.00m² billable",
+      "lines": [
+        {
+          "label": "Print + White self-adhesive vinyl",
+          "value": 350
+        },
+        {
+          "label": "Finishing + artwork",
+          "value": 0
+        },
+        {
+          "label": "Turnaround",
+          "text": "Standard turnaround"
+        }
+      ],
+      "metrics": {
+        "rawArea": 0.25,
+        "billableArea": 1
+      }
+    }
+  ],
+  "a4-print": [
+    {
+      "preset": {
+        "pages": 12
+      },
+      "total": 24,
+      "summary": "12 pages × 1 copy",
+      "lines": [
+        {
+          "label": "Black & white",
+          "value": 24
+        },
+        {
+          "label": "One side",
+          "text": "standard"
+        },
+        {
+          "label": "Nothing else",
+          "value": 0
+        }
+      ],
+      "metrics": {
+        "pages": 12,
+        "copies": 1,
+        "printedPages": 12
+      }
+    },
+    {
+      "preset": {
+        "pages": 12,
+        "copies": 3,
+        "printMode": "colour",
+        "sides": "double",
+        "finish": "staple"
+      },
+      "total": 262.5,
+      "summary": "12 pages × 3 copies",
+      "lines": [
+        {
+          "label": "Colour",
+          "value": 256.5
+        },
+        {
+          "label": "Both sides",
+          "text": "paper-saving option"
+        },
+        {
+          "label": "Staple it",
+          "value": 6
+        }
+      ],
+      "metrics": {
+        "pages": 12,
+        "copies": 3,
+        "printedPages": 36
+      }
+    }
+  ],
+  "business-cards": [
+    {
+      "preset": {},
+      "total": 180,
+      "summary": "100 cards · Standard premium stock",
+      "lines": [
+        {
+          "label": "Cards · Standard premium stock",
+          "value": 180
+        },
+        {
+          "label": "Standard finish",
+          "value": 0
+        },
+        {
+          "label": "My design is ready",
+          "value": 0
+        }
+      ],
+      "metrics": {
+        "quantity": 100
+      }
+    },
+    {
+      "preset": {
+        "quantity": "250",
+        "stock": "thick",
+        "finish": "matt"
+      },
+      "total": 402,
+      "summary": "250 cards · Extra-thick stock",
+      "lines": [
+        {
+          "label": "Cards · Extra-thick stock",
+          "value": 312
+        },
+        {
+          "label": "Matt lamination",
+          "value": 90
+        },
+        {
+          "label": "My design is ready",
+          "value": 0
+        }
+      ],
+      "metrics": {
+        "quantity": 250
+      }
+    }
+  ],
+  "printed-tshirt": [
+    {
+      "preset": {},
+      "total": 170,
+      "summary": "1 shirt · Joint X premium T-shirt",
+      "lines": [
+        {
+          "label": "Garment + print",
+          "value": 170
+        },
+        {
+          "label": "Artwork support",
+          "value": 0
+        },
+        {
+          "label": "Quantity pricing",
+          "text": "standard"
+        }
+      ],
+      "metrics": {
+        "quantity": 1,
+        "unit": 170,
+        "discount": 1
+      }
+    },
+    {
+      "preset": {
+        "quantity": 12
+      },
+      "total": 1938,
+      "summary": "12 shirts · Joint X premium T-shirt",
+      "lines": [
+        {
+          "label": "Garment + print",
+          "value": 1938
+        },
+        {
+          "label": "Artwork support",
+          "value": 0
+        },
+        {
+          "label": "Quantity pricing",
+          "text": "5% quantity saving"
+        }
+      ],
+      "metrics": {
+        "quantity": 12,
+        "unit": 170,
+        "discount": 0.95
+      }
+    }
+  ],
+  "media-services": [
+    {
+      "preset": {},
+      "total": 0,
+      "summary": "Quote after review",
+      "lines": [
+        {
+          "label": "Service request",
+          "text": "Photo / video brief captured"
+        },
+        {
+          "label": "Pricing",
+          "text": "Confirmed after crew, location and scope review"
+        }
+      ],
+      "metrics": {
+        "quoteRequired": true,
+        "serviceType": "media"
+      }
+    }
+  ],
+  "flags": [
+    {
+      "preset": {},
+      "total": 0,
+      "summary": "Quote required",
+      "lines": [
+        {
+          "label": "Pricing",
+          "text": "One or more selected options need a quote"
+        }
+      ],
+      "metrics": {
+        "quoteRequired": true,
+        "quantity": 1,
+        "minQuantity": 1,
+        "quantityStep": 1
+      }
+    }
+  ],
+  "gazebos": [
+    {
+      "preset": {},
+      "total": 0,
+      "summary": "Quote required",
+      "lines": [
+        {
+          "label": "Pricing",
+          "text": "One or more selected options need a quote"
+        }
+      ],
+      "metrics": {
+        "quoteRequired": true,
+        "quantity": 1,
+        "minQuantity": 1,
+        "quantityStep": 1
+      }
+    }
+  ],
+  "photo-session": [
+    {
+      "preset": {},
+      "total": 449,
+      "summary": "30-minute session — 7 edited photos included",
+      "lines": [
+        {
+          "label": "30-minute session — 7 edited photos included",
+          "value": 449
+        }
+      ],
+      "metrics": {
+        "quoteRequired": false,
+        "sessionId": "30min-7edits",
+        "durationMinutes": 30,
+        "includedEdits": 7,
+        "extraEdits": 0
+      }
+    }
+  ]
+}
