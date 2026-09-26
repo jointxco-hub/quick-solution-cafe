@@ -1606,6 +1606,102 @@ export const products = [
       "help": "Optional. Upload an image or PDF reference if it helps explain the look you want."
     }
   ]
+},
+// CAFE-GUEST-01H / 01K - Scan, the first product on the generic PER_UNIT strategy.
+//
+// 01H created it structurally, not live and unpriced (no verified price existed, so
+// none was invented). CAFE-GUEST-01K finalizes it with the confirmed business
+// decision: R5 per scanned page, minimum 1 page, maximum 300 pages per order. It is
+// live now, like every other seeded product with an approved price (published,
+// available, active). These are the seed values: after that the price and maximum
+// live in the database and are changed only in /admin, with no code change.
+//
+// One unit = one page scanned: one side of one sheet, counted once. Pages, not
+// sheets, matching every other Cafe document product (a4-print counts pages).
+//
+// Channels are deliberate, not copied: Café staff scan a walk-in customer's
+// paper documents at the counter (pos), but the storefront has no way to hand
+// over originals or to deliver the scanned output, so a customer cannot order it
+// online (storefront, guided, advanced and quote are all off). Live therefore still
+// means counter-only: the public catalogue never returns it.
+//
+// No file field: the originals are physical, so there is nothing to upload.
+{
+  id: 'scan',
+  name: 'Document Scanning',
+  shortName: 'Scanning',
+  category: 'Quick Print',
+  description: 'Paper documents scanned by our team at the Café.',
+  plainDescription: 'Bring your paper documents and we will scan them for you, priced per page scanned.',
+  keywords: ['scan', 'scanning', 'document', 'documents', 'paper'],
+  popular: false,
+  active: true,
+  channels: { storefront: false, guided: false, pos: true, quote: false, advanced: false },
+  pricingVersion: '2026-09-qsc-18',
+  pricing: { strategy: 'PER_UNIT', unitPrice: 5, minUnits: 1, maxUnits: 300 },
+  fields: [
+    { id: 'units', type: 'number', label: 'How many pages need scanning?', shortLabel: 'Pages to scan', suffix: 'pages', help: 'Count each page once: one side of a sheet is one page.', min: 1, step: 1, required: true }
+  ]
+},
+// CAFE-GUEST-01J - A4 Lamination and A3 Lamination: the second and third PER_UNIT
+// products. They REPLACE the unfinished generic 'lamination' placeholder of
+// CAFE-GUEST-01I (which is retired in the database by migration 01J and no longer
+// exists here).
+//
+// Confirmed business decision: A4 is R15 per sheet, A3 is R30 per sheet, at most
+// 100 sheets per order, and only these two sizes for now. PER_UNIT has a single
+// unitPrice, so the SIZE IS THE PRODUCT: two separate products, each with its own
+// price and maximum, editable independently in /admin. There is no size field, no
+// variant and no priced option.
+//
+// One unit = one physical sheet laminated once - NOT a page. A sheet printed on
+// both sides is still one unit. (Scan counts pages; these count sheets.)
+//
+// Channels follow Scan's reasoning: Cafe staff laminate the sheets a walk-in
+// customer hands over (pos); the storefront cannot take in the item or hand it
+// back, so a customer cannot order it online (storefront, guided, advanced and
+// quote are off). pos means only that staff may start the service for a walk-in;
+// it says nothing about fulfilment speed, authorization or production.
+//
+// Live: the definition is valid and approved, and every earlier seeded product with
+// an approved price went live immediately, so these do too (published, available,
+// active). No file field: the item is physical.
+//
+// These are the seed values. After that the price and maximum live in the database
+// and are changed only in /admin; no code change is needed for a new price.
+{
+  id: 'a4-lamination',
+  name: 'A4 Lamination',
+  shortName: 'A4 Lamination',
+  category: 'Quick Print',
+  description: 'A4 sheets laminated by our team at the Café.',
+  plainDescription: 'Bring your A4 sheets and we will laminate them for you.',
+  keywords: ['laminate', 'laminating', 'lamination', 'a4', 'sheet', 'sheets'],
+  popular: false,
+  active: true,
+  channels: { storefront: false, guided: false, pos: true, quote: false, advanced: false },
+  pricingVersion: '2026-09-qsc-17',
+  pricing: { strategy: 'PER_UNIT', unitPrice: 15, minUnits: 1, maxUnits: 100 },
+  fields: [
+    { id: 'units', type: 'number', label: 'How many A4 sheets need laminating?', shortLabel: 'Sheets to laminate', suffix: 'sheets', help: 'Count each sheet once, even if it is printed on both sides.', min: 1, step: 1, required: true }
+  ]
+},
+{
+  id: 'a3-lamination',
+  name: 'A3 Lamination',
+  shortName: 'A3 Lamination',
+  category: 'Quick Print',
+  description: 'A3 sheets laminated by our team at the Café.',
+  plainDescription: 'Bring your A3 sheets and we will laminate them for you.',
+  keywords: ['laminate', 'laminating', 'lamination', 'a3', 'sheet', 'sheets'],
+  popular: false,
+  active: true,
+  channels: { storefront: false, guided: false, pos: true, quote: false, advanced: false },
+  pricingVersion: '2026-09-qsc-17',
+  pricing: { strategy: 'PER_UNIT', unitPrice: 30, minUnits: 1, maxUnits: 100 },
+  fields: [
+    { id: 'units', type: 'number', label: 'How many A3 sheets need laminating?', shortLabel: 'Sheets to laminate', suffix: 'sheets', help: 'Count each sheet once, even if it is printed on both sides.', min: 1, step: 1, required: true }
+  ]
 }
 ]
 
