@@ -271,6 +271,29 @@ export async function recordQuickSolutionCounterPayment({ orderId, method, idemp
   return rpc('record_quick_solution_counter_payment', { p_order_id: orderId, p_method: method, p_idempotency_key: idempotencyKey }, { accessToken })
 }
 
+// CAFE-GUEST-01U - the cash-up for a chosen Cafe business DATE, read-only. The only argument is the calendar date; the server works out
+// the exact day (Africa/Johannesburg), refuses a future or invalid date, and returns the same shape as today's cash-up.
+export async function loadQuickSolutionCounterCashup(businessDate) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_cashup', { p_business_date: businessDate }, { accessToken })
+}
+
+// CAFE-GUEST-01T - every counter order that still owes money, whichever day it was created, oldest first, read-only. It sends NO
+// argument: the server resolves the tenant and the counter channel, decides what is still owed (from the completed ledger) and works
+// out each order's age in Cafe business days.
+export async function loadQuickSolutionUnpaidCounterOrders() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('list_quick_solution_unpaid_counter_orders', {}, { accessToken })
+}
+
+// CAFE-GUEST-01S - today's cash-up, read-only: Cash and Card taken today, the payments that make it up, and the counter orders
+// still unpaid. It sends NO argument: the server resolves the tenant, the counter channel and the business day itself, and the
+// totals are made from the rows it returns.
+export async function loadQuickSolutionCounterCashupToday() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_cashup_today', {}, { accessToken })
+}
+
 // CAFE-GUEST-01M - the call contract for creating ONE counter order. Called only by the Counter page
 // (CAFE-GUEST-01O), once per confirmed sale attempt. The caller supplies only the idempotency key (stable per sale attempt, so a
 // retry returns the original order), the product key, its configuration and optional customer
