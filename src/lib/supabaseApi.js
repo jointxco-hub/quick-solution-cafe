@@ -248,6 +248,29 @@ export async function loadQuickSolutionCounterCatalog() {
   return rpc('get_quick_solution_counter_catalog', {}, { accessToken })
 }
 
+// CAFE-GUEST-01P - today's counter orders, read-only. It sends NO argument: the server resolves the Cafe
+// tenant, the counter channel and the business day itself and enforces the counter access, so nothing here
+// can name a tenant, a channel, a creator or a date. The result is { businessDate, timezone, orders: [...] }.
+export async function loadQuickSolutionCounterOrdersToday() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('list_quick_solution_counter_orders_today', {}, { accessToken })
+}
+
+// CAFE-GUEST-01Q - one counter order, read fresh from the server: items, totals, amount paid, outstanding, and whether
+// a payment may be recorded. The caller supplies only the order id; the tenant and the counter channel are the server's.
+export async function loadQuickSolutionCounterOrder(orderId) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_order', { p_order_id: orderId }, { accessToken })
+}
+
+// CAFE-GUEST-01Q - record ONE full Cash or Card payment of a counter order. There is deliberately NO amount, status,
+// tenant, actor or time argument: the server settles exactly what is outstanding, records who did it and when, and
+// marks the order paid in the same transaction. The key is stable per payment attempt, so a retry returns the same payment.
+export async function recordQuickSolutionCounterPayment({ orderId, method, idempotencyKey }) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('record_quick_solution_counter_payment', { p_order_id: orderId, p_method: method, p_idempotency_key: idempotencyKey }, { accessToken })
+}
+
 // CAFE-GUEST-01M - the call contract for creating ONE counter order. Called only by the Counter page
 // (CAFE-GUEST-01O), once per confirmed sale attempt. The caller supplies only the idempotency key (stable per sale attempt, so a
 // retry returns the original order), the product key, its configuration and optional customer
