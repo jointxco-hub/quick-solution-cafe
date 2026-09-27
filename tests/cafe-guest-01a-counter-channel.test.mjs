@@ -182,11 +182,32 @@ test('handoff contract: channel is never a production/OPPS-handoff eligibility s
   assert.match(documented, /Handoff stays an explicit staff action/)
 
   // No handoff-related migration references channel, so nothing hardcodes
-  // "counter = never production" or "counter = always production".
-  const handoffMigrations = migrationFiles.filter((name) => /opps_handoff|create_opps_order|backend_acceptance|handoff_queue|sent_preview|collection_point_visibility|rpc_grants/.test(name))
+  // "counter = never production" or "counter = always production". The one
+  // deliberate, documented exception is CAFE-GUEST-01X: it does not gate
+  // whether an order may be handed off at all (ORDER_CLOSED, ALREADY_HANDED_OFF,
+  // NO_ORDER_ITEMS, EXPECTED_FILE_MISSING, DELIVERY_ADDRESS_MISSING are all
+  // still channel-independent); it only exempts one specific blocker
+  // (NO_CUSTOMER_CONTACT) for a genuine counter walk-in, verified by name below
+  // and by the narrower "bare channel filter" guard just after this loop.
+  const ONE_DOCUMENTED_CHANNEL_EXCEPTION = '20260927100000_cafe_guest_01x_counter_opps_handoff_guest_contact.sql'
+  const handoffMigrations = migrationFiles.filter((name) => /opps_handoff|create_opps_order|backend_acceptance|handoff_queue|sent_preview|collection_point_visibility|rpc_grants/.test(name) && name !== ONE_DOCUMENTED_CHANNEL_EXCEPTION)
   assert.ok(handoffMigrations.length >= 5)
   for (const name of handoffMigrations) {
     assert.doesNotMatch(byName(name).code, /\bchannel\b/i, `${name} must not depend on channel`)
+  }
+  assert.ok(migrationFiles.includes(ONE_DOCUMENTED_CHANNEL_EXCEPTION), 'the documented exception must exist')
+  {
+    const code = byName(ONE_DOCUMENTED_CHANNEL_EXCEPTION).code
+    // The exception may only ever compare channel to 'counter' (never storefront, never <>/!=),
+    // and only to choose between a blocker and a warning for the one contact rule - not to
+    // decide ORDER_CLOSED/ALREADY_HANDED_OFF/NO_ORDER_ITEMS/EXPECTED_FILE_MISSING/DELIVERY_ADDRESS_MISSING.
+    assert.doesNotMatch(code, /channel\s*(<>|!=)/i, 'the exception must never use channel as a negative/bypass filter')
+    assert.doesNotMatch(code, /'storefront'/i, 'the exception must never special-case the storefront channel by name')
+    for (const blocker of ['ORDER_CLOSED', 'ALREADY_HANDED_OFF', 'NO_ORDER_ITEMS', 'EXPECTED_FILE_MISSING', 'DELIVERY_ADDRESS_MISSING']) {
+      const idx = code.indexOf(blocker)
+      assert.ok(idx > -1, `${blocker} must still exist unconditionally`)
+      assert.doesNotMatch(code.slice(Math.max(0, idx - 200), idx), /channel/i, `${blocker} must not be gated by channel`)
+    }
   }
 
   // The eventual eligibility rule must not be a bare channel filter.

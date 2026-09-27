@@ -187,12 +187,39 @@ create table commerce.products (
 );
 
 -- OPPS orders: the Cafe handoff migrations (qs_04a onwards) alter the source
--- constraint on it and reference public.orders(id). Only the columns the Cafe
--- DDL touches are present; the real table is far wider.
+-- constraint on it and reference public.orders(id). Widened (beyond the
+-- original id/order_number/source) to the columns
+-- public.admin_send_quick_solution_order_to_opps (QS-04B) actually inserts,
+-- because CAFE-GUEST-01X's test is the first local test to exercise that
+-- function at all. Types/nullability/defaults for the added columns are taken
+-- read-only from the live hosted schema (2026-09-27), not invented; the real
+-- table is still far wider than this.
 create table public.orders (
   id uuid primary key default gen_random_uuid(),
   order_number text,
-  source text not null default 'opps'
+  source text not null default 'opps',
+  tenant_id uuid,
+  client_name text not null,
+  client_email text,
+  client_phone text,
+  status text not null default 'confirmed',
+  priority text not null default 'normal',
+  products jsonb default '[]'::jsonb,
+  total_amount numeric default 0,
+  deposit_paid numeric default 0,
+  special_instructions text,
+  file_urls text[] default '{}'::text[],
+  pipeline_stage text default 'received',
+  portal_show_files boolean not null default false,
+  account_show_files boolean not null default false,
+  fulfillment_type text not null default 'courier',
+  apply_shipping_fee boolean not null default true,
+  shipping_fee numeric,
+  payment_status text not null default 'pending',
+  shipping_address jsonb,
+  shipping_method text,
+  checkout_idempotency_key text,
+  source_metadata jsonb not null default '{}'::jsonb
 );
 
 -- ── OPPS staff-authority helpers, verbatim, latest OPPS definitions ───────
@@ -287,6 +314,24 @@ as $$
 $$;
 revoke all on function public.is_opps_staff() from public, anon, authenticated, service_role;
 grant execute on function public.is_opps_staff() to authenticated, service_role;
+
+-- NOT a verbatim OPPS copy (unlike every function above): the harness maintainer does not have
+-- public.safe_numeric's real OPPS source. This is a documented, local-only best-effort approximation of
+-- its evident contract - safely parse arbitrary text as numeric, returning null (never raising) when it is
+-- not a valid number - built only so commerce.qs_build_opps_handoff_preview (QS-04A / CAFE-GUEST-01X), the
+-- first locally-tested caller of this function, can run in this harness at all. See the file header's
+-- "What this is NOT" note; this is exactly that kind of gap, called out rather than hidden.
+create or replace function public.safe_numeric(p_value text)
+returns numeric
+language plpgsql
+immutable
+as $$
+begin
+  return p_value::numeric;
+exception when others then
+  return null;
+end;
+$$;
 
 -- ── real OPPS triggers on public.users, verbatim ──────────────────────────
 -- Source: OPPS 202606230005_admin_role_guard.sql. Only approved owners may assign or

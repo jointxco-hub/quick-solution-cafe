@@ -64,7 +64,7 @@ test('the migration replay covers every migration except the one documented gap,
 test('every Cafe SQL test is executed by the runner and is rollback-contained', () => {
   assert.match(code, /-Filter 'cafe_guest_\*\.sql'/)
   const tests = fs.readdirSync(new URL('../supabase/tests/', import.meta.url)).filter((name) => /^cafe_guest_.*\.sql$/.test(name)).sort()
-  assert.deepEqual(tests.map((name) => name.slice(0, 14)), ['cafe_guest_01a', 'cafe_guest_01c', 'cafe_guest_01d', 'cafe_guest_01f', 'cafe_guest_01g', 'cafe_guest_01j', 'cafe_guest_01k', 'cafe_guest_01l', 'cafe_guest_01m', 'cafe_guest_01p', 'cafe_guest_01q', 'cafe_guest_01q', 'cafe_guest_01s', 'cafe_guest_01t', 'cafe_guest_01u', 'cafe_guest_01v', 'cafe_guest_01v', 'cafe_guest_01w'])
+  assert.deepEqual(tests.map((name) => name.slice(0, 14)), ['cafe_guest_01a', 'cafe_guest_01c', 'cafe_guest_01d', 'cafe_guest_01f', 'cafe_guest_01g', 'cafe_guest_01j', 'cafe_guest_01k', 'cafe_guest_01l', 'cafe_guest_01m', 'cafe_guest_01p', 'cafe_guest_01q', 'cafe_guest_01q', 'cafe_guest_01s', 'cafe_guest_01t', 'cafe_guest_01u', 'cafe_guest_01v', 'cafe_guest_01v', 'cafe_guest_01w', 'cafe_guest_01x'])
   for (const name of tests) {
     const sql = read(`../supabase/tests/${name}`).replace(/--[^\n]*/g, '')
     if (/concurrency/.test(name)) {
