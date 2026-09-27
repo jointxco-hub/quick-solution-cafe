@@ -79,7 +79,9 @@ test('exactly eleven counter RPCs exist (catalogue, single-item create, orders o
     for (const match of code.matchAll(/create (?:or replace )?function ([\w.]*counter[\w.]*)/gi)) counterFunctions.push(`${name}: ${match[1]}`)
   }
   // The primitive is owned by the OPPS worktree; the Cafe consumers are the counter catalogue (01L) and the counter-create RPC (01M).
-  assert.deepEqual(users, ['20260926210000_cafe_guest_01l_counter_catalogue_rpc.sql', '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql', '20260926230000_cafe_guest_01p_counter_orders_today_rpc.sql', '20260926240000_cafe_guest_01q_counter_order_detail_and_payment.sql', '20260926250000_cafe_guest_01s_counter_cashup_today_rpc.sql', '20260926260000_cafe_guest_01t_unpaid_counter_orders_rpc.sql', '20260926270000_cafe_guest_01u_dated_counter_cashup.sql', '20260926280000_cafe_guest_01v_cancel_unpaid_counter_order.sql', '20260926290000_cafe_guest_01w_cancelled_counter_orders_rpc.sql'])
+  // The security patch (20260927120000) also gates on has_tenant_capability directly (it is not
+  // a counter RPC; it re-guards the pre-existing catalogue/handoff admin RPCs) so it belongs here too.
+  assert.deepEqual(users, ['20260926210000_cafe_guest_01l_counter_catalogue_rpc.sql', '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql', '20260926230000_cafe_guest_01p_counter_orders_today_rpc.sql', '20260926240000_cafe_guest_01q_counter_order_detail_and_payment.sql', '20260926250000_cafe_guest_01s_counter_cashup_today_rpc.sql', '20260926260000_cafe_guest_01t_unpaid_counter_orders_rpc.sql', '20260926270000_cafe_guest_01u_dated_counter_cashup.sql', '20260926280000_cafe_guest_01v_cancel_unpaid_counter_order.sql', '20260926290000_cafe_guest_01w_cancelled_counter_orders_rpc.sql', '20260927120000_qs_administration_capability_authorization.sql'])
   assert.deepEqual(counterFunctions, [
     '20260926210000_cafe_guest_01l_counter_catalogue_rpc.sql: public.get_quick_solution_counter_catalog',
     '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql: commerce._qs_product_counter_sellable',
@@ -235,11 +237,12 @@ test('the migrations are ordered so the primitive exists first: 01 before the Ca
   const taken = new Set(['20260924232724', '20260926190000', '20260926200000', '20260926205000'])
   assert.ok(cafeFiles.every((name) => !taken.has(name.slice(0, 14))), 'no version collision across the two repos')
   // CAFE-ACCESS-04 (counter_staff joins the counter arm) sorts after ACCESS-03 and before every Cafe migration that depends on the primitive.
-  // Those Cafe migrations (01L .. 01Y) therefore sort after all four access migrations.
-  assert.deepEqual(cafeFiles.slice(-11), ['20260926210000_cafe_guest_01l_counter_catalogue_rpc.sql', '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql', '20260926230000_cafe_guest_01p_counter_orders_today_rpc.sql', '20260926240000_cafe_guest_01q_counter_order_detail_and_payment.sql', '20260926250000_cafe_guest_01s_counter_cashup_today_rpc.sql', '20260926260000_cafe_guest_01t_unpaid_counter_orders_rpc.sql', '20260926270000_cafe_guest_01u_dated_counter_cashup.sql', '20260926280000_cafe_guest_01v_cancel_unpaid_counter_order.sql', '20260926290000_cafe_guest_01w_cancelled_counter_orders_rpc.sql', '20260927100000_cafe_guest_01x_counter_opps_handoff_guest_contact.sql', '20260927110000_cafe_guest_01y_opps_payment_ledger_sync.sql'])
-  assert.ok(cafeFiles.at(-11).slice(0, 14) > '20260926205000', 'the counter migrations come after ACCESS-04')
+  // Those Cafe migrations (01L .. 01Y, plus the later security patch 20260927120000, which also
+  // depends on has_tenant_capability) therefore sort after all four access migrations.
+  assert.deepEqual(cafeFiles.slice(-12), ['20260926210000_cafe_guest_01l_counter_catalogue_rpc.sql', '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql', '20260926230000_cafe_guest_01p_counter_orders_today_rpc.sql', '20260926240000_cafe_guest_01q_counter_order_detail_and_payment.sql', '20260926250000_cafe_guest_01s_counter_cashup_today_rpc.sql', '20260926260000_cafe_guest_01t_unpaid_counter_orders_rpc.sql', '20260926270000_cafe_guest_01u_dated_counter_cashup.sql', '20260926280000_cafe_guest_01v_cancel_unpaid_counter_order.sql', '20260926290000_cafe_guest_01w_cancelled_counter_orders_rpc.sql', '20260927100000_cafe_guest_01x_counter_opps_handoff_guest_contact.sql', '20260927110000_cafe_guest_01y_opps_payment_ledger_sync.sql', '20260927120000_qs_administration_capability_authorization.sql'])
+  assert.ok(cafeFiles.at(-12).slice(0, 14) > '20260926205000', 'the counter migrations come after ACCESS-04')
   assert.ok(oppsFiles.at(-1).slice(0, 14) === '20260926205000' && oppsFiles.at(-2).slice(0, 14) === '20260926200000', 'ACCESS-04 is the last access migration, directly after ACCESS-03')
-  assert.ok(cafeFiles.at(-12).slice(0, 14) < '20260926190000', 'everything before them is independent of the access layer')
+  assert.ok(cafeFiles.at(-13).slice(0, 14) < '20260926190000', 'everything before them is independent of the access layer')
 })
 
 test('the new test file is part of npm test', () => {

@@ -9,13 +9,20 @@
 -- tests/per-unit-admin.test.mjs.
 --
 -- All fixtures are synthetic and enclosed by BEGIN/ROLLBACK. The staff gate is
--- exercised exactly as it exists today, through the real OPPS helper bodies:
---   * anonymous                      -> 'Staff sign-in is required.'
---   * signed in, not staff           -> denied
---   * OPPS staff, no tenant access   -> denied
---   * OPPS staff with tenant access  -> admitted
---   * app admin (the owner-email arm of is_app_admin(), a claim used only to
---     pass the unchanged gate)       -> admitted
+-- exercised exactly as it exists today:
+--   * anonymous                                         -> 'Staff sign-in is required.'
+--   * signed in, not staff                              -> denied
+--   * OPPS staff, no tenant membership at all            -> denied
+--   * OPPS staff WITH a mere counter-level membership
+--     (cafe.counter.operate, not cafe.operations.manage,
+--     the security patch 20260927120000)                -> still denied
+--   * a real cafe.operations.manage holder of the tenant -> admitted
+-- The gate is has_tenant_capability(tenant, 'cafe.operations.manage') (security patch
+-- 20260927120000); is_app_admin()/is_opps_staff() are no longer consulted by this RPC at
+-- all, so neither an app-admin claim nor OPPS-staff status admits anyone here on their own
+-- - only real Cafe tenant authority does. Everything from "PER_UNIT is now accepted and
+-- normalized" onward is unchanged: only this gate-verification section and the actor used
+-- to run the substantive PER_UNIT checks were touched.
 
 \set ON_ERROR_STOP on
 
@@ -98,9 +105,7 @@ begin
       v_slug, 'cg01g-unit-product', v_unit_customer, '{"strategy":"PER_UNIT","unitPrice":2,"minUnits":1,"maxUnits":5}', 'cg01g-v1'),
     'signed-in caller without staff authority', '42501', 'You do not have access to Quick Solution Product Admin.');
 
-  -- ── the OPPS-staff arm of the gate: staff of the joint-x tenant, admitted only
-  --    for a tenant they can access. Runs the real is_opps_staff() and
-  --    can_access_tenant() bodies against synthetic membership rows.
+  -- ── OPPS staff, no tenant membership at all -> denied ──────────────
   select t.id into v_joint_x from public.tenants t where t.slug = 'joint-x' and t.status = 'active';
   if v_joint_x is null then raise exception 'the joint-x staff tenant must exist for the OPPS-staff gate arm'; end if;
   insert into auth.users(id, email) values (v_staff, 'cg01g-staff-' || v_suffix || '@disposable.test');
@@ -125,15 +130,35 @@ begin
   perform pg_temp.expect_error(
     format('select public.admin_update_quick_solution_product(%L,%L,%L::jsonb,%L::jsonb,%L)',
       v_slug, 'cg01g-staff-product', v_unit_customer, '{"strategy":"PER_UNIT","unitPrice":2,"minUnits":1,"maxUnits":5}', 'cg01g-v1'),
-    'OPPS staff without access to the tenant', '42501', 'You do not have access to Quick Solution Product Admin.');
+    'OPPS staff with no Cafe tenant membership at all', '42501', 'You do not have access to Quick Solution Product Admin.');
 
-  insert into public.tenant_memberships(tenant_id, auth_user_id) values (v_tenant, v_staff);
+  -- ── a mere counter-level membership (cafe.counter.operate) is NOT enough: the security
+  --    patch means is_opps_staff() (which this caller does satisfy) and tenant "access" are
+  --    no longer consulted here at all - only cafe.operations.manage is. Proves
+  --    cafe.counter.operate never implies cafe.operations.manage for this RPC. ──
+  insert into public.tenant_memberships(tenant_id, auth_user_id, tenant_role, status) values (v_tenant, v_staff, 'member', 'active');
+  if public.has_tenant_capability(v_tenant, 'cafe.counter.operate') is distinct from true
+     or public.has_tenant_capability(v_tenant, 'cafe.operations.manage') is distinct from false then
+    raise exception 'fixture: a plain member must hold cafe.counter.operate and not cafe.operations.manage';
+  end if;
+  perform pg_temp.expect_error(
+    format('select public.admin_update_quick_solution_product(%L,%L,%L::jsonb,%L::jsonb,%L)',
+      v_slug, 'cg01g-staff-product', v_unit_customer, '{"strategy":"PER_UNIT","unitPrice":2,"minUnits":1,"maxUnits":5}', 'cg01g-v1'),
+    'OPPS staff with only a counter-level Cafe membership (cafe.counter.operate, not manage)', '42501', 'You do not have access to Quick Solution Product Admin.');
+
+  -- ── a real cafe.operations.manage holder of the tenant -> admitted. v_admin is given a
+  --    real admin membership of v_tenant so the rest of this test (the substantive PER_UNIT
+  --    validation, unchanged below) can keep using it to save/edit products. ──
+  insert into auth.users(id, email) values (v_admin, 'cg01g-admin-' || v_suffix || '@disposable.test');
+  insert into public.tenant_memberships(tenant_id, auth_user_id, tenant_role, status) values (v_tenant, v_admin, 'admin', 'active');
+  perform set_config('request.jwt.claims',
+    jsonb_build_object('sub', v_admin, 'role', 'authenticated', 'email', 'cg01g-admin-' || v_suffix || '@disposable.test')::text, true);
+  if public.has_tenant_capability(v_tenant, 'cafe.operations.manage') is distinct from true then
+    raise exception 'fixture: the admin caller must hold cafe.operations.manage';
+  end if;
   v_result := public.admin_update_quick_solution_product(
     v_slug, 'cg01g-staff-product', v_unit_customer, '{"strategy":"PER_UNIT","unitPrice":2,"minUnits":1,"maxUnits":5}', 'cg01g-v1');
-  if v_result ->> 'ok' is distinct from 'true' then raise exception 'OPPS staff with tenant access must be admitted: %', v_result; end if;
-
-  perform set_config('request.jwt.claims',
-    jsonb_build_object('sub', v_admin, 'role', 'authenticated', 'email', 'jointx.co@gmail.com')::text, true);
+  if v_result ->> 'ok' is distinct from 'true' then raise exception 'a real cafe.operations.manage holder must be admitted: %', v_result; end if;
 
   -- ── PER_UNIT is now accepted and normalized ────────────────────────
   v_result := public.admin_update_quick_solution_product(

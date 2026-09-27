@@ -121,6 +121,7 @@ declare
   u_other_owner uuid := gen_random_uuid();
   u_app_admin uuid := gen_random_uuid();
   u_opps_staff uuid := gen_random_uuid();
+  u_cafe_admin uuid := gen_random_uuid();
 
   v_labels text[]; v_subs uuid[]; v_emails text[]; v_expect text[];
   i integer;
@@ -152,7 +153,7 @@ begin
   insert into auth.users(id, aud, role, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
   select u.id, 'authenticated', 'authenticated', 'cg01l-' || u.label || '-' || v_suffix || '@disposable.test', now(), '{}'::jsonb, '{}'::jsonb, now(), now()
   from (values (u_nomember, 'nomember'), (u_member, 'member'), (u_admin, 'admin'), (u_owner, 'owner'), (u_suspended, 'suspended'),
-               (u_other_owner, 'otherowner'), (u_app_admin, 'appadmin'), (u_opps_staff, 'oppsstaff')) as u(id, label);
+               (u_other_owner, 'otherowner'), (u_app_admin, 'appadmin'), (u_opps_staff, 'oppsstaff'), (u_cafe_admin, 'cafeadmin')) as u(id, label);
 
   -- SETUP-ONLY approved-owner claim (the real OPPS trigger allows a role='admin' users row only for
   -- an approved-owner JWT email); cleared immediately and asserted gone.
@@ -165,14 +166,20 @@ begin
 
   insert into public.tenant_memberships(tenant_id, auth_user_id, tenant_role, status)
   values (v_cafe, u_member, 'member', 'active'), (v_cafe, u_admin, 'admin', 'active'), (v_cafe, u_owner, 'owner', 'active'),
-         (v_cafe, u_suspended, 'member', 'suspended'), (v_other, u_other_owner, 'owner', 'active');
+         (v_cafe, u_suspended, 'member', 'suspended'), (v_other, u_other_owner, 'owner', 'active'),
+         -- u_cafe_admin is used only to drive the admin_get_quick_solution_catalog snapshots
+         -- below (that RPC now gates on has_tenant_capability(tenant, 'cafe.operations.manage'),
+         -- security patch 20260927120000); u_app_admin/u_opps_staff stay membership-less, which
+         -- is the whole point of the "app admin / OPPS staff with no Cafe membership" persona
+         -- checks just below.
+         (v_cafe, u_cafe_admin, 'admin', 'active');
   if exists (select 1 from public.tenant_memberships m where m.tenant_id = v_cafe and m.auth_user_id in (u_app_admin, u_opps_staff)) then
     raise exception 'CAFE_GUEST_01L_TEST_SETUP: the app-admin and OPPS-staff fixtures must have no Cafe membership';
   end if;
 
   -- snapshots to prove the RPC is read-only and the neighbouring catalogues are unchanged
   v_public_before := public.get_quick_solution_catalog('quick-solution');
-  perform set_config('request.jwt.claims', jsonb_build_object('sub', u_app_admin, 'role', 'authenticated', 'email', 'jointx.co@gmail.com')::text, true);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', u_cafe_admin, 'role', 'authenticated')::text, true);
   v_admin_before := public.admin_get_quick_solution_catalog('quick-solution');
   perform set_config('request.jwt.claims', '{}', true);
   v_counts_before := (select (select count(*) from commerce.products) || '|' || (select count(*) from commerce.service_product_configs) || '|' || (select count(*) from commerce.service_orders) || '|' || (select count(*) from commerce.service_order_items));
@@ -338,7 +345,7 @@ begin
      array['a4-print', 'business-cards', 'flags', 'gazebos', 'media-services', 'photo-session', 'printed-tshirt', 'pvc-banner', 'vinyl-stickers'] then
     raise exception 'CAFE_GUEST_01L: the public catalogue must still be exactly the nine storefront products';
   end if;
-  perform set_config('request.jwt.claims', jsonb_build_object('sub', u_app_admin, 'role', 'authenticated', 'email', 'jointx.co@gmail.com')::text, true);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', u_cafe_admin, 'role', 'authenticated')::text, true);
   v_admin_after := public.admin_get_quick_solution_catalog('quick-solution');
   perform set_config('request.jwt.claims', '{}', true);
   if v_admin_after is distinct from v_admin_before then raise exception 'CAFE_GUEST_01L: the admin catalogue must be unchanged'; end if;

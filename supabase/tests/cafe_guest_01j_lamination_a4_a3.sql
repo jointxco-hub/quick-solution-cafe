@@ -260,7 +260,13 @@ begin
     values (v_order_counter, v_tenant, v_product.id, v_key, v_product.name);
   end loop;
 
-  -- ── admin: both are editable independently, through the existing PER_UNIT path ──
+  -- ── admin: both are editable independently, through the existing PER_UNIT path.
+  --    v_admin is given a real admin membership of the quick-solution tenant: the security
+  --    patch (20260927120000) gates admin_update_quick_solution_product/
+  --    admin_get_quick_solution_catalog on has_tenant_capability(tenant, 'cafe.operations.manage')
+  --    only, so the old is_app_admin() email-claim bypass alone no longer admits anyone. ──
+  insert into auth.users(id, email) values (v_admin, 'jointx.co@gmail.com');
+  insert into public.tenant_memberships(tenant_id, auth_user_id, tenant_role, status) values (v_tenant, v_admin, 'admin', 'active');
   perform set_config('request.jwt.claims',
     jsonb_build_object('sub', v_admin, 'role', 'authenticated', 'email', 'jointx.co@gmail.com')::text, true);
 

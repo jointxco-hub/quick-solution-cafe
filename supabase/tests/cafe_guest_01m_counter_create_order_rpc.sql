@@ -176,7 +176,7 @@ begin
   insert into public.tenants(id, slug, name, status, settings) values (v_other, 'cg01m-other-' || left(v_suffix, 10), 'CG01M other cafe', 'active', '{}'::jsonb);
   insert into public.tenant_capabilities(tenant_id, capability_key, enabled) values (v_other, 'quick_solution', true);
 
-  for u in select * from (values ('nomember'), ('member'), ('member2'), ('admin'), ('owner'), ('suspended'), ('otherowner'), ('appadmin'), ('oppsstaff')) as x(label) loop
+  for u in select * from (values ('nomember'), ('member'), ('member2'), ('admin'), ('owner'), ('suspended'), ('otherowner'), ('appadmin'), ('oppsstaff'), ('cafeadmin')) as x(label) loop
     insert into public._cg01m_ctx values ('u_' || u.label, gen_random_uuid()::text);
     insert into auth.users(id, aud, role, email, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
     values ((select v::uuid from public._cg01m_ctx where k = 'u_' || u.label), 'authenticated', 'authenticated', 'cg01m-' || u.label || '-' || v_suffix || '@disposable.test', now(), '{}'::jsonb, '{}'::jsonb, now(), now());
@@ -192,7 +192,14 @@ begin
 
   insert into public.tenant_memberships(tenant_id, auth_user_id, tenant_role, status)
   select v_cafe, (select v::uuid from public._cg01m_ctx where k = 'u_' || m.label), m.role, m.status
-  from (values ('member', 'member', 'active'), ('member2', 'member', 'active'), ('admin', 'admin', 'active'), ('owner', 'owner', 'active'), ('suspended', 'member', 'suspended')) as m(label, role, status);
+  from (values ('member', 'member', 'active'), ('member2', 'member', 'active'), ('admin', 'admin', 'active'), ('owner', 'owner', 'active'), ('suspended', 'member', 'suspended'),
+               -- u_cafeadmin is used only to drive the admin_get_quick_solution_catalog
+               -- regression check far below (that RPC now gates on
+               -- has_tenant_capability(tenant, 'cafe.operations.manage'), security patch
+               -- 20260927120000); u_appadmin/u_oppsstaff stay membership-less, which is the
+               -- whole point of the "app admin / OPPS staff with no Cafe membership" persona
+               -- checks just below.
+               ('cafeadmin', 'admin', 'active')) as m(label, role, status);
   insert into public.tenant_memberships(tenant_id, auth_user_id, tenant_role, status)
   values (v_other, (select v::uuid from public._cg01m_ctx where k = 'u_otherowner'), 'owner', 'active');
   if exists (select 1 from public.tenant_memberships m where m.tenant_id = v_cafe and m.auth_user_id in
@@ -717,7 +724,7 @@ begin
      array['a4-print', 'business-cards', 'flags', 'gazebos', 'media-services', 'photo-session', 'printed-tshirt', 'pvc-banner', 'vinyl-stickers'] then
     raise exception 'CAFE_GUEST_01M: the public storefront catalogue must be unchanged';
   end if;
-  perform set_config('request.jwt.claims', jsonb_build_object('sub', (select v from public._cg01m_ctx where k = 'u_appadmin'), 'role', 'authenticated', 'email', 'jointx.co@gmail.com')::text, true);
+  perform set_config('request.jwt.claims', jsonb_build_object('sub', (select v from public._cg01m_ctx where k = 'u_cafeadmin'), 'role', 'authenticated')::text, true);
   if not exists (select 1 from jsonb_array_elements(public.admin_get_quick_solution_catalog('quick-solution') -> 'products') p where p ->> 'id' = 'scan' and p ? 'pricingDefinition') then
     raise exception 'CAFE_GUEST_01M: the admin catalogue is unchanged';
   end if;

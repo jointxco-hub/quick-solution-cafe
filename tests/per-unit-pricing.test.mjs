@@ -373,8 +373,8 @@ test('only Scan and the two Lamination products use PER_UNIT, and the nine origi
   const users = files.filter((name) => /PER_UNIT/.test(read(`../supabase/migrations/${name}`)))
   assert.deepEqual(
     users,
-    ['20260926130000_cafe_guest_01f_per_unit_pricing.sql', '20260926140000_cafe_guest_01g_admin_per_unit_support.sql', '20260926150000_cafe_guest_01h_scan_product.sql', '20260926160000_cafe_guest_01i_lamination_product.sql', '20260926170000_cafe_guest_01j_lamination_a4_a3.sql', '20260926180000_cafe_guest_01k_scan_final.sql', '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql'],
-    'only the 01F pricing, 01G admin, 01H Scan, 01I placeholder (historical), 01J Lamination, 01K Scan-final and 01M counter-create (quantity-override refusal) migrations mention PER_UNIT'
+    ['20260926130000_cafe_guest_01f_per_unit_pricing.sql', '20260926140000_cafe_guest_01g_admin_per_unit_support.sql', '20260926150000_cafe_guest_01h_scan_product.sql', '20260926160000_cafe_guest_01i_lamination_product.sql', '20260926170000_cafe_guest_01j_lamination_a4_a3.sql', '20260926180000_cafe_guest_01k_scan_final.sql', '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql', '20260927120000_qs_administration_capability_authorization.sql'],
+    'only the 01F pricing, 01G admin, 01H Scan, 01I placeholder (historical), 01J Lamination, 01K Scan-final, 01M counter-create (quantity-override refusal) migrations mention PER_UNIT, plus the security patch, which mentions it only because it carries admin_update_quick_solution_product\'s PER_UNIT-aware body forward byte-for-byte apart from its gate line'
   )
   assert.doesNotMatch(read('../supabase/seed.sql'), /PER_UNIT/)
   const catalogueSource = read('../src/data/products.js')

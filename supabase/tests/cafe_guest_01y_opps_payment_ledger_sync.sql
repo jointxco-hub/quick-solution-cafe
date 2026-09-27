@@ -81,8 +81,13 @@ begin
     (u_staff, 'authenticated', 'authenticated', 'cg01y-staff-' || v_suffix || '@disposable.test', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
     (u_appadmin, 'authenticated', 'authenticated', 'cg01y-appadmin-' || v_suffix || '@disposable.test', now(), '{}'::jsonb, '{}'::jsonb, now(), now());
 
+  -- u_appadmin is also given a real admin membership of the Cafe tenant: the security patch
+  -- (20260927120000) removes admin_send_quick_solution_order_to_opps's is_app_admin() bypass, so
+  -- from that migration onward a caller needs cafe.operations.manage, not merely app-admin status,
+  -- to send an order.
   insert into public.tenant_memberships(tenant_id, auth_user_id, tenant_role, status)
-  values (v_cafe, u_staff, 'member', 'active');
+  values (v_cafe, u_staff, 'member', 'active'),
+         (v_cafe, u_appadmin, 'admin', 'active');
 end
 $fixtures$;
 

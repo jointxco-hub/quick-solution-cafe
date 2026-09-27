@@ -305,8 +305,11 @@ test('server: the staff gate, security posture and grants are byte-for-byte the 
 test('server: this is the latest definition of the admin function and the previous one is the QS-14 copy', () => {
   const files = fs.readdirSync(new URL('../supabase/migrations/', import.meta.url)).sort()
   const definers = files.filter((name) => /create or replace function public\.admin_update_quick_solution_product/i.test(read(`../supabase/migrations/${name}`)))
-  assert.equal(definers.at(-1), '20260926140000_cafe_guest_01g_admin_per_unit_support.sql')
-  assert.equal(definers.at(-2), '20260921120000_qs14_checkout_guards_and_supplier_rules.sql')
+  // The security patch (20260927120000) is the newest definer: it re-guards this RPC (and five
+  // others) on has_tenant_capability without touching the PER_UNIT body this file tests.
+  assert.equal(definers.at(-1), '20260927120000_qs_administration_capability_authorization.sql')
+  assert.equal(definers.at(-2), '20260926140000_cafe_guest_01g_admin_per_unit_support.sql')
+  assert.equal(definers.at(-3), '20260921120000_qs14_checkout_guards_and_supplier_rules.sql')
   assert.ok(files.includes('20260926130000_cafe_guest_01f_per_unit_pricing.sql') && files.indexOf('20260926130000_cafe_guest_01f_per_unit_pricing.sql') < files.indexOf('20260926140000_cafe_guest_01g_admin_per_unit_support.sql'), 'runs after the validator exists')
   assert.match(migration, /to_regprocedure\('commerce\._qs_validate_per_unit_definition\(jsonb\)'\) is null/, 'preflight')
 })

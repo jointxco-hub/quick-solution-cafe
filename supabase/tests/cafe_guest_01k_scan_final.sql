@@ -209,7 +209,13 @@ begin
   insert into commerce.service_order_items(order_id,tenant_id,product_id,product_key,product_name)
   values (v_order_counter, v_tenant, v_product.id, 'scan', v_product.name);
 
-  -- ── admin: Scan is editable through the existing PER_UNIT path, independently ──
+  -- ── admin: Scan is editable through the existing PER_UNIT path, independently.
+  --    v_admin is given a real admin membership of the quick-solution tenant: the security
+  --    patch (20260927120000) gates admin_update_quick_solution_product/
+  --    admin_get_quick_solution_catalog on has_tenant_capability(tenant, 'cafe.operations.manage')
+  --    only, so the old is_app_admin() email-claim bypass alone no longer admits anyone. ──
+  insert into auth.users(id, email) values (v_admin, 'jointx.co@gmail.com');
+  insert into public.tenant_memberships(tenant_id, auth_user_id, tenant_role, status) values (v_tenant, v_admin, 'admin', 'active');
   perform set_config('request.jwt.claims',
     jsonb_build_object('sub', v_admin, 'role', 'authenticated', 'email', 'jointx.co@gmail.com')::text, true);
   select string_agg(p ->> 'id', ',' order by p ->> 'id') into v_ids
