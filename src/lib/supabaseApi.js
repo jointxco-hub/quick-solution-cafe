@@ -1,3 +1,5 @@
+import { buildPricingDefinition } from './pricingDefinition.js'
+
 const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
 const SUPABASE_KEY = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '')
 const TENANT_SLUG = String(import.meta.env.VITE_QS_TENANT_SLUG || 'quick-solution')
@@ -219,76 +221,9 @@ export async function uploadQuickSolutionFile({ orderId, orderItemId, uploadToke
   return parseResponse(response, 'File upload failed')
 }
 
-function optionMap(product, fieldId, valueKey) {
-  const field = product.fields?.find((item) => item.id === fieldId)
-  return Object.fromEntries((field?.options || []).map((option) => [option.id, { [valueKey]: Number(option[valueKey] || 0) }]))
-}
-
-export function buildPricingDefinition(product) {
-  const strategy = product?.pricing?.strategy
-  if (strategy === 'PER_AREA') {
-    return {
-      strategy,
-      baseRate: Number(product.pricing.baseRate || 0),
-      minimumBillableArea: Number(product.pricing.minimumBillableArea || 0),
-      materials: optionMap(product, 'material', 'multiplier'),
-      finishing: optionMap(product, 'finishing', 'fee'),
-      artwork: optionMap(product, 'artwork', 'fee'),
-      turnaround: optionMap(product, 'turnaround', 'multiplier')
-    }
-  }
-  if (strategy === 'PER_PAGE') {
-    return {
-      strategy,
-      rates: optionMap(product, 'printMode', 'rate'),
-      sides: optionMap(product, 'sides', 'multiplier'),
-      finishes: optionMap(product, 'finish', 'fee')
-    }
-  }
-  if (strategy === 'TIERED') {
-    return {
-      strategy,
-      quantities: optionMap(product, 'quantity', 'total'),
-      stock: optionMap(product, 'stock', 'multiplier'),
-      finishes: optionMap(product, 'finish', 'fee'),
-      artwork: optionMap(product, 'artwork', 'fee')
-    }
-  }
-  if (strategy === 'CONFIGURABLE') {
-    return {
-      strategy,
-      garments: optionMap(product, 'garment', 'unitFee'),
-      frontPrint: optionMap(product, 'frontPrint', 'unitFee'),
-      backPrint: optionMap(product, 'backPrint', 'unitFee'),
-      artwork: optionMap(product, 'artwork', 'fee')
-    }
-  }
-  if (strategy === 'ENQUIRY') {
-    return {
-      strategy,
-      quoteRequired: true,
-      serviceType: product?.serviceType || 'service'
-    }
-  }
-  if (strategy === 'SUPPLIER_MARGIN' || strategy === 'PHOTOGRAPHY_SESSION') {
-    // These two strategies split pricing into a customer-safe mirror
-    // (product.pricing — selling prices only) and a staff-only
-    // pricing_definition (product.pricingDefinition — reference
-    // prices/margin rate/session rates), unlike every other strategy
-    // above where both are effectively the same numbers. The generic
-    // admin PricingEditor only reads/edits product.pricing and
-    // product.fields[].options[], so it cannot safely edit reference
-    // prices or margin without a dedicated section (not built yet —
-    // see AdminProductManager.jsx). Passing pricingDefinition through
-    // unchanged still lets admins rename/activate-deactivate these
-    // products without corrupting their pricing.
-    if (!product.pricingDefinition) {
-      throw new Error('This product’s rates can only be edited via a database migration until a dedicated admin editor is built for this pricing strategy.')
-    }
-    return product.pricingDefinition
-  }
-  throw new Error(`Unsupported pricing strategy: ${strategy || 'unknown'}`)
-}
+// buildPricingDefinition lives in pricingDefinition.js (pure, so it can be
+// tested; this module reads import.meta.env at load). Re-exported unchanged.
+export { buildPricingDefinition }
 
 function customerDefinitionFromProduct(product) {
   const copy = JSON.parse(JSON.stringify(product))
@@ -301,6 +236,104 @@ function customerDefinitionFromProduct(product) {
 export async function loadQuickSolutionAdminCatalog() {
   const accessToken = await getAdminAccessToken()
   return rpc('admin_get_quick_solution_catalog', { p_tenant_slug: TENANT_SLUG }, { accessToken })
+}
+
+// CAFE-GUEST-01L - the call contract for the server-side counter catalogue. Deliberately UNUSED
+// until the Counter UI exists. It sends NO tenant: the server resolves the Cafe tenant itself
+// and enforces the counter capability and the Cafe module, so nothing here (or in any
+// front-end state) can widen access. The result is { tenant: { slug, name }, products: [...] }
+// in the customer-safe product shape that src/lib/counterCatalogue.js reads.
+export async function loadQuickSolutionCounterCatalog() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_catalog', {}, { accessToken })
+}
+
+// CAFE-GUEST-01P - today's counter orders, read-only. It sends NO argument: the server resolves the Cafe
+// tenant, the counter channel and the business day itself and enforces the counter access, so nothing here
+// can name a tenant, a channel, a creator or a date. The result is { businessDate, timezone, orders: [...] }.
+export async function loadQuickSolutionCounterOrdersToday() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('list_quick_solution_counter_orders_today', {}, { accessToken })
+}
+
+// CAFE-GUEST-01Q - one counter order, read fresh from the server: items, totals, amount paid, outstanding, and whether
+// a payment may be recorded. The caller supplies only the order id; the tenant and the counter channel are the server's.
+export async function loadQuickSolutionCounterOrder(orderId) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_order', { p_order_id: orderId }, { accessToken })
+}
+
+// CAFE-GUEST-01Q - record ONE full Cash or Card payment of a counter order. There is deliberately NO amount, status,
+// tenant, actor or time argument: the server settles exactly what is outstanding, records who did it and when, and
+// marks the order paid in the same transaction. The key is stable per payment attempt, so a retry returns the same payment.
+export async function recordQuickSolutionCounterPayment({ orderId, method, idempotencyKey }) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('record_quick_solution_counter_payment', { p_order_id: orderId, p_method: method, p_idempotency_key: idempotencyKey }, { accessToken })
+}
+
+// CAFE-GUEST-01W - the audited cancelled counter orders (who, when, why), newest first, read-only. It sends NO argument: the server
+// resolves the tenant and the counter channel, answers only an admin or owner, and caps the page.
+export async function loadQuickSolutionCancelledCounterOrders() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('list_quick_solution_cancelled_counter_orders', {}, { accessToken })
+}
+
+// CAFE-GUEST-01V - the server's check for cancelling ONE counter order, read-only: whether THIS caller may cancel it (admin / owner) and
+// whether the order can be cancelled at all. The only argument is the order id. It decides whether the screen offers the action; the
+// server enforces every rule again on the real call.
+export async function loadQuickSolutionCounterOrderCancelCheck(orderId) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_order_cancel_check', { p_order_id: orderId }, { accessToken })
+}
+
+// CAFE-GUEST-01V - cancels ONE never-paid counter order (admin / owner only). The caller supplies only the order id and the reason: the
+// server decides who is allowed, whether the order can still be cancelled, sets the status and writes the audit row (who, when, why)
+// in one transaction. There is no status, tenant, actor or time argument.
+export async function cancelQuickSolutionCounterOrder({ orderId, reason }) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('cancel_quick_solution_counter_order', { p_order_id: orderId, p_reason: reason }, { accessToken })
+}
+
+// CAFE-GUEST-01U - the cash-up for a chosen Cafe business DATE, read-only. The only argument is the calendar date; the server works out
+// the exact day (Africa/Johannesburg), refuses a future or invalid date, and returns the same shape as today's cash-up.
+export async function loadQuickSolutionCounterCashup(businessDate) {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_cashup', { p_business_date: businessDate }, { accessToken })
+}
+
+// CAFE-GUEST-01T - every counter order that still owes money, whichever day it was created, oldest first, read-only. It sends NO
+// argument: the server resolves the tenant and the counter channel, decides what is still owed (from the completed ledger) and works
+// out each order's age in Cafe business days.
+export async function loadQuickSolutionUnpaidCounterOrders() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('list_quick_solution_unpaid_counter_orders', {}, { accessToken })
+}
+
+// CAFE-GUEST-01S - today's cash-up, read-only: Cash and Card taken today, the payments that make it up, and the counter orders
+// still unpaid. It sends NO argument: the server resolves the tenant, the counter channel and the business day itself, and the
+// totals are made from the rows it returns.
+export async function loadQuickSolutionCounterCashupToday() {
+  const accessToken = await getAdminAccessToken()
+  return rpc('get_quick_solution_counter_cashup_today', {}, { accessToken })
+}
+
+// CAFE-GUEST-01M - the call contract for creating ONE counter order. Called only by the Counter page
+// (CAFE-GUEST-01O), once per confirmed sale attempt. The caller supplies only the idempotency key (stable per sale attempt, so a
+// retry returns the original order), the product key, its configuration and optional customer
+// details. There is no tenant, channel, actor, price or payment argument: the server decides the
+// tenant, sets the channel and the creating staff member, prices the item itself, and creates the
+// order unpaid. Authorization is enforced server-side; nothing here can widen it.
+export async function createQuickSolutionCounterOrder({ idempotencyKey, productKey, configuration, customerName, customerEmail, customerPhone }) {
+  const accessToken = await getAdminAccessToken()
+  const body = {
+    p_idempotency_key: idempotencyKey,
+    p_product_key: productKey,
+    p_configuration: configuration
+  }
+  if (customerName) body.p_customer_name = customerName
+  if (customerEmail) body.p_customer_email = customerEmail
+  if (customerPhone) body.p_customer_phone = customerPhone
+  return rpc('create_quick_solution_counter_order', body, { accessToken })
 }
 
 export async function saveQuickSolutionProduct(product) {

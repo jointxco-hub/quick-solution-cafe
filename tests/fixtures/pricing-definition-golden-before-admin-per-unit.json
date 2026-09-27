@@ -1,0 +1,259 @@
+{
+  "pvc-banner": {
+    "definition": {
+      "strategy": "PER_AREA",
+      "baseRate": 350,
+      "minimumBillableArea": 1,
+      "materials": {
+        "standard": {
+          "multiplier": 1
+        },
+        "premium": {
+          "multiplier": 1.25
+        },
+        "mesh": {
+          "multiplier": 1.35
+        }
+      },
+      "finishing": {
+        "none": {
+          "fee": 0
+        },
+        "eyelets": {
+          "fee": 55
+        },
+        "hem": {
+          "fee": 70
+        },
+        "hem-eyelets": {
+          "fee": 110
+        }
+      },
+      "artwork": {
+        "ready": {
+          "fee": 0
+        },
+        "check": {
+          "fee": 75
+        },
+        "design": {
+          "fee": 250
+        }
+      },
+      "turnaround": {
+        "standard": {
+          "multiplier": 1
+        },
+        "express": {
+          "multiplier": 1.2
+        }
+      }
+    }
+  },
+  "vinyl-stickers": {
+    "definition": {
+      "strategy": "PER_AREA",
+      "baseRate": 350,
+      "minimumBillableArea": 1,
+      "materials": {
+        "standard": {
+          "multiplier": 1
+        }
+      },
+      "finishing": {
+        "print-only": {
+          "fee": 0
+        },
+        "print-cut": {
+          "fee": 100
+        }
+      },
+      "artwork": {
+        "ready": {
+          "fee": 0
+        },
+        "check": {
+          "fee": 75
+        },
+        "design": {
+          "fee": 250
+        }
+      },
+      "turnaround": {
+        "standard": {
+          "multiplier": 1
+        },
+        "express": {
+          "multiplier": 1.2
+        }
+      }
+    }
+  },
+  "a4-print": {
+    "definition": {
+      "strategy": "PER_PAGE",
+      "rates": {
+        "bw": {
+          "rate": 2
+        },
+        "colour": {
+          "rate": 7.5
+        }
+      },
+      "sides": {
+        "single": {
+          "multiplier": 1
+        },
+        "double": {
+          "multiplier": 0.95
+        }
+      },
+      "finishes": {
+        "none": {
+          "fee": 0
+        },
+        "staple": {
+          "fee": 2
+        },
+        "clear-sleeve": {
+          "fee": 5
+        }
+      }
+    }
+  },
+  "business-cards": {
+    "definition": {
+      "strategy": "TIERED",
+      "quantities": {
+        "100": {
+          "total": 180
+        },
+        "250": {
+          "total": 260
+        },
+        "500": {
+          "total": 390
+        },
+        "1000": {
+          "total": 650
+        }
+      },
+      "stock": {
+        "standard": {
+          "multiplier": 1
+        },
+        "thick": {
+          "multiplier": 1.2
+        }
+      },
+      "finishes": {
+        "standard": {
+          "fee": 0
+        },
+        "matt": {
+          "fee": 90
+        },
+        "gloss": {
+          "fee": 80
+        }
+      },
+      "artwork": {
+        "ready": {
+          "fee": 0
+        },
+        "check": {
+          "fee": 75
+        },
+        "design": {
+          "fee": 250
+        }
+      }
+    }
+  },
+  "printed-tshirt": {
+    "definition": {
+      "strategy": "CONFIGURABLE",
+      "garments": {
+        "own": {
+          "unitFee": 0
+        },
+        "jointx-220": {
+          "unitFee": 95
+        },
+        "jointx-300": {
+          "unitFee": 145
+        }
+      },
+      "frontPrint": {
+        "none": {
+          "unitFee": 0
+        },
+        "pocket": {
+          "unitFee": 55
+        },
+        "a4": {
+          "unitFee": 75
+        },
+        "a3": {
+          "unitFee": 95
+        }
+      },
+      "backPrint": {
+        "none": {
+          "unitFee": 0
+        },
+        "a4": {
+          "unitFee": 75
+        },
+        "a3": {
+          "unitFee": 95
+        }
+      },
+      "artwork": {
+        "ready": {
+          "fee": 0
+        },
+        "check": {
+          "fee": 75
+        },
+        "design": {
+          "fee": 250
+        }
+      }
+    }
+  },
+  "media-services": {
+    "definition": {
+      "strategy": "ENQUIRY",
+      "quoteRequired": true,
+      "serviceType": "media"
+    }
+  },
+  "flags": {
+    "throws": "This product’s rates can only be edited via a database migration until a dedicated admin editor is built for this pricing strategy."
+  },
+  "gazebos": {
+    "throws": "This product’s rates can only be edited via a database migration until a dedicated admin editor is built for this pricing strategy."
+  },
+  "photo-session": {
+    "throws": "This product’s rates can only be edited via a database migration until a dedicated admin editor is built for this pricing strategy."
+  },
+  "synthetic-supplier-with-definition": {
+    "definition": {
+      "strategy": "SUPPLIER_MARGIN",
+      "marker": "x"
+    }
+  },
+  "synthetic-photo-with-definition": {
+    "definition": {
+      "strategy": "PHOTOGRAPHY_SESSION",
+      "marker": "y"
+    }
+  },
+  "unknown-SUPPORTED_NOWHERE": {
+    "throws": "Unsupported pricing strategy: SUPPORTED_NOWHERE"
+  },
+  "unknown-undefined": {
+    "throws": "Unsupported pricing strategy: unknown"
+  }
+}

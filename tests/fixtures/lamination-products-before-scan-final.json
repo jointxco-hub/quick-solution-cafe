@@ -1,0 +1,92 @@
+[
+  {
+    "id": "a4-lamination",
+    "name": "A4 Lamination",
+    "shortName": "A4 Lamination",
+    "category": "Quick Print",
+    "description": "A4 sheets laminated by our team at the Café.",
+    "plainDescription": "Bring your A4 sheets and we will laminate them for you.",
+    "keywords": [
+      "laminate",
+      "laminating",
+      "lamination",
+      "a4",
+      "sheet",
+      "sheets"
+    ],
+    "popular": false,
+    "active": true,
+    "channels": {
+      "storefront": false,
+      "guided": false,
+      "pos": true,
+      "quote": false,
+      "advanced": false
+    },
+    "pricingVersion": "2026-09-qsc-17",
+    "pricing": {
+      "strategy": "PER_UNIT",
+      "unitPrice": 15,
+      "minUnits": 1,
+      "maxUnits": 100
+    },
+    "fields": [
+      {
+        "id": "units",
+        "type": "number",
+        "label": "How many A4 sheets need laminating?",
+        "shortLabel": "Sheets to laminate",
+        "suffix": "sheets",
+        "help": "Count each sheet once, even if it is printed on both sides.",
+        "min": 1,
+        "step": 1,
+        "required": true
+      }
+    ]
+  },
+  {
+    "id": "a3-lamination",
+    "name": "A3 Lamination",
+    "shortName": "A3 Lamination",
+    "category": "Quick Print",
+    "description": "A3 sheets laminated by our team at the Café.",
+    "plainDescription": "Bring your A3 sheets and we will laminate them for you.",
+    "keywords": [
+      "laminate",
+      "laminating",
+      "lamination",
+      "a3",
+      "sheet",
+      "sheets"
+    ],
+    "popular": false,
+    "active": true,
+    "channels": {
+      "storefront": false,
+      "guided": false,
+      "pos": true,
+      "quote": false,
+      "advanced": false
+    },
+    "pricingVersion": "2026-09-qsc-17",
+    "pricing": {
+      "strategy": "PER_UNIT",
+      "unitPrice": 30,
+      "minUnits": 1,
+      "maxUnits": 100
+    },
+    "fields": [
+      {
+        "id": "units",
+        "type": "number",
+        "label": "How many A3 sheets need laminating?",
+        "shortLabel": "Sheets to laminate",
+        "suffix": "sheets",
+        "help": "Count each sheet once, even if it is printed on both sides.",
+        "min": 1,
+        "step": 1,
+        "required": true
+      }
+    ]
+  }
+]

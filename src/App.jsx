@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
+﻿import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './components/Icon.jsx'
 import Header from './components/Header.jsx'
 import ProductCard from './components/ProductCard.jsx'
@@ -48,6 +48,9 @@ import {
 } from './lib/businessInfo.js'
 import Footer from './components/Footer.jsx'
 import MobileBottomNav from './components/MobileBottomNav.jsx'
+
+// CAFE-GUEST-01X: the staff Counter is its own chunk, fetched only when /counter is opened, so storefront and admin visitors never download it.
+const CounterPage = lazy(() => import('./counter/CounterPage.jsx'))
 
 function scrollToConfigurator(node, behavior = 'smooth') {
   if (!node) return
@@ -672,6 +675,14 @@ export default function App() {
 
   if (view === 'admin') {
     return <AdminProductManager initialProducts={catalog} defaultProducts={defaultProducts} onCatalogChange={setCatalog} onFulfilmentPointsChange={setFulfilmentPoints}/>
+  }
+
+  if (view === 'counter') {
+    return (
+      <Suspense fallback={<div className="admin-loading" role="status"><span className="brand-dot green"/><strong>Loading the counter…</strong></div>}>
+        <CounterPage/>
+      </Suspense>
+    )
   }
 
   if (view === 'not-found') {
