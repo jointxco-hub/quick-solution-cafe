@@ -64,7 +64,7 @@ test('the migration replay covers every migration except the one documented gap,
 test('every Cafe SQL test is executed by the runner and is rollback-contained', () => {
   assert.match(code, /-Filter 'cafe_guest_\*\.sql'/)
   const tests = fs.readdirSync(new URL('../supabase/tests/', import.meta.url)).filter((name) => /^cafe_guest_.*\.sql$/.test(name)).sort()
-  assert.deepEqual(tests.map((name) => name.slice(0, 14)), ['cafe_guest_01a', 'cafe_guest_01c', 'cafe_guest_01d', 'cafe_guest_01f', 'cafe_guest_01g', 'cafe_guest_01j', 'cafe_guest_01k', 'cafe_guest_01l', 'cafe_guest_01m', 'cafe_guest_01p', 'cafe_guest_01q', 'cafe_guest_01q', 'cafe_guest_01s', 'cafe_guest_01t', 'cafe_guest_01u', 'cafe_guest_01v', 'cafe_guest_01v', 'cafe_guest_01w', 'cafe_guest_01x'])
+  assert.deepEqual(tests.map((name) => name.slice(0, 14)), ['cafe_guest_01a', 'cafe_guest_01c', 'cafe_guest_01d', 'cafe_guest_01f', 'cafe_guest_01g', 'cafe_guest_01j', 'cafe_guest_01k', 'cafe_guest_01l', 'cafe_guest_01m', 'cafe_guest_01p', 'cafe_guest_01q', 'cafe_guest_01q', 'cafe_guest_01s', 'cafe_guest_01t', 'cafe_guest_01u', 'cafe_guest_01v', 'cafe_guest_01v', 'cafe_guest_01w', 'cafe_guest_01x', 'cafe_guest_01y'])
   for (const name of tests) {
     const sql = read(`../supabase/tests/${name}`).replace(/--[^\n]*/g, '')
     if (/concurrency/.test(name)) {
@@ -104,7 +104,7 @@ test('the base layer refuses to load anywhere that is not marked disposable and 
   assert.match(stub, /'jointx\.co@gmail\.com'/, 'the owner-email arm the 01G test relies on')
   // Every table it stubs is documented as partial; nothing is created in the Cafe-owned schema surface beyond OPPS products.
   assert.deepEqual([...stub.matchAll(/^create table ([\w.]+)/gm)].map((match) => match[1]),
-    ['auth.users', 'public.tenants', 'public.tenant_memberships', 'public.users', 'public.tenant_capabilities', 'commerce.products', 'public.orders'])
+    ['auth.users', 'public.tenants', 'public.tenant_memberships', 'public.users', 'public.tenant_capabilities', 'commerce.products', 'public.orders', 'public.transactions'])
 })
 
 test('npm run test:sql runs the harness, and the harness test is part of npm test', () => {

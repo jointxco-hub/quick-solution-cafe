@@ -189,11 +189,12 @@ create table commerce.products (
 -- OPPS orders: the Cafe handoff migrations (qs_04a onwards) alter the source
 -- constraint on it and reference public.orders(id). Widened (beyond the
 -- original id/order_number/source) to the columns
--- public.admin_send_quick_solution_order_to_opps (QS-04B) actually inserts,
--- because CAFE-GUEST-01X's test is the first local test to exercise that
--- function at all. Types/nullability/defaults for the added columns are taken
--- read-only from the live hosted schema (2026-09-27), not invented; the real
--- table is still far wider than this.
+-- public.admin_send_quick_solution_order_to_opps (QS-04B) inserts, plus
+-- created_at/updated_at, which CAFE-GUEST-01Y's payment-sync helper also
+-- updates - because CAFE-GUEST-01X's test is the first local test to
+-- exercise that function at all. Types/nullability/defaults for the added
+-- columns are taken read-only from the live hosted schema (2026-09-27), not
+-- invented; the real table is still far wider than this.
 create table public.orders (
   id uuid primary key default gen_random_uuid(),
   order_number text,
@@ -219,8 +220,55 @@ create table public.orders (
   shipping_address jsonb,
   shipping_method text,
   checkout_idempotency_key text,
-  source_metadata jsonb not null default '{}'::jsonb
+  source_metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
+alter table public.orders add constraint orders_payment_status_check
+  check (payment_status = any (array['pending','paid','failed','cancelled','reconciliation_required']));
+
+-- OPPS transactions: the one income/expense ledger. Only the columns and constraints
+-- CAFE-GUEST-01Y's payment-sync helper touches are present (types/nullability/defaults/constraints/the
+-- order_id unique index/the tenant-assignment trigger taken read-only from the live hosted schema,
+-- 2026-09-27, not invented); the real table carries many more expense-only columns.
+create table public.transactions (
+  id uuid primary key default gen_random_uuid(),
+  type text not null check (type = any (array['income','expense'])),
+  order_id uuid references public.orders(id) on delete set null,
+  order_number text,
+  client_name text,
+  payment_date date,
+  payment_status text check (payment_status = any (array['pending','completed','failed','refunded'])),
+  payment_method text check (payment_method is null or payment_method = any (array['cash','card','eft','credit','bank_transfer','paypal','other'])),
+  amount numeric not null,
+  notes text,
+  source text,
+  tenant_id uuid,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint transactions_order_id_unique unique (order_id)
+);
+
+create or replace function public.assign_transaction_tenant()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare parent_tenant_id uuid;
+begin
+  if new.order_id is not null then select tenant_id into parent_tenant_id from public.orders where id = new.order_id; end if;
+  if parent_tenant_id is not null then
+    if new.tenant_id is not null and new.tenant_id <> parent_tenant_id then raise exception 'Transaction tenant must match its linked order or client.'; end if;
+    new.tenant_id := parent_tenant_id;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_transactions_tenant
+before insert or update of order_id, tenant_id on public.transactions
+for each row execute function public.assign_transaction_tenant();
 
 -- ── OPPS staff-authority helpers, verbatim, latest OPPS definitions ───────
 -- Source: OPPS 20260523_finance_rls_tighten.sql (body) +
