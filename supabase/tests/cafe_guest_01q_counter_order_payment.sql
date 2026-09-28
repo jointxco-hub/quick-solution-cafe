@@ -193,8 +193,13 @@ begin
   -- the ledger enforces the same rules the RPC applies
   if not exists (select 1 from pg_catalog.pg_indexes where schemaname = 'commerce' and indexname = 'uq_qs_service_order_payments_one_counter_payment') then raise exception 'one completed counter payment per order must be a unique index'; end if;
   if not exists (select 1 from pg_catalog.pg_indexes where schemaname = 'commerce' and indexname = 'uq_qs_service_order_payments_idempotency') then raise exception 'payment keys must be a unique index'; end if;
-  if not exists (select 1 from pg_catalog.pg_constraint where conrelid = 'commerce.service_order_payments'::regclass and conname = 'service_order_payments_provider_check' and pg_get_constraintdef(oid) ~ 'payfast.*cash.*card' and pg_get_constraintdef(oid) !~* 'eft') then
-    raise exception 'the provider vocabulary is payfast, cash and card only';
+  -- QS Payment Eligibility v1 widened this to also allow 'eft' and
+  -- 'counter' (customer-stated payment INTENT, always inserted pending by
+  -- qs_record_quick_solution_payment_intent - never by this RPC, which
+  -- still only ever accepts 'cash'/'card' as its own p_method, per the
+  -- checks above).
+  if not exists (select 1 from pg_catalog.pg_constraint where conrelid = 'commerce.service_order_payments'::regclass and conname = 'service_order_payments_provider_check' and pg_get_constraintdef(oid) ~ 'payfast.*cash.*card.*eft.*counter') then
+    raise exception 'the provider vocabulary is payfast, cash, card, eft and counter only';
   end if;
   if has_table_privilege('authenticated', 'commerce.service_order_payments', 'select') or has_table_privilege('anon', 'commerce.service_order_payments', 'insert') then
     raise exception 'the ledger must not be readable or writable by API roles';
@@ -620,11 +625,14 @@ begin
     raise exception 'CAFE_GUEST_01Q: a pending counter payment must violate the shape check';
   exception when check_violation then null;
   end;
-  begin
-    insert into commerce.service_order_payments(tenant_id, service_order_id, provider, status, amount, completed_at, recorded_by, idempotency_key) values (v_cafe, public._cg01q_mk(v_cafe, 'counter', 10), 'eft', 'completed', 10, now(), u_member, 'k-four-' || gen_random_uuid()::text);
-    raise exception 'CAFE_GUEST_01Q: EFT must not be an allowed provider';
-  exception when check_violation then null;
-  end;
+  -- QS Payment Eligibility v1: 'eft' and 'counter' are now valid provider
+  -- values too - a customer's stated payment INTENT, always inserted
+  -- pending by qs_record_quick_solution_payment_intent (never by this
+  -- file's own RPC, which still only ever records 'cash'/'card' -
+  -- checked above). Nothing about the counter_recorded_check shape
+  -- constraint changes: it only ever restricted 'cash'/'card'.
+  insert into commerce.service_order_payments(tenant_id, service_order_id, provider, status, amount) values (v_cafe, public._cg01q_mk(v_cafe, 'storefront', 10), 'eft', 'pending', 10);
+  insert into commerce.service_order_payments(tenant_id, service_order_id, provider, status, amount) values (v_cafe, public._cg01q_mk(v_cafe, 'storefront', 10), 'counter', 'pending', 10);
   -- the existing gateway path still fits the ledger
   insert into commerce.service_order_payments(tenant_id, service_order_id, provider, status, amount) values (v_cafe, public._cg01q_mk(v_cafe, 'storefront', 10), 'payfast', 'pending', 10);
 end

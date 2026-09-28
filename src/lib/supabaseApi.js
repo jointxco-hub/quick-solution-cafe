@@ -514,6 +514,19 @@ export async function getQuickSolutionPaymentStatus(orderId, paymentToken) {
 }
 
 
+// QS Payment Eligibility v1: records "Pay at Counter" or "EFT" as the
+// customer's stated intent on an already-created order - never a
+// completed payment. Ownership is proven with the same paymentToken
+// create_quick_solution_cart_order already returns, exactly like
+// getQuickSolutionPaymentStatus above.
+export async function recordQuickSolutionPaymentIntent(orderId, paymentToken, method) {
+  return rpc('qs_record_quick_solution_payment_intent', {
+    p_order_id: orderId,
+    p_payment_token: paymentToken,
+    p_method: method
+  })
+}
+
 export async function getQuickSolutionTracking({ orderNumber, trackingToken = null, contact = null }) {
   return rpc('get_quick_solution_tracking', {
     p_order_number: String(orderNumber || '').trim(),

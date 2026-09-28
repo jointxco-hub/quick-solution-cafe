@@ -2,10 +2,29 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
 import { formatMoney } from '../lib/pricing.js'
-import { beginQuickSolutionPayment, createQuickSolutionCartOrder, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
+import { beginQuickSolutionPayment, createQuickSolutionCartOrder, recordQuickSolutionPaymentIntent, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
 import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from '../lib/trackingSession.js'
 import { canStartPayfastRedirect, resolvePayfastInitOutcome } from '../lib/payfastInit.js'
+import { computeBasketPaymentEligibility, buildPayfastShortfallMessage, DEFAULT_PAYFAST_MINIMUM_AMOUNT } from '../lib/paymentEligibility.js'
+import { buildOrderHandoffMessage } from '../lib/whatsappOrderHandoff.js'
+import { buildWhatsappUrl } from '../lib/businessInfo.js'
+
+function copyToClipboard(text) {
+  navigator.clipboard?.writeText?.(text).catch(() => {})
+}
+
+function formatEftBankDetailsText(bank, orderNumber, amount) {
+  if (!bank) return ''
+  return [
+    `Bank: ${bank.bank || ''}`,
+    `Account holder: ${bank.accountHolder || ''}`,
+    `Account type: ${bank.accountType || ''}`,
+    `Account number: ${bank.accountNumber || ''}`,
+    `Amount due: ${formatMoney(amount)}`,
+    `Reference: ${orderNumber || ''}`
+  ].join('\n')
+}
 
 function displayFileName(file, fileMeta) {
   const raw = String(file?.originalName || file?.name || fileMeta?.originalName || fileMeta?.name || '').trim()
@@ -58,6 +77,7 @@ export default function OrderBasket({
   items,
   open,
   fulfilmentPoints = [],
+  paymentConfig = null,
   onClose,
   onRemove,
   onContinueShopping,
@@ -77,6 +97,13 @@ export default function OrderBasket({
   const [uploadResults, setUploadResults] = useState([])
   const [paymentState, setPaymentState] = useState('idle')
   const [paymentError, setPaymentError] = useState('')
+  // 'idle' | 'saving' | 'counter' | 'eft' | 'error' - which non-PayFast
+  // payment intent (if any) the customer has chosen for this order, once
+  // created. Mutually exclusive with paying via PayFast and with each
+  // other, since qs_record_quick_solution_payment_intent only ever keeps
+  // one pending intent meaningful at a time for this v1.
+  const [intentState, setIntentState] = useState('idle')
+  const [intentError, setIntentError] = useState('')
   // Synchronous double-click guard: React committing the disabled button is
   // not synchronous, so a second click landing before that render must still
   // be rejected here, not only by the DOM attribute.
@@ -93,6 +120,22 @@ export default function OrderBasket({
     [fulfilmentPoints]
   )
   const visiblePoints = fulfilment === 'quick-point' ? quickPoints : cafePoints
+
+  const basketEligibility = useMemo(
+    () => computeBasketPaymentEligibility(items, {
+      payfastMinimumAmount: Number(paymentConfig?.payfastMinimumAmount) || DEFAULT_PAYFAST_MINIMUM_AMOUNT,
+      eftBankDetails: paymentConfig?.eftBankDetails
+    }),
+    [items, paymentConfig]
+  )
+  const payfastShortfall = basketEligibility.payfastMeetsMinimum
+    ? null
+    : buildPayfastShortfallMessage(basketEligibility.amountShortOfMinimum, basketEligibility.payfastMinimumAmount)
+  const eftBankDetails = paymentConfig?.eftBankDetails || null
+  const fulfilmentLabel = fulfilment === 'delivery'
+    ? 'Delivery'
+    : (visiblePoints.find((point) => point.id === selectedPointId)?.name
+      || (fulfilment === 'quick-point' ? 'Quick Point' : 'Quick Solution Café · 13 Kite Cres'))
 
   useEffect(() => {
     if (!open) setPhase('basket')
@@ -236,6 +279,35 @@ export default function OrderBasket({
     }
   }
 
+  // Pay at Counter / EFT: the order already exists at this point (this only
+  // ever renders in phase === 'success'). This never creates a completed
+  // payment - it records the customer's stated intent as a 'pending' row
+  // via qs_record_quick_solution_payment_intent, leaving payment_status
+  // untouched until a real payment actually happens.
+  const recordIntent = async (method) => {
+    if (!orderResponse?.orderId || !orderResponse?.paymentToken) return
+    setIntentState('saving')
+    setIntentError('')
+    try {
+      const result = await recordQuickSolutionPaymentIntent(orderResponse.orderId, orderResponse.paymentToken, method)
+      if (!result?.ok) throw new Error('Could not record your payment choice.')
+      setIntentState(method)
+    } catch (error) {
+      setIntentState('error')
+      setIntentError(error?.message || 'Could not record your payment choice.')
+    }
+  }
+
+  const whatsappHandoffHref = orderResponse
+    ? buildWhatsappUrl(encodeURIComponent(buildOrderHandoffMessage({
+      orderNumber: orderResponse.orderNumber,
+      customerName,
+      items,
+      total: orderResponse.totalAmount,
+      fulfilmentLabel
+    })))
+    : buildWhatsappUrl()
+
   if (!open) return null
 
   if (phase === 'success' && orderResponse && (paymentState === 'starting' || paymentState === 'redirecting')) {
@@ -269,7 +341,7 @@ export default function OrderBasket({
             ) : null}
             {failedUploads.length ? <p className="checkout-error">{failedUploads.length} file upload{failedUploads.length === 1 ? '' : 's'} still need attention. The order itself is already safe.</p> : null}
             <div className="qs-cart-success-actions">
-              {orderResponse.paymentToken && orderResponse.deliveryFeeStatus !== 'pending_confirmation' && paymentState !== 'paid' ? (
+              {orderResponse.paymentToken && orderResponse.deliveryFeeStatus !== 'pending_confirmation' && paymentState !== 'paid' && basketEligibility.payfastOffered && intentState !== 'counter' && intentState !== 'eft' ? (
                 <button className="button primary-green" type="button" disabled={!canStartPayfastRedirect(paymentState)} onClick={startCombinedPayment}>
                   {paymentState === 'starting' || paymentState === 'redirecting'
                     ? 'Opening secure PayFast checkout…'
@@ -279,6 +351,51 @@ export default function OrderBasket({
               {orderResponse.deliveryFeeStatus === 'pending_confirmation' ? <div className="secure-file-note neutral"><strong>Delivery price first.</strong><span>We will confirm the delivery fee before payment opens.</span></div> : null}
               {paymentState === 'paid' ? <div className="secure-file-note success"><strong>Payment confirmed.</strong></div> : null}
               {paymentError ? <p className="checkout-error">{paymentError}</p> : null}
+
+              {!basketEligibility.payfastOffered && basketEligibility.allowPayfast && basketEligibility.hasPayableItems && orderResponse.deliveryFeeStatus !== 'pending_confirmation' && paymentState !== 'paid' && payfastShortfall ? (
+                <div className="secure-file-note neutral">
+                  <strong>{payfastShortfall.headline}</strong>
+                  <span>{payfastShortfall.detail}</span>
+                </div>
+              ) : null}
+
+              {basketEligibility.payAtCounterOffered && paymentState !== 'paid' && intentState !== 'counter' && intentState !== 'eft' ? (
+                <button className="button dark" type="button" disabled={intentState === 'saving'} onClick={() => recordIntent('counter')}>
+                  Pay at counter
+                </button>
+              ) : null}
+              {intentState === 'counter' ? (
+                <div className="secure-file-note success">
+                  <strong>Pay at counter</strong>
+                  <span>Payment due: {formatMoney(orderResponse.totalAmount)}</span>
+                  <span>Show order {orderResponse.orderNumber} when you arrive.</span>
+                </div>
+              ) : null}
+
+              {basketEligibility.eftOffered && paymentState !== 'paid' && intentState !== 'counter' && intentState !== 'eft' ? (
+                <button className="button ghost" type="button" disabled={intentState === 'saving'} onClick={() => recordIntent('eft')}>
+                  Pay by EFT
+                </button>
+              ) : null}
+              {intentState === 'eft' ? (
+                <div className="secure-file-note neutral">
+                  <strong>Awaiting EFT payment</strong>
+                  <span>Amount: {formatMoney(orderResponse.totalAmount)}</span>
+                  <span>Reference: {orderResponse.orderNumber}</span>
+                  {basketEligibility.eftBankDetailsComplete ? (
+                    <>
+                      <span>{eftBankDetails.bank} · {eftBankDetails.accountHolder} · {eftBankDetails.accountType} · {eftBankDetails.accountNumber}</span>
+                      <div className="qs-eft-copy-actions">
+                        <button type="button" className="text-button" onClick={() => copyToClipboard(formatEftBankDetailsText(eftBankDetails, orderResponse.orderNumber, orderResponse.totalAmount))}>Copy banking details</button>
+                        <button type="button" className="text-button" onClick={() => copyToClipboard(orderResponse.orderNumber)}>Copy reference</button>
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+              {intentError ? <p className="checkout-error">{intentError}</p> : null}
+
+              <a className="button ghost" href={whatsappHandoffHref} target="_blank" rel="noreferrer">Continue on WhatsApp</a>
               <a className="button dark" href={trackingHref}><Icon name="search" size={16}/> Track this order</a>
               <button className="button ghost" type="button" onClick={onClose}>Done</button>
             </div>
