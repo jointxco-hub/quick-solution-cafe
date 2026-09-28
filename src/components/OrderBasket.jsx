@@ -342,7 +342,7 @@ export default function OrderBasket({
                 <h3>Collection or delivery?</h3>
               </div>
               <div className="qs-checkout-choice-grid">
-                <button type="button" className={fulfilment === 'cafe' ? 'selected' : ''} onClick={() => setFulfilment('cafe')}>
+                <button type="button" className={fulfilment === 'cafe' ? 'selected' : ''} disabled={!cafePoints.length} onClick={() => setFulfilment('cafe')}>
                   <Icon name="store" size={18}/><span><strong>Quick Solution Café</strong><small>Collect from a branch</small></span>
                 </button>
                 <button type="button" className={fulfilment === 'quick-point' ? 'selected' : ''} disabled={!quickPoints.length} onClick={() => setFulfilment('quick-point')}>
