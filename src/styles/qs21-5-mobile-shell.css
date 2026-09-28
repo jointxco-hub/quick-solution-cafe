@@ -570,15 +570,21 @@
   .product-card-footer { margin-top: 10px; }
 }
 
-/* QS-21.7 — configurator orientation + visual selection. */
+/* QS-21.7 — configurator orientation + visual selection.
+   .site-header is `position: sticky`, so its own box always keeps its real
+   height in the document flow - it must NEVER also change height/overflow
+   to hide itself. That combination (a layout-affecting height change firing
+   on every scroll-driven class toggle, at the same time as a transform
+   transition) is what caused the header/scroll jitter this fixes: every
+   toggle forced a reflow of the header and everything below it, interleaved
+   with a still-running transform. Hiding via transform ALONE is a
+   compositor-only operation - it never touches layout, so content below
+   the header never jumps, regardless of how often `is-hidden` toggles. */
 .qs217-auto-header {
   transition: transform .24s ease, border-color .24s ease;
   will-change: transform;
 }
 .qs217-auto-header.is-hidden {
-  height: 0;
-  overflow: hidden;
-  border-bottom-width: 0;
   transform: translateY(calc(-100% - 2px));
 }
 .qs217-auto-header:focus-within,

@@ -19,7 +19,7 @@ export default function PaymentRedirectLoader({ orderNumber, amount }) {
         </div>
 
         <span className="eyebrow">Secure payment</span>
-        <h2>Taking you to PayFast…</h2>
+        <h2>Opening secure PayFast checkout…</h2>
         <p>
           Your order is already saved. We’re creating the secure payment session
           before handing you over to PayFast.
