@@ -472,7 +472,7 @@ export default function AdminQuickPointsPanel({ onPointsChange }) {
               {isPrimaryCafe ? <div className="quick-point-protection-note"><Icon name="store" size={18}/><span><strong>Primary café protection.</strong> XOS will not let you disable the last active café collection location.</span></div> : null}
 
               <div className="quick-point-save-bar">
-                <div><strong>{draft.id ? 'Update fulfilment point' : 'Create Quick Point'}</strong><span>{draft.status === 'active' ? 'Saving makes this location available to the customer storefront.' : 'This location will stay hidden from active customer collection choices.'}</span></div>
+                <div><strong>{draft.id ? 'Update fulfilment point' : draft.kind === 'cafe' ? 'Create Café location' : 'Create Quick Point'}</strong><span>{draft.status === 'active' ? 'Saving makes this location available to the customer storefront.' : 'This location will stay hidden from active customer collection choices.'}</span></div>
                 <button className="button primary-green" type="button" onClick={save} disabled={saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save location'}</button>
               </div>
 
