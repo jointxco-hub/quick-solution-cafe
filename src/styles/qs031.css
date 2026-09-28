@@ -80,6 +80,31 @@
   margin-top: 4px;
 }
 
+.admin-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+  color: #a3a199;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.admin-auth-divider::before,
+.admin-auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e4e2db;
+}
+
+.admin-auth-google {
+  width: 100%;
+  justify-content: center;
+  min-height: 48px;
+}
+
 .admin-auth-error,
 .admin-system-message {
   padding: 12px 14px;

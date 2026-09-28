@@ -4,11 +4,13 @@ import AdminOppsHandoffPanel from './AdminOppsHandoffPanel.jsx'
 import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'
 import { cloneCatalog, exportCatalog } from '../lib/catalogStore.js'
 import {
+  consumeOAuthRedirectResult,
   getAdminSession,
   loadQuickSolutionAdminCatalog,
   saveQuickSolutionProduct,
   signInAdmin,
-  signOutAdmin
+  signOutAdmin,
+  startAdminGoogleSignIn
 } from '../lib/supabaseApi.js'
 
 const modifierKeys = ['rate', 'fee', 'multiplier', 'total', 'unitFee']
@@ -444,6 +446,29 @@ function AdminSignIn({ onSignedIn }) {
   const [password, setPassword] = useState('')
   const [state, setState] = useState('idle')
   const [error, setError] = useState('')
+  // Separate from `state` (the password form's own submit state): this
+  // also has to cover the redirect back FROM Google, which the password
+  // form never does, and the two must never show a stale message from
+  // one flow while the other is what's actually pending.
+  const [googleState, setGoogleState] = useState('idle')
+
+  // Runs once per mount, including the render this component gets right
+  // after GoTrue redirects back to /admin with the session (or an error)
+  // in the URL fragment. consumeOAuthRedirectResult() returns null on an
+  // ordinary visit to the login page, so this is a no-op then.
+  useEffect(() => {
+    const result = consumeOAuthRedirectResult()
+    if (!result) return
+    if (result.error) {
+      setError(result.error)
+      return
+    }
+    setGoogleState('loading')
+    onSignedIn(result.session)
+      .catch((nextError) => setError(nextError.message || 'Could not finish signing in with Google.'))
+      .finally(() => setGoogleState('idle'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const submit = async (event) => {
     event.preventDefault()
@@ -456,6 +481,17 @@ function AdminSignIn({ onSignedIn }) {
     } catch (nextError) {
       setError(nextError.message || 'Could not sign in.')
       setState('idle')
+    }
+  }
+
+  const continueWithGoogle = () => {
+    setError('')
+    setGoogleState('redirecting')
+    try {
+      startAdminGoogleSignIn()
+    } catch (nextError) {
+      setError(nextError.message || 'Could not start Google sign-in.')
+      setGoogleState('idle')
     }
   }
 
@@ -472,6 +508,15 @@ function AdminSignIn({ onSignedIn }) {
           {error && <div className="admin-auth-error" role="alert">{error}</div>}
           <button className="button dark admin-auth-submit" type="submit" disabled={state === 'loading'}>{state === 'loading' ? 'Signing in…' : 'Sign in securely'}</button>
         </form>
+        <div className="admin-auth-divider"><span>or</span></div>
+        <button
+          type="button"
+          className="button ghost admin-auth-google"
+          onClick={continueWithGoogle}
+          disabled={googleState !== 'idle'}
+        >
+          {googleState === 'redirecting' ? 'Redirecting to Google…' : googleState === 'loading' ? 'Signing in…' : 'Continue with Google'}
+        </button>
         <a className="text-button admin-back-storefront" href="/">← Back to storefront</a>
       </div>
     </div>
