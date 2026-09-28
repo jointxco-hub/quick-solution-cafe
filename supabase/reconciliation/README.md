@@ -17,6 +17,17 @@ run`) — confirmed, then fixed by moving them here.
   staging-only customer-tracking subsystem (`commerce.qs_issue_tracking_token`,
   `commerce.service_order_tracking_tokens`, `public.get_quick_solution_tracking`) into git.
   Must run **after** the reconciliation migration above (see its own header).
+- `20260928090000_qs_upload_authorization_rpcs_restoration.sql` — restores only
+  `public.qs_authorize_file_upload` and `public.qs_register_file_upload` (the two RPCs the
+  `quick-solution-upload` Edge Function depends on), extracted out of
+  `20260913163950_qs_03_1_upload_tokens.sql`. That migration's own ledger row was never applied
+  to production, and its committed body is no longer safe to apply as-is there — it also
+  replaces `public.create_quick_solution_order` with a body dated before the later
+  `quoteRequired`/`PHOTOGRAPHY_SESSION` checkout-protection guard, which production's live
+  `create_quick_solution_order` already carries. This file's postflight pins that function's
+  hash and would fail loudly if it were ever run somewhere that hash doesn't hold (confirmed:
+  staging's own `create_quick_solution_order` hash already differs from production's, exactly
+  the same reason the other two files above live here instead of `supabase/migrations/`).
 
 Apply each to production exactly once, using the same hash-verified, one-transaction method
 already used for every other production/staging change in this project (read the file's exact
