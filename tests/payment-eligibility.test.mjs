@@ -5,7 +5,8 @@ import {
   DEFAULT_PAYFAST_MINIMUM_AMOUNT,
   resolveProductPaymentEligibility,
   computeBasketPaymentEligibility,
-  buildPayfastShortfallMessage
+  buildPayfastShortfallMessage,
+  isEftBankDetailsComplete
 } from '../src/lib/paymentEligibility.js'
 import { buildOrderHandoffMessage } from '../src/lib/whatsappOrderHandoff.js'
 
@@ -94,7 +95,7 @@ test('one line disallowing EFT blocks EFT for the entire basket', () => {
 })
 
 test('a basket that is fully eligible offers PayFast, EFT and Counter together', () => {
-  const result = computeBasketPaymentEligibility([item({ total: 100 })])
+  const result = computeBasketPaymentEligibility([item({ total: 100 })], { eftBankDetails: completeBank })
   assert.equal(result.payfastOffered, true)
   assert.equal(result.eftOffered, true)
   assert.equal(result.payAtCounterOffered, true)
@@ -128,6 +129,35 @@ test('a basket of only quote-required lines offers nothing through this layer - 
   assert.equal(result.payfastOffered, false)
   assert.equal(result.eftOffered, false)
   assert.equal(result.payAtCounterOffered, false)
+})
+
+// ── EFT bank-details completeness (never blank/placeholder to a customer) ──
+const completeBank = { bank: 'FNB/RMB', accountHolder: 'Some Holder', accountType: 'Business Account', accountNumber: '1234567' }
+
+test('isEftBankDetailsComplete: all four required fields present and non-empty is complete', () => {
+  assert.equal(isEftBankDetailsComplete(completeBank), true)
+})
+
+test('isEftBankDetailsComplete: missing, empty or unseeded ({}) bank details are all incomplete', () => {
+  assert.equal(isEftBankDetailsComplete(null), false)
+  assert.equal(isEftBankDetailsComplete({}), false)
+  assert.equal(isEftBankDetailsComplete({ ...completeBank, accountNumber: '' }), false)
+  assert.equal(isEftBankDetailsComplete({ ...completeBank, accountHolder: '   ' }), false)
+  const { bank, ...missingBank } = completeBank
+  assert.equal(isEftBankDetailsComplete(missingBank), false)
+})
+
+test('computeBasketPaymentEligibility never offers EFT while the tenant\'s bank details are incomplete, even when every line allows EFT', () => {
+  const eligible = computeBasketPaymentEligibility([item({ total: 100 })], { eftBankDetails: {} })
+  assert.equal(eligible.allowEft, true)
+  assert.equal(eligible.eftBankDetailsComplete, false)
+  assert.equal(eligible.eftOffered, false)
+})
+
+test('computeBasketPaymentEligibility offers EFT once both the product flags and the bank details are complete', () => {
+  const eligible = computeBasketPaymentEligibility([item({ total: 100 })], { eftBankDetails: completeBank })
+  assert.equal(eligible.eftBankDetailsComplete, true)
+  assert.equal(eligible.eftOffered, true)
 })
 
 // ── WhatsApp Order Handoff ───────────────────────────────────────────────

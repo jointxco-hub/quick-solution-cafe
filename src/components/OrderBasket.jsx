@@ -14,15 +14,16 @@ function copyToClipboard(text) {
   navigator.clipboard?.writeText?.(text).catch(() => {})
 }
 
-function formatEftBankDetailsText(bank, orderNumber) {
+function formatEftBankDetailsText(bank, orderNumber, amount) {
   if (!bank) return ''
   return [
     `Bank: ${bank.bank || ''}`,
-    `Account name: ${bank.accountName || ''}`,
+    `Account holder: ${bank.accountHolder || ''}`,
+    `Account type: ${bank.accountType || ''}`,
     `Account number: ${bank.accountNumber || ''}`,
-    `Branch code: ${bank.branchCode || ''}`,
+    `Amount due: ${formatMoney(amount)}`,
     `Reference: ${orderNumber || ''}`
-  ].filter((line) => !line.endsWith(': ')).join('\n')
+  ].join('\n')
 }
 
 function displayFileName(file, fileMeta) {
@@ -122,7 +123,8 @@ export default function OrderBasket({
 
   const basketEligibility = useMemo(
     () => computeBasketPaymentEligibility(items, {
-      payfastMinimumAmount: Number(paymentConfig?.payfastMinimumAmount) || DEFAULT_PAYFAST_MINIMUM_AMOUNT
+      payfastMinimumAmount: Number(paymentConfig?.payfastMinimumAmount) || DEFAULT_PAYFAST_MINIMUM_AMOUNT,
+      eftBankDetails: paymentConfig?.eftBankDetails
     }),
     [items, paymentConfig]
   )
@@ -380,11 +382,11 @@ export default function OrderBasket({
                   <strong>Awaiting EFT payment</strong>
                   <span>Amount: {formatMoney(orderResponse.totalAmount)}</span>
                   <span>Reference: {orderResponse.orderNumber}</span>
-                  {eftBankDetails ? (
+                  {basketEligibility.eftBankDetailsComplete ? (
                     <>
-                      <span>{eftBankDetails.bank} · {eftBankDetails.accountName} · {eftBankDetails.accountNumber} · Branch {eftBankDetails.branchCode}</span>
+                      <span>{eftBankDetails.bank} · {eftBankDetails.accountHolder} · {eftBankDetails.accountType} · {eftBankDetails.accountNumber}</span>
                       <div className="qs-eft-copy-actions">
-                        <button type="button" className="text-button" onClick={() => copyToClipboard(formatEftBankDetailsText(eftBankDetails, orderResponse.orderNumber))}>Copy banking details</button>
+                        <button type="button" className="text-button" onClick={() => copyToClipboard(formatEftBankDetailsText(eftBankDetails, orderResponse.orderNumber, orderResponse.totalAmount))}>Copy banking details</button>
                         <button type="button" className="text-button" onClick={() => copyToClipboard(orderResponse.orderNumber)}>Copy reference</button>
                       </div>
                     </>

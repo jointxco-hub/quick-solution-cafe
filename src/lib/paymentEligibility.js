@@ -27,6 +27,19 @@ export const DEFAULT_PAYMENT_ELIGIBILITY = Object.freeze({
 
 export const DEFAULT_PAYFAST_MINIMUM_AMOUNT = 50
 
+// The exact four fields the customer-facing EFT screen needs (bank,
+// account holder, account type, account number - "amount due" and
+// "reference" are computed from the order itself, never stored here).
+// Real values are seeded directly into tenants.settings, never hardcoded
+// in this codebase - if any one of the four is missing (not yet seeded,
+// or a hand-edit dropped one), EFT must stay unavailable rather than show
+// blank/placeholder details to a customer.
+export const REQUIRED_EFT_BANK_DETAIL_FIELDS = ['bank', 'accountHolder', 'accountType', 'accountNumber']
+
+export function isEftBankDetailsComplete(bankDetails) {
+  return REQUIRED_EFT_BANK_DETAIL_FIELDS.every((field) => typeof bankDetails?.[field] === 'string' && bankDetails[field].trim().length > 0)
+}
+
 // A product's customer_definition may have no paymentEligibility key at all
 // (every product that predates this slice), a partial object, or malformed
 // values (hand-edited JSON) - this always returns a complete, safe object,
@@ -56,7 +69,7 @@ function isPayableItem(item) {
 // that method for the entire basket - no split payment, no per-line
 // routing. A basket with zero payable lines (everything quote-required)
 // offers nothing - there is nothing to pay for through this layer.
-export function computeBasketPaymentEligibility(items, { payfastMinimumAmount = DEFAULT_PAYFAST_MINIMUM_AMOUNT } = {}) {
+export function computeBasketPaymentEligibility(items, { payfastMinimumAmount = DEFAULT_PAYFAST_MINIMUM_AMOUNT, eftBankDetails = null } = {}) {
   const payableItems = (items || []).filter(isPayableItem)
   const payableTotal = payableItems.reduce((sum, item) => sum + Number(item.total || 0), 0)
   const hasPayableItems = payableItems.length > 0
@@ -68,6 +81,11 @@ export function computeBasketPaymentEligibility(items, { payfastMinimumAmount = 
   const payfastMeetsMinimum = payableTotal >= payfastMinimumAmount
   const payfastOffered = allowPayfast && payfastMeetsMinimum
   const amountShortOfMinimum = payfastMeetsMinimum ? 0 : Math.round((payfastMinimumAmount - payableTotal) * 100) / 100
+  // EFT is tenant-wide config, not per-product - a product opting in never
+  // overrides an incomplete/unseeded bank-details config: EFT stays
+  // unavailable rather than showing blank/placeholder details.
+  const eftBankDetailsComplete = isEftBankDetailsComplete(eftBankDetails)
+  const eftOffered = allowEft && eftBankDetailsComplete
 
   return {
     payableTotal,
@@ -78,7 +96,8 @@ export function computeBasketPaymentEligibility(items, { payfastMinimumAmount = 
     payfastMinimumAmount,
     payfastMeetsMinimum,
     payfastOffered,
-    eftOffered: allowEft,
+    eftBankDetailsComplete,
+    eftOffered,
     payAtCounterOffered: allowPayAtCounter,
     amountShortOfMinimum
   }
