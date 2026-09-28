@@ -1,4 +1,5 @@
 import { buildPricingDefinition } from './pricingDefinition.js'
+import { parseOAuthRedirectHash } from './oauthRedirect.js'
 
 const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
 const SUPABASE_KEY = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '')
@@ -117,6 +118,50 @@ export async function signOutAdmin() {
     }
   }
   if (typeof window !== 'undefined') window.localStorage.removeItem(ADMIN_SESSION_KEY)
+}
+
+// Google staff sign-in, added alongside the existing email/password path
+// (signInAdmin) rather than replacing it. There is no @supabase/supabase-js
+// dependency in this app - every other auth call here is a raw fetch
+// against GoTrue's REST endpoints (grant_type=password, grant_type=
+// refresh_token) - so this follows the same pattern instead of pulling in
+// the SDK just for one button: /auth/v1/authorize is GoTrue's own OAuth
+// entry point, and it redirects back to `redirect_to` with the session in
+// the URL fragment (the plain implicit grant - this never sends a
+// `code_challenge`, so GoTrue does not switch to the PKCE code-exchange
+// flow), the same token shape signInAdmin already hands to storeSession().
+//
+// Authorization is never decided here or anywhere in this file: every RPC
+// call already goes through getAdminAccessToken() -> the same server-side
+// tenant/capability check regardless of which provider issued the JWT, so
+// a Google-authenticated session that lacks Quick Solution staff access
+// fails the same RPC calls the same way a password session would
+// (AdminProductManager's existing 401/error handling in loadLiveAdmin
+// already covers both - this file never names, checks or brands on a
+// capability itself, see cafe-access.test.mjs).
+export function startAdminGoogleSignIn(redirectTo) {
+  if (!isSupabaseConfigured()) throw new Error('Supabase is not configured.')
+  const target = redirectTo || (typeof window !== 'undefined' ? `${window.location.origin}/admin` : '/admin')
+  const url = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(target)}`
+  window.location.assign(url)
+}
+
+// Side-effecting wrapper: reads the real URL, strips the fragment right
+// away (tokens/errors must never linger in the URL bar, browser history,
+// or survive a refresh), and stores the session through the exact same
+// storeSession() the password grant already uses. Returns null when the
+// current URL carries no OAuth redirect at all (the ordinary case of
+// just loading the login page), so callers can tell "not an OAuth
+// return" apart from "OAuth returned an error".
+export function consumeOAuthRedirectResult() {
+  if (typeof window === 'undefined') return null
+  const result = parseOAuthRedirectHash(window.location.hash)
+  if (!result) return null
+
+  window.history.replaceState(null, '', window.location.pathname + window.location.search)
+
+  if (result.error) return { error: result.error }
+  return { session: storeSession(result.payload) }
 }
 
 export async function loadQuickSolutionCatalog() {
