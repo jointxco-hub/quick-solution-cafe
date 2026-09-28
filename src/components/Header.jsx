@@ -21,8 +21,10 @@ export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickP
 
   useEffect(() => {
     lastScrollY.current = window.scrollY || 0
+    let ticking = false
 
-    const onScroll = () => {
+    const evaluate = () => {
+      ticking = false
       const nextY = Math.max(0, window.scrollY || 0)
       const delta = nextY - lastScrollY.current
 
@@ -31,6 +33,22 @@ export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickP
       else if (delta < -4) setHidden(false)
 
       lastScrollY.current = nextY
+    }
+
+    // Coalesce to one evaluation per animation frame - the raw 'scroll'
+    // event can fire many times per frame (trackpad inertia in particular),
+    // and calling setHidden from every single one of those was the actual
+    // cause of the header/scroll jitter: each toggle used to also change
+    // the header's height (see qs21-5-mobile-shell.css), so a burst of
+    // rapid, unthrottled toggles meant a burst of reflows of the header and
+    // everything below it. That height change is gone now (transform-only
+    // hide), but rAF-throttling the listener itself is the other half of
+    // the fix - it keeps setHidden from firing meaningfully more often than
+    // the browser can actually paint, on any device.
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      window.requestAnimationFrame(evaluate)
     }
 
     window.addEventListener('scroll', onScroll, { passive: true })

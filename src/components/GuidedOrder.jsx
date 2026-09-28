@@ -1,6 +1,7 @@
-﻿import React, { useEffect, useMemo, useState } from 'react'
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
+import { canStartPayfastRedirect, resolvePayfastInitOutcome } from '../lib/payfastInit.js'
 import FieldControl from './FieldControl.jsx'
 import SupplierVariantConfigurator from './SupplierVariantConfigurator.jsx'
 import PhotoDeliverablesField from './PhotoDeliverablesField.jsx'
@@ -189,6 +190,8 @@ export default function GuidedOrder({
   const [uploadedFile, setUploadedFile] = useState(null)
   const [uploadError, setUploadError] = useState('')
   const [paymentState, setPaymentState] = useState('idle')
+  // Synchronous double-click guard - see lib/payfastInit.js's header comment.
+  const paymentInFlight = useRef(false)
   const [paymentError, setPaymentError] = useState('')
   const [locationError, setLocationError] = useState('')
   const [itemAdded, setItemAdded] = useState(false)
@@ -459,25 +462,34 @@ export default function GuidedOrder({
       setPaymentError('This order does not have an active payment session yet.')
       return
     }
+    if (paymentInFlight.current || !canStartPayfastRedirect(paymentState)) return
+    paymentInFlight.current = true
 
     setPaymentState('starting')
     setPaymentError('')
     try {
       const result = await beginQuickSolutionPayment(orderResponse.orderId, orderResponse.paymentToken)
-      if (result?.alreadyPaid || result?.paymentStatus === 'paid') {
+      const outcome = resolvePayfastInitOutcome(result)
+      if (outcome.type === 'paid') {
         setPaymentState('paid')
         return
       }
-      if (!result?.payment_url) throw new Error('PayFast did not return a payment link.')
+      if (outcome.type === 'error') throw new Error(outcome.message)
       saveQuickSolutionPaymentSession({
         orderId: orderResponse.orderId,
         paymentToken: orderResponse.paymentToken,
         orderNumber: orderResponse.orderNumber,
         amount: orderResponse.totalAmount
       })
-      setPaymentState('waiting')
-      window.location.assign(result.payment_url)
+      // Distinct from the 'waiting' checkPayment() sets below (that means
+      // "we checked, PayFast has not confirmed yet, still on this page") -
+      // this means the browser is about to leave, so the loader below must
+      // keep covering the screen through window.location.assign, not flip
+      // back to the ordinary "still waiting" view for that one tick.
+      setPaymentState('redirecting')
+      window.location.assign(outcome.url)
     } catch (error) {
+      paymentInFlight.current = false
       setPaymentState('error')
       setPaymentError(error?.message || 'Could not open PayFast.')
     }
@@ -513,7 +525,7 @@ export default function GuidedOrder({
       ? buildQuickSolutionTrackingHref(orderNumber, orderResponse.trackingToken)
       : '/track'
 
-    if (paymentState === 'starting') {
+    if (paymentState === 'starting' || paymentState === 'redirecting') {
       return <PaymentRedirectLoader orderNumber={orderNumber} amount={total}/>
     }
 
@@ -575,8 +587,8 @@ export default function GuidedOrder({
             </div>
             {paymentState !== 'paid' && (
               <div className="qs-payment-actions">
-                <button className="button primary-green" type="button" disabled={paymentState === 'starting'} onClick={startPayment}>
-                  {paymentState === 'starting' ? 'Opening PayFast…' : 'Pay securely with PayFast'}
+                <button className="button primary-green" type="button" disabled={!canStartPayfastRedirect(paymentState)} onClick={startPayment}>
+                  {paymentState === 'starting' || paymentState === 'redirecting' ? 'Opening secure PayFast checkout…' : 'Pay securely with PayFast'}
                 </button>
                 {(paymentState === 'waiting' || paymentState === 'checking' || paymentState === 'error') && (
                   <button className="button ghost" type="button" disabled={paymentState === 'checking'} onClick={checkPayment}>

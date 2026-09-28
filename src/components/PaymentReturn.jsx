@@ -1,13 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Header from './Header.jsx'
 import Icon from './Icon.jsx'
-import { getQuickSolutionPaymentStatus } from '../lib/supabaseApi.js'
+import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
+import { beginQuickSolutionPayment, getQuickSolutionPaymentStatus } from '../lib/supabaseApi.js'
 import {
   clearQuickSolutionPaymentSession,
   readQuickSolutionPaymentSession
 } from '../lib/paymentSession.js'
 import { buildQuickSolutionTrackingHref, readQuickSolutionTrackingSession } from '../lib/trackingSession.js'
 import { buildWhatsappUrl } from '../lib/businessInfo.js'
+import { canStartPayfastRedirect, resolvePayfastInitOutcome } from '../lib/payfastInit.js'
 
 function money(value) {
   return new Intl.NumberFormat('en-ZA', {
@@ -28,6 +30,39 @@ export default function PaymentReturn() {
   const [status, setStatus] = useState(null)
   const [message, setMessage] = useState('')
   const [attempt, setAttempt] = useState(0)
+  const [payAgainState, setPayAgainState] = useState('idle')
+  const [payAgainError, setPayAgainError] = useState('')
+  const payAgainInFlight = useRef(false)
+
+  // Explicit action, never automatic: this order's saved payment session is
+  // read fresh (the same session readQuickSolutionPaymentSession already
+  // gave this page), and re-uses the exact same beginQuickSolutionPayment
+  // call the basket/guided checkout use - it never touches the storefront
+  // cart in any way, so there is no path from "pay again" back into an
+  // editable basket.
+  const payAgain = async () => {
+    if (!session?.paymentToken || !orderId) return
+    if (payAgainInFlight.current || !canStartPayfastRedirect(payAgainState)) return
+    payAgainInFlight.current = true
+    setPayAgainError('')
+    setPayAgainState('starting')
+    try {
+      const result = await beginQuickSolutionPayment(orderId, session.paymentToken)
+      const outcome = resolvePayfastInitOutcome(result)
+      if (outcome.type === 'paid') {
+        setPayAgainState('paid')
+        setState('paid')
+        return
+      }
+      if (outcome.type === 'error') throw new Error(outcome.message)
+      setPayAgainState('redirecting')
+      window.location.assign(outcome.url)
+    } catch (error) {
+      payAgainInFlight.current = false
+      setPayAgainState('error')
+      setPayAgainError(error?.message || 'Could not open PayFast.')
+    }
+  }
 
   const check = useCallback(async ({ quiet = false } = {}) => {
     if (!session?.paymentToken || !orderId) {
@@ -129,9 +164,17 @@ export default function PaymentReturn() {
     icon: 'refresh'
   }
 
+  if (payAgainState === 'starting' || payAgainState === 'redirecting') {
+    return <PaymentRedirectLoader orderNumber={orderNumber} amount={amount}/>
+  }
+
   return (
     <div className="qs-payment-return-page">
-      <Header/>
+      <Header
+        onGoHome={() => { window.location.href = '/' }}
+        onGoShop={() => { window.location.href = '/shop' }}
+        onGoQuickPoints={() => { window.location.href = '/#quick-points' }}
+      />
       <main className="qs-payment-return-shell">
         <section className={`qs-payment-return-card ${state}`}>
           <div className="qs-payment-return-icon"><Icon name={content.icon} size={26}/></div>
@@ -157,10 +200,16 @@ export default function PaymentReturn() {
           </div>
 
           {message ? <p className="qs-payment-return-note">{message}</p> : null}
+          {payAgainError ? <p className="qs-payment-return-note">{payAgainError}</p> : null}
 
           <div className="qs-payment-return-actions">
+            {(state === 'cancelled' || state === 'pending') && session?.paymentToken && (
+              <button className="button primary-green" type="button" disabled={!canStartPayfastRedirect(payAgainState)} onClick={payAgain}>
+                Pay again
+              </button>
+            )}
             {state !== 'paid' && (
-              <button className="button primary-green" type="button" onClick={() => check()}>
+              <button className="button ghost" type="button" onClick={() => check()}>
                 Check payment again
               </button>
             )}

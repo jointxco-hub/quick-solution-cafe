@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
+import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
 import { formatMoney } from '../lib/pricing.js'
 import { beginQuickSolutionPayment, createQuickSolutionCartOrder, uploadQuickSolutionFile } from '../lib/supabaseApi.js'
 import { saveQuickSolutionPaymentSession } from '../lib/paymentSession.js'
 import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from '../lib/trackingSession.js'
+import { canStartPayfastRedirect, resolvePayfastInitOutcome } from '../lib/payfastInit.js'
 
 function displayFileName(file, fileMeta) {
   const raw = String(file?.originalName || file?.name || fileMeta?.originalName || fileMeta?.name || '').trim()
@@ -75,6 +77,10 @@ export default function OrderBasket({
   const [uploadResults, setUploadResults] = useState([])
   const [paymentState, setPaymentState] = useState('idle')
   const [paymentError, setPaymentError] = useState('')
+  // Synchronous double-click guard: React committing the disabled button is
+  // not synchronous, so a second click landing before that render must still
+  // be rejected here, not only by the DOM attribute.
+  const paymentInFlight = useRef(false)
   const [idempotencyKey] = useState(() => globalThis.crypto?.randomUUID?.() || `qsc-cart-${Date.now()}-${Math.random().toString(36).slice(2)}`)
 
   const total = items.reduce((sum, item) => sum + Number(item.total || 0), 0)
@@ -205,23 +211,36 @@ export default function OrderBasket({
 
   const startCombinedPayment = async () => {
     if (!orderResponse?.orderId || !orderResponse?.paymentToken) return
+    if (paymentInFlight.current || !canStartPayfastRedirect(paymentState)) return
+    paymentInFlight.current = true
     setPaymentError('')
     setPaymentState('starting')
     try {
       const result = await beginQuickSolutionPayment(orderResponse.orderId, orderResponse.paymentToken)
-      if (result?.alreadyPaid || result?.paymentStatus === 'paid') {
+      const outcome = resolvePayfastInitOutcome(result)
+      if (outcome.type === 'paid') {
         setPaymentState('paid')
         return
       }
-      if (!result?.payment_url) throw new Error('PayFast did not return a payment link.')
-      window.location.assign(result.payment_url)
+      if (outcome.type === 'error') throw new Error(outcome.message)
+      // Stay disabled/loading through the actual navigation - there is
+      // nothing to recover to once this fires, so the button must never
+      // flip back to its idle "Pay securely" label before the browser
+      // actually leaves this page.
+      setPaymentState('redirecting')
+      window.location.assign(outcome.url)
     } catch (error) {
+      paymentInFlight.current = false
       setPaymentState('error')
       setPaymentError(error?.message || 'Could not open PayFast.')
     }
   }
 
   if (!open) return null
+
+  if (phase === 'success' && orderResponse && (paymentState === 'starting' || paymentState === 'redirecting')) {
+    return <PaymentRedirectLoader orderNumber={orderResponse.orderNumber} amount={orderResponse.totalAmount}/>
+  }
 
   if (phase === 'success' && orderResponse) {
     const failedUploads = uploadResults.filter((item) => !item.ok)
@@ -251,8 +270,10 @@ export default function OrderBasket({
             {failedUploads.length ? <p className="checkout-error">{failedUploads.length} file upload{failedUploads.length === 1 ? '' : 's'} still need attention. The order itself is already safe.</p> : null}
             <div className="qs-cart-success-actions">
               {orderResponse.paymentToken && orderResponse.deliveryFeeStatus !== 'pending_confirmation' && paymentState !== 'paid' ? (
-                <button className="button primary-green" type="button" disabled={paymentState === 'starting'} onClick={startCombinedPayment}>
-                  {paymentState === 'starting' ? 'Opening PayFast…' : `Pay ${formatMoney(orderResponse.totalAmount)} securely`}
+                <button className="button primary-green" type="button" disabled={!canStartPayfastRedirect(paymentState)} onClick={startCombinedPayment}>
+                  {paymentState === 'starting' || paymentState === 'redirecting'
+                    ? 'Opening secure PayFast checkout…'
+                    : `Pay ${formatMoney(orderResponse.totalAmount)} securely`}
                 </button>
               ) : null}
               {orderResponse.deliveryFeeStatus === 'pending_confirmation' ? <div className="secure-file-note neutral"><strong>Delivery price first.</strong><span>We will confirm the delivery fee before payment opens.</span></div> : null}

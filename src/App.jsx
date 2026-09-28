@@ -16,7 +16,7 @@ import AdminProductManager from './admin/AdminProductManager.jsx'
 import OrderBasket from './components/OrderBasket.jsx'
 import OfferCard from './components/OfferCard.jsx'
 import QuickConfigureSheet from './components/QuickConfigureSheet.jsx'
-import { loadCart, saveCart } from './lib/cartStore.js'
+import { clearCart, loadCart, saveCart } from './lib/cartStore.js'
 import { guidedJourneys, heroOutcomes, offers as defaultOffers, products as defaultProducts } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
@@ -362,9 +362,38 @@ export default function App() {
     scrollToQuickPoints()
   }
 
+  // A successfully created order is a saved, separate thing from here on -
+  // its own payment/tracking session, surfaced on the PayFast return page.
+  // The basket that built it must not linger anywhere, not just as an
+  // empty-but-present React array: clearCart() removes the storage key
+  // outright (rather than leaning on the [cart] effect above to persist an
+  // empty array), so there is exactly one way to answer "is there a stale
+  // basket" and it is the same one loadCart()/the bfcache guard both read.
+  const handleOrderCreated = () => {
+    setCart([])
+    clearCart()
+  }
+
   useEffect(() => {
     saveCart(cart)
   }, [cart])
+
+  // Defensive against the one real resurrection vector: bfcache. Pressing
+  // the browser's own Back button after leaving for PayFast can restore
+  // this exact tab's frozen JS heap instead of running this module again -
+  // no loadCart() call happens on that path, so without this listener the
+  // in-memory `cart` a customer sees would just be whatever it was at the
+  // instant they left, and adding one more item afterward would build on
+  // top of it. Re-reading storage on every bfcache restore (never on an
+  // ordinary first load - see event.persisted) means the UI can never show
+  // anything localStorage does not also already hold.
+  useEffect(() => {
+    const onPageShow = (event) => {
+      if (event.persisted) setCart(loadCart())
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
 
   // QS-20.1: if productViewContext is active AND still points at THIS
   // exact product (see resolveOfferContextCartTag()/navigation.js), tag
@@ -1146,7 +1175,7 @@ export default function App() {
         onClose={() => setCartOpen(false)}
         onRemove={removeCartItem}
         onContinueShopping={continueShopping}
-        onOrderCreated={() => setCart([])}
+        onOrderCreated={handleOrderCreated}
       />
       {cartNotice ? <div className="qs-cart-toast" role="status"><Icon name="bag" size={16}/><span>{cartNotice}</span></div> : null}
       {/* QS-21.5: hidden on mobile via CSS once the bottom nav is
