@@ -116,19 +116,20 @@ test('the migration pins the exact pre-change hash of every function it replaces
 })
 
 // ── 3. EFT config is tenant-scoped, never a git-committed literal ───────
-test('the migration never commits a real bank account number/holder as a literal - it only reserves the eftBankDetails shape', () => {
-  assert.doesNotMatch(code, /6310357/)
-  assert.doesNotMatch(code, /K2021866615/)
-  assert.doesNotMatch(code, /Gold Business Account/)
-  assert.match(code, /eftBankDetails/)
+// Structural, not value-based: this proves the migration only ever
+// PRESERVES whatever eftBankDetails already exists (defaulting to '{}' the
+// first time) rather than asserting the absence of one particular known
+// value - a real value seeded any other way would still be caught, not
+// just this one.
+test('the migration only ever preserves the tenant\'s existing eftBankDetails (or seeds an empty object) - it never assigns a literal bank-detail value', () => {
+  assert.match(code, /'eftBankDetails',\s*coalesce\(settings->'qsPayment'->'eftBankDetails',\s*'\{\}'::jsonb\)/)
+  assert.doesNotMatch(code, /'eftBankDetails',\s*jsonb_build_object\(\s*'bank'/)
 })
 
-test('no React/JS source file hardcodes the real EFT bank details - they only ever come from paymentConfig.eftBankDetails', () => {
+test('no React/JS source file hardcodes a bank/accountHolder/accountType/accountNumber value - those keys are only ever read off paymentConfig.eftBankDetails, never assigned a literal', () => {
   const files = ['../src/App.jsx', '../src/components/OrderBasket.jsx', '../src/lib/paymentEligibility.js', '../src/admin/AdminProductManager.jsx']
   for (const file of files) {
     const source = fs.readFileSync(new URL(file, import.meta.url), 'utf8')
-    assert.doesNotMatch(source, /6310357/)
-    assert.doesNotMatch(source, /FNB\/RMB/)
-    assert.doesNotMatch(source, /Gold Business Account/)
+    assert.doesNotMatch(source, /\b(bank|accountHolder|accountType|accountNumber)\s*:\s*['"]/, `${file} must never assign a literal string to a bank-detail key`)
   }
 })

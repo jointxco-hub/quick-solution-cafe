@@ -132,7 +132,7 @@ test('a basket of only quote-required lines offers nothing through this layer - 
 })
 
 // ── EFT bank-details completeness (never blank/placeholder to a customer) ──
-const completeBank = { bank: 'FNB/RMB', accountHolder: 'Some Holder', accountType: 'Business Account', accountNumber: '1234567' }
+const completeBank = { bank: 'Test Bank', accountHolder: 'Test Holder', accountType: 'Test Account', accountNumber: '0000000' }
 
 test('isEftBankDetailsComplete: all four required fields present and non-empty is complete', () => {
   assert.equal(isEftBankDetailsComplete(completeBank), true)
