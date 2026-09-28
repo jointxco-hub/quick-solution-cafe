@@ -22,6 +22,7 @@ import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
 import { resolveProductDisplayName, resolveProductPriceCue, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
 import { formatMoney } from './lib/pricing.js'
+import { resolveProductPaymentEligibility } from './lib/paymentEligibility.js'
 import {
   DEFAULT_PAGE,
   resolveAppRoute,
@@ -65,6 +66,7 @@ export default function App() {
   })
   const [catalog, setCatalog] = useState(() => loadCatalog(defaultProducts))
   const [fulfilmentPoints, setFulfilmentPoints] = useState([])
+  const [qsPaymentConfig, setQsPaymentConfig] = useState(null)
   const [catalogSource, setCatalogSource] = useState('local')
   const [selectedId, setSelectedId] = useState('a4-print')
   const [preset, setPreset] = useState({})
@@ -277,6 +279,9 @@ export default function App() {
         if (Array.isArray(data?.fulfilmentPoints)) {
           setFulfilmentPoints(data.fulfilmentPoints)
         }
+        if (data?.tenant?.paymentConfig) {
+          setQsPaymentConfig(data.tenant.paymentConfig)
+        }
       })
       .catch((error) => {
         console.warn('Quick Solution catalog fallback:', error)
@@ -424,6 +429,7 @@ export default function App() {
       total: Number(total || 0),
       summary,
       quoteRequired: Boolean(quoteRequired),
+      paymentEligibility: resolveProductPaymentEligibility(product),
       ...(contextTag ? { offerId: contextTag.offerId, offerName } : {})
     }])
     if (contextTag) setProductViewContext(null)
@@ -473,6 +479,7 @@ export default function App() {
           total: Number(line.unitTotal || 0),
           summary: line.summary,
           quoteRequired: Boolean(line.quoteRequired),
+          paymentEligibility: resolveProductPaymentEligibility(product),
           offerId: offer.id,
           offerName
         })
@@ -1172,6 +1179,7 @@ export default function App() {
         items={cart}
         open={cartOpen}
         fulfilmentPoints={fulfilmentPoints}
+        paymentConfig={qsPaymentConfig}
         onClose={() => setCartOpen(false)}
         onRemove={removeCartItem}
         onContinueShopping={continueShopping}

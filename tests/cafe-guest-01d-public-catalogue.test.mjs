@@ -15,6 +15,10 @@ const NEW = '20260926120000_cafe_guest_01d_public_catalogue_storefront_filter.sq
 const PREVIOUS = '20260913190841_qs_07_customer_fulfilment_choices.sql'
 const ORIGINAL = '20260913155351_qs_03_quick_solution_foundation.sql'
 const GUARD = '20260926110000_cafe_guest_01c_channel_availability_guard.sql'
+// QS Payment Eligibility v1 also redefines the catalogue RPC (adds the
+// curated tenant paymentConfig) - a later, legitimate entry in this same
+// function's history, not a change to what CAFE-GUEST-01D itself proved.
+const NEWEST = '20260928170000_qs_payment_eligibility_v1.sql'
 
 const migrationFiles = fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
 const stripComments = (sql) => sql.replace(/--[^\n]*/g, '')
@@ -83,7 +87,7 @@ test('the migration replaces the latest public catalogue definition, and only th
   const definers = migrations
     .filter((migration) => /create\s+or\s+replace\s+function\s+public\.get_quick_solution_catalog\(/i.test(migration.code))
     .map((migration) => migration.name)
-  assert.deepEqual(definers, [ORIGINAL, PREVIOUS, NEW], 'full history of the public catalogue RPC')
+  assert.deepEqual(definers, [ORIGINAL, PREVIOUS, NEW, NEWEST], 'full history of the public catalogue RPC')
 
   const created = [...next.bare.matchAll(/create\s+or\s+replace\s+function\s+([\w.]+)/gi)].map((match) => match[1])
   assert.deepEqual(created, ['public.get_quick_solution_catalog'])

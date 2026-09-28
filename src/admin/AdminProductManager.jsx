@@ -12,6 +12,7 @@ import {
   signOutAdmin,
   startAdminGoogleSignIn
 } from '../lib/supabaseApi.js'
+import { resolveProductPaymentEligibility } from '../lib/paymentEligibility.js'
 
 const modifierKeys = ['rate', 'fee', 'multiplier', 'total', 'unitFee']
 
@@ -619,6 +620,10 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
 
   const updateTop = (key, value) => replaceSelected({ ...product, [key]: value })
   const updateChannel = (key, value) => replaceSelected({ ...product, channels: { ...product.channels, [key]: value } })
+  const updatePaymentEligibility = (key, value) => replaceSelected({
+    ...product,
+    paymentEligibility: { ...resolveProductPaymentEligibility(product), [key]: value }
+  })
 
   const save = async () => {
     if (!hasChanges || saveState === 'saving') return
@@ -741,6 +746,23 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
                       ].map(([key, label, helper]) => (
                         <label className={`channel-card ${product.channels?.[key] ? 'selected' : ''}`} key={key}>
                           <input type="checkbox" checked={Boolean(product.channels?.[key])} onChange={(event) => updateChannel(key, event.target.checked)}/>
+                          <span><strong>{label}</strong><small>{helper}</small></span>
+                          <i/>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="admin-section-block">
+                    <span className="eyebrow">Payment options</span>
+                    <div className="channel-grid">
+                      {[
+                        ['allowPayfast', 'Allow secure online payment', 'PayFast, once the basket meets the minimum order amount.'],
+                        ['allowEft', 'Allow EFT', 'Customer pays by bank transfer, order stays unpaid until confirmed.'],
+                        ['allowPayAtCounter', 'Allow pay at counter', 'Customer pays in person when collecting.']
+                      ].map(([key, label, helper]) => (
+                        <label className={`channel-card ${resolveProductPaymentEligibility(product)[key] ? 'selected' : ''}`} key={key}>
+                          <input type="checkbox" checked={resolveProductPaymentEligibility(product)[key]} onChange={(event) => updatePaymentEligibility(key, event.target.checked)}/>
                           <span><strong>{label}</strong><small>{helper}</small></span>
                           <i/>
                         </label>

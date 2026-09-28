@@ -376,9 +376,10 @@ test('the gaps recorded by this slice are explicit; the public catalogue gap is 
   assert.match(normalizedHeader, /No counter catalogue may be exposed until a deliberate product curation pass sets it/)
   assert.match(normalizedHeader, /Do not rely on the React UI/)
   // This slice never redefines the catalogue; CAFE-GUEST-01D (a separate
-  // migration) does. The pos curation gap is unchanged by both.
+  // migration) does, and QS Payment Eligibility v1 later redefines it again
+  // (adds the curated tenant paymentConfig) without touching this gap.
   assert.doesNotMatch(guard.code, /get_quick_solution_catalog/i)
-  assert.equal(latestFunctionBody('get_quick_solution_catalog').file, '20260926120000_cafe_guest_01d_public_catalogue_storefront_filter.sql')
+  assert.equal(latestFunctionBody('get_quick_solution_catalog').file, '20260928170000_qs_payment_eligibility_v1.sql')
 })
 
 test('SQL contract test is rollback-contained, never commits, and covers every required case', () => {
