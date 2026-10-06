@@ -673,14 +673,14 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
           {activeSection === 'products' ? <span>{activeCount} live products</span> : activeSection === 'quick-points' ? <span>Fulfilment network</span> : <span>Location 001</span>}
           <span className="admin-live-badge"><i/> XOS Staging</span>
           <a className="button ghost" href="#top">View storefront</a>
-          <a className="button ghost" href="/counter">Counter POS</a>
+          <a className="button ghost admin-counter-link" href="/counter">Counter POS</a>
           {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
           <button className="admin-signout-button" type="button" onClick={logout}>Sign out</button>
         </div>
       </header>
 
       <main className="admin-shell">
-        <section className="admin-intro compact-admin-intro">
+        <section className={`admin-intro compact-admin-intro ${activeSection === 'orders' ? 'orders-intro' : ''}`}>
           <div>
             <span className="eyebrow">Quick Solution Admin · Location 001</span>
             <h1>{activeSection === 'orders' ? 'Orders first.' : activeSection === 'quick-points' ? 'Local fulfilment, one source.' : 'Product & pricing control.'}</h1>

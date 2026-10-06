@@ -1,0 +1,142 @@
+/* Staff screens: allow grid children and long references to shrink on phones. */
+.admin-layout > *, .handoff-layout > *, .quick-points-layout > *,
+.admin-field, .handoff-card, .handoff-card-top > *, .quick-point-editor { min-width: 0; }
+.admin-app input, .admin-app select, .admin-app textarea { max-width: 100%; }
+.admin-app .handoff-card, .admin-app .quick-point-editor-head,
+.admin-app .handoff-preview, .admin-app .schema-tag { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .admin-shell { width: calc(100% - 24px); padding: 20px 0 32px; }
+  .admin-header { height: auto; min-height: 64px; padding: 10px 12px; gap: 8px; flex-wrap: wrap; }
+  .admin-header-actions { gap: 6px; flex-wrap: wrap; }
+  .admin-header-actions .button { min-height: 44px; padding: 10px 12px; }
+  .admin-intro { margin-bottom: 18px; gap: 12px; }
+  .admin-intro h1 { font-size: 32px; }
+  .admin-layout, .handoff-layout, .quick-points-layout { grid-template-columns: minmax(0, 1fr); }
+  .admin-editor-heading, .admin-section-block { padding: 16px; border-radius: 18px; }
+  .admin-editor-heading h2 { font-size: 28px; }
+  .admin-two-col, .channel-grid, .quick-point-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-field input, .admin-field select, .admin-field textarea { font-size: 16px; min-height: 44px; }
+  .admin-section-title { flex-wrap: wrap; gap: 8px; }
+  .admin-products { position: static; max-height: 240px; overflow: auto; }
+  .admin-editor, .handoff-preview, .quick-point-editor { scroll-margin-top: 150px; }
+  /* Save stays in the document so it never obscures fields or the keyboard. */
+  .admin-save-bar { position: static; padding: 12px 14px; gap: 10px; border-radius: 16px; box-shadow: none; flex-direction: row; }
+  .admin-save-bar .button { min-height: 44px; width: auto; flex: 0 0 auto; padding: 10px 14px; }
+  .admin-save-bar strong { font-size: 14px; }
+  .handoff-summary-grid, .quick-points-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .handoff-metric, .quick-points-summary article { padding: 12px; border-radius: 16px; gap: 4px; }
+  .handoff-metric strong, .quick-points-summary strong { font-size: 28px; }
+  .handoff-metric span, .quick-points-summary span { font-size: 13px; }
+  .handoff-metric small, .quick-points-summary small { font-size: 11px; line-height: 1.35; }
+  .handoff-queue, .handoff-preview { min-height: 0; }
+  .handoff-card-top { flex-direction: column; gap: 4px; }
+  .handoff-card-meta, .handoff-card-tags, .handoff-card-flags,
+  .handoff-preview-actions { flex-wrap: wrap; }
+  .handoff-list { max-height: 360px; }
+  .quick-point-editor-head { flex-direction: column; padding: 16px; gap: 12px; }
+  .quick-point-status-field { width: 100%; }
+  .quick-point-form-grid { padding: 12px; gap: 12px; }
+  .quick-point-form-section { padding: 14px; }
+  .rate-row { gap: 10px; flex-wrap: wrap; }
+  .rate-inputs { justify-content: flex-start; }
+  .admin-section-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; overflow: visible; gap: 4px; }
+  .admin-section-tabs button { justify-content: center; padding: 8px; white-space: normal; }
+  .handoff-preview-actions, .handoff-follow-up-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .handoff-preview-actions button, .handoff-follow-up-actions button { min-height: 44px; padding: 10px 14px; border-radius: 12px; overflow-wrap: normal; }
+  .handoff-preview-actions svg, .handoff-follow-up-actions svg { flex-shrink: 0; }
+  .handoff-line { align-items: flex-start; gap: 12px; }
+  .handoff-line > div { min-width: 0; display: grid; gap: 5px; }
+  .handoff-line > span { flex-shrink: 0; }
+  .handoff-line strong, .handoff-line small { display: block; }
+  .handoff-card-top > div { display: grid; gap: 4px; }
+}
+/* Orders use a quiet list; colour marks exceptions and the next action. */
+.order-overview { display: flex; gap: 36px; padding: 16px 0; }
+.order-overview > div { display: grid; gap: 4px; }
+.order-overview strong { font-size: 32px; letter-spacing: -.04em; }
+.order-overview span { font-size: 13px; color: #666660; }
+.order-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.order-filters button { border: 1px solid #deded8; border-radius: 10px; background: #fff; padding: 10px 14px; min-height: 44px; cursor: pointer; }
+.order-filters button[aria-pressed="true"] { background: #171717; color: #fff; border-color: #171717; }
+.order-more > summary { padding: 18px; cursor: pointer; font-weight: 650; }
+.order-back { display: none; }
+.handoff-section .handoff-card { background: #fff; }
+.handoff-section .handoff-card.active { background: #f7f7f5; border-color: #b8b8b0; box-shadow: none; }
+.handoff-section .status-pill { background: #f2f2ef; color: #5d5d56; border-color: transparent; }
+.handoff-section .status-pill.bad { background: #fff0e5; color: #984315; }
+.handoff-section .status-pill.warn { background: #fff7e9; color: #886020; }
+.handoff-section .status-pill.good { background: transparent; color: #26705d; }
+.handoff-section .handoff-card-flags[hidden] { display: none; }
+@media (max-width: 760px) {
+  .orders-intro { display: none; }
+  .handoff-section { scroll-margin-top: 80px; }
+  .handoff-heading { align-items: center; flex-direction: row; gap: 8px; margin-bottom: 0; }
+  .handoff-heading h2 { font-size: 26px; margin: 0; }
+  .handoff-heading-actions { width: auto; }
+  .handoff-heading-actions button { font-size: 13px; padding: 8px 12px; }
+  .handoff-list { max-height: none; overflow: visible; padding: 0; }
+  .handoff-queue { border: 0; background: transparent; }
+  .handoff-queue-title { padding: 12px 0; }
+  .handoff-card { border-radius: 12px; padding: 14px; margin-bottom: 8px; }
+  .handoff-card-top { flex-direction: row; align-items: flex-start; }
+  .handoff-card-top strong { font-size: 15px; }
+  .handoff-card-top small { font-size: 13px; }
+  .handoff-card-meta { font-size: 13px; margin-top: 8px; }
+  .handoff-card-tags { margin-top: 8px; }
+  .handoff-card .status-pill { font-size: 11px; padding: 4px 7px; }
+  .order-list-open .handoff-preview { display: none; }
+  .order-detail-open .handoff-queue, .order-detail-open > .order-overview, .order-detail-open > .order-filters, .order-detail-open > .handoff-heading { display: none; }
+  .order-back { display: block; background: transparent; border: 0; min-height: 44px; padding: 12px 16px; cursor: pointer; color: #26705d; }
+  .handoff-preview-top { padding: 16px; gap: 16px; }
+  .handoff-preview-top h3 { font-size: 24px; }
+  .handoff-status-row { padding: 12px 16px; }
+  .handoff-detail-grid, .handoff-message-grid, .handoff-preview-body { padding: 12px; gap: 8px; }
+  .handoff-subsection, .message-card { background: #fafaf8; border-color: #e8e8e2; padding: 12px; border-radius: 12px; }
+  .detail-row { border-radius: 10px; padding: 12px; gap: 6px; }
+  .detail-row strong { font-size: 15px; }
+  .handoff-preview-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .handoff-preview-actions .button.dark { grid-column: 1 / -1; background: #176953; color: #fff; }
+}
+/* Compact mobile rows replace cards nested inside cards. */
+@media (max-width: 760px) {
+  .admin-app .admin-section-tabs { margin-bottom: 12px; padding: 4px; border-radius: 12px; }
+  .admin-app .admin-section-tabs button { min-height: 44px; font-size: 14px; padding: 6px; }
+  .admin-app .handoff-section { padding: 14px; border-radius: 16px; }
+  .admin-app .handoff-list { gap: 0; }
+  .admin-app .handoff-card { padding: 12px 0; gap: 6px; margin: 0; border: 0; border-bottom: 1px solid #e5e5df; border-radius: 0; background: transparent; }
+  .admin-app .handoff-card.active { background: transparent; box-shadow: none; }
+  .admin-app .handoff-card-meta, .admin-app .handoff-card-tags { margin-top: 0; }
+  .admin-app .handoff-card-top { gap: 8px; }
+  .admin-app .handoff-card-top > div { gap: 2px; }
+  .admin-app .handoff-card-top .status-pill { max-width: 45%; text-align: right; }
+  .admin-app .handoff-preview { border: 0; border-radius: 0; background: transparent; }
+  .admin-app .handoff-preview-top { padding: 8px 0 12px; }
+  .admin-app .handoff-preview-top .eyebrow { display: none; }
+  .admin-app .handoff-preview-top h3 { margin: 4px 0 8px; }
+  .admin-app .handoff-preview-top p { margin: 0; font-size: 14px; }
+  .admin-app .handoff-preview-actions button { font-size: 14px; }
+  .admin-app .handoff-status-row { padding: 12px 0; gap: 8px; }
+  .admin-app .order-more > summary, .admin-app .order-warning > summary { padding: 14px 0; font-size: 14px; cursor: pointer; }
+  .admin-app .order-warning > summary { color: #886020; }
+  .admin-app .order-more .handoff-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr); padding: 0; gap: 0; }
+  .admin-app .order-more .detail-row { flex-direction: row; align-items: baseline; padding: 10px 0; border: 0; border-bottom: 1px solid #e8e8e2; border-radius: 0; background: transparent; gap: 12px; }
+  .admin-app .order-more .detail-row span { font-size: 13px; flex-shrink: 0; }
+  .admin-app .order-more .detail-row strong { font-size: 13px; text-align: right; line-height: 1.45; }
+  .admin-app .order-more .handoff-preview-body { padding: 0; gap: 16px; }
+  .admin-app .order-more .handoff-subsection { padding: 12px 0; border: 0; background: transparent; border-radius: 0; }
+  .admin-app .handoff-subsection-title, .admin-app .handoff-lines-header { font-size: 14px; }
+  .admin-app .handoff-line { padding: 10px 0; border: 0; border-bottom: 1px solid #e8e8e2; background: transparent; border-radius: 0; }
+  .admin-app .handoff-line strong, .admin-app .handoff-line > span { font-size: 14px; }
+  .admin-app .handoff-line small { font-size: 12px; }
+  .admin-app .handoff-technical-details { border-radius: 8px; background: transparent; }
+  .admin-app .handoff-technical-details > summary { padding: 12px; font-size: 13px; }
+  .admin-app .message-card { margin: 8px 0; padding: 12px; border-radius: 8px; }
+  .admin-app .message-card.warn { background: #fff7e9; border-color: #f0dfc2; }
+}
+
+@media (max-width:760px) {
+  .admin-app .admin-header .admin-counter-link { display: inline-flex; min-height: 40px; padding: 8px 12px; font-size: 13px; color: #346957; background: #f4f7f4; border-color: #e2e7e1; }
+  .admin-app .admin-header-actions { gap: 8px; }
+  .admin-app .handoff-card-top > div > span, .admin-app .handoff-card-meta, .admin-app .handoff-preview-top p { color: #747a74; }
+  .admin-app .order-more .detail-row span, .admin-app .handoff-line small { color: #747a74; }
+}

@@ -97,6 +97,7 @@ import '../styles/qs-counter.css'
 export default function CounterPage() {
   const [state, setState] = useState(() => (getAdminSession() ? { status: 'loading' } : { status: 'signed-out' }))
   const [selectedId, setSelectedId] = useState(null)
+  const [choosingService, setChoosingService] = useState(true)
   const [draft, setDraft] = useState(null)
   const [customer, setCustomer] = useState(EMPTY_COUNTER_CUSTOMER)
   const [sale, setSale] = useState(initialSale)
@@ -342,6 +343,7 @@ export default function CounterPage() {
     const entry = (state.entries || []).find((item) => item.product.id === productId)
     if (!entry) return
     setSale((current) => backToEdit(current))
+    setChoosingService(false)
     setSelectedId(productId)
     setDraft((current) => selectCounterProduct(current, entry.product))
     // On a phone the options sit below the product list, so bring them into view.
@@ -411,6 +413,8 @@ export default function CounterPage() {
     <CounterView
       state={state}
       selectedId={selectedId}
+      choosingService={choosingService}
+      onChooseService={() => setChoosingService(true)}
       draft={draft}
       customer={customer}
       sale={sale}

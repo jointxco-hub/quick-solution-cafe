@@ -1,5 +1,8 @@
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
+import ProductScene from '../components/ProductScene.jsx'
+import { resolveVisualAxisOption } from '../lib/configuratorVisuals.js'
+import { resolveProductMedia, deriveVariantAxisValues } from '../lib/productContent.js'
 import FieldControl from '../components/FieldControl.jsx'
 import { formatMoney } from '../lib/pricing.js'
 import { COUNTER_ACTIONS } from '../lib/counterCatalogue.js'
@@ -20,6 +23,14 @@ import { COUNTER_UNKNOWN_RESULT_MESSAGE, EMPTY_COUNTER_CUSTOMER, SALE_PHASES, in
 // handlers. It never calls the API and never decides who may use the counter or which product may be
 // written - the server's answer arrives as `state`, and write readiness comes from
 // counterSubmissionReadiness.js.
+
+function CounterProductImage({ product }) {
+  const [failed, setFailed] = useState(false)
+  const source = resolveProductMedia(product).hero
+  return <span className="qsc-product-image" aria-hidden="true">
+    {source && !failed ? <img src={source} alt="" loading="lazy" onError={() => setFailed(true)}/> : <ProductScene productId={product.id}/>}
+  </span>
+}
 
 function TopBar({ signedIn, onSignOut }) {
   return (
@@ -93,8 +104,17 @@ function ProductList({ sections, selectedId, onSelect, locked }) {
                   aria-pressed={selected}
                   data-product-id={entry.product.id}
                   disabled={locked}
-                  onClick={() => onSelect?.(entry.product.id)}
+                  onClick={(event) => {
+                    onSelect?.(entry.product.id)
+                    const screen = event?.currentTarget?.ownerDocument?.defaultView
+                    if (screen?.matchMedia('(max-width: 899px)').matches) {
+                      screen.requestAnimationFrame(() => {
+                        screen.document.querySelector('.qsc-work')?.scrollIntoView({ block: 'start' })
+                      })
+                    }
+                  }}
                 >
+                  <CounterProductImage product={entry.product}/>
                   <span className="qsc-tile-top"><strong>{entry.product.name}</strong><ActionBadge action={entry.action}/></span>
                   {entry.product.description ? <small>{entry.product.description}</small> : null}
                 </button>
@@ -105,6 +125,57 @@ function ProductList({ sections, selectedId, onSelect, locked }) {
       ))}
     </nav>
   )
+}
+
+function CounterNumberField({ field, value, onChange }) {
+  const minimum = Number(field.min ?? 1)
+  const step = Number(field.step || 1)
+  const blank = value === '' || value == null
+  const current = blank ? minimum : Number(value)
+  const adjust = (direction) => {
+    const next = blank ? minimum : Math.round((current + direction * step) * 10000) / 10000
+    onChange(String(Math.min(Number(field.max ?? Infinity), Math.max(minimum, next))))
+  }
+  return <div className="field">
+    <label htmlFor={`counter-${field.id}`}>{field.label}</label>
+    <div className="qsc-number-control">
+      <button type="button" aria-label={`Decrease ${field.shortLabel || field.label}`} disabled={!blank && current <= minimum} onClick={() => adjust(-1)}>−</button>
+      <input id={`counter-${field.id}`} type="number" inputMode={step % 1 ? 'decimal' : 'numeric'} min={field.min} max={field.max} step={step} value={value ?? ''} placeholder={String(minimum)} onChange={(event) => onChange(event.target.value)}/>
+      <button type="button" aria-label={`Increase ${field.shortLabel || field.label}`} disabled={!blank && current >= Number(field.max ?? Infinity)} onClick={() => adjust(1)}>+</button>
+    </div>
+    {field.suffix ? <small className="qsc-number-unit">{field.suffix}</small> : null}
+  </div>
+}
+
+function CounterVariantField({ product, field, value, onChange }) {
+  const axes = product.pricing.variantAxes
+  const [choices, setChoices] = useState(() => deriveVariantAxisValues(product, value) || {})
+  const choose = (axisId, optionId) => {
+    const next = { ...choices, [axisId]: optionId }
+    for (const axis of axes) {
+      const option = axis.options.find((item) => item.id === next[axis.id])
+      if (option?.availableWhen && !Object.entries(option.availableWhen).every(([id, allowed]) => allowed.includes(next[id]))) next[axis.id] = ''
+    }
+    setChoices(next)
+    const variant = product.pricing.variantTemplate.replace(/\{([^}]+)\}/g, (_, id) => next[id] || '')
+    onChange(axes.every((axis) => next[axis.id]) && product.pricing.variants?.[variant] ? variant : '')
+  }
+  return <div className="qsc-variant-choices">
+    <span className="qsc-variant-heading">{field.label}</span>
+    {axes.map((axis) => {
+      const options = axis.options.filter((option) => !option.availableWhen || Object.entries(option.availableWhen).every(([id, allowed]) => allowed.includes(choices[id])))
+      const visuals = options.map((option) => ({ option, visual: resolveVisualAxisOption(product, axis.id, option) }))
+      if (visuals.length && visuals.every(({ visual }) => visual?.image)) return <fieldset className="field qsc-visual-field" key={axis.id}>
+        <legend>{axis.label}</legend>
+        <div className="qsc-visual-choices">{visuals.map(({ option, visual }) => <button type="button" key={option.id} className={`qsc-visual-choice ${choices[axis.id] === option.id ? 'selected' : ''}`} aria-pressed={choices[axis.id] === option.id} onClick={() => choose(axis.id, option.id)}>
+          <img src={visual.image} alt="" loading="lazy"/>
+          <span>{option.label}</span>
+        </button>)}</div>
+      </fieldset>
+      return <FieldControl key={axis.id} field={{ ...axis, label: axis.label, type: options.length <= 3 ? 'segmented' : 'select', options }} value={choices[axis.id] || ''} onChange={(id) => choose(axis.id, id)}/>
+    })}
+    <small>Choose each option to identify the exact product.</small>
+  </div>
 }
 
 function ProductForm({ entry, draft, onChange }) {
@@ -123,12 +194,13 @@ function ProductForm({ entry, draft, onChange }) {
   return (
     <div className="field-grid qsc-fields">
       {counterFields(product).map((field) => (
-        <FieldControl
-          key={`${product.id}:${field.id}`}
-          field={field}
-          value={draft?.values?.[field.id] ?? ''}
-          onChange={(value) => onChange?.(field.id, value)}
-        />
+        <div key={`${product.id}:${field.id}`} className={`qsc-form-field qsc-form-field-${field.id}`}>
+          {field.type === 'number' ? <CounterNumberField field={field} value={draft?.values?.[field.id] ?? ''} onChange={(value) => onChange?.(field.id, value)}/> : field.id === 'variant' && product.pricing?.variantAxes?.length && product.pricing?.variantTemplate ? <CounterVariantField product={product} field={field} value={draft?.values?.[field.id]} onChange={(value) => onChange?.(field.id, value)}/> : <FieldControl
+            field={field}
+            value={draft?.values?.[field.id] ?? ''}
+            onChange={(value) => onChange?.(field.id, value)}
+          />}
+        </div>
       ))}
     </div>
   )
@@ -145,6 +217,8 @@ function CustomerFields({ customer, onChange }) {
     </label>
   )
   return (
+    <details className="qsc-customer-details">
+      <summary>Customer details <small>Optional · Walk-in by default</small></summary>
     <fieldset className="qsc-customer">
       <legend>Customer <small>optional · leave blank for Walk-in</small></legend>
       <div className="field-grid">
@@ -153,6 +227,7 @@ function CustomerFields({ customer, onChange }) {
         {field('email', 'Email', { autoComplete: 'off', inputMode: 'email', placeholder: 'name@example.com' })}
       </div>
     </fieldset>
+    </details>
   )
 }
 
@@ -901,6 +976,8 @@ function UnpaidPanel({ unpaid, entries, onRefresh, onOpenOrder, onSignIn, signIn
 export default function CounterView({
   state,
   selectedId = null,
+  choosingService = false,
+  onChooseService,
   draft = null,
   customer = EMPTY_COUNTER_CUSTOMER,
   sale = initialSale(),
@@ -978,15 +1055,17 @@ export default function CounterView({
     const writable = selected ? resolveCounterSubmission(selected).status === COUNTER_SUBMISSION.WRITABLE : false
     const inSale = sale.phase !== SALE_PHASES.EDITING && sale.attempt !== null
     const saleBody = (
-      <div className="qsc-layout">
+      <div className={`qsc-layout ${(choosingService || !selected) && !inSale ? 'qsc-choosing-service' : 'qsc-configuring-service'}`}>
         <ProductList sections={groupCounterEntries(entries)} selectedId={selected?.product.id || null} onSelect={onSelect} locked={isSaleLocked(sale)}/>
         <section className="qsc-work" aria-label="Configure">
+          {!inSale && selected ? <button type="button" className="qsc-change-service" onClick={() => { onChooseService?.(); window.requestAnimationFrame?.(() => document.querySelector('.qsc-layout')?.scrollIntoView({ block: 'start' })); }}>← Change service</button> : null}
           {inSale ? (
             <SalePanel sale={sale} onBackToEdit={onBackToEdit} onSubmit={onSubmit} onNewSale={onNewSale} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
           ) : selected ? (
             <>
               <div className="qsc-config">
                 <div className="qsc-config-head">
+                  <CounterProductImage key={selected.product.id} product={selected.product}/>
                   <div><span className="eyebrow">{selected.group}</span><h2>{selected.product.name}</h2></div>
                   <ActionBadge action={selected.action}/>
                 </div>

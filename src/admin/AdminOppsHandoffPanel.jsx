@@ -1,5 +1,6 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '../components/Icon.jsx'
+import { orderDay, filterOrders } from './orderOverview.js'
 import {
   adminIssueQuickSolutionTrackingToken,
   buildOppsAppUrl,
@@ -109,6 +110,8 @@ function MessageList({ title, icon, items = [], tone = 'neutral', emptyLabel }) 
 
 export default function AdminOppsHandoffPanel() {
   const [queue, setQueue] = useState([])
+  const [orderFilter, setOrderFilter] = useState('all')
+  const [detailOpen, setDetailOpen] = useState(false)
   const [selectedId, setSelectedId] = useState('')
   const [previewCache, setPreviewCache] = useState({})
   const [loadState, setLoadState] = useState('loading')
@@ -151,12 +154,15 @@ export default function AdminOppsHandoffPanel() {
     loadQueue().catch(() => {})
   }, [])
 
+  const todayKey = orderDay(new Date())
+  const visibleQueue = filterOrders(queue, orderFilter)
   const summary = useMemo(() => ({
+    today: queue.filter((item) => orderDay(item.submittedAt) === todayKey).length,
     total: queue.length,
     ready: queue.filter((item) => item.handoffStatus === 'ready').length,
     blocked: queue.filter((item) => item.handoffStatus === 'blocked').length,
     sent: queue.filter((item) => item.handoffStatus === 'sent').length
-  }), [queue])
+  }), [queue, todayKey])
 
   const selected = queue.find((item) => item.serviceOrderId === selectedId) || null
   const preview = selected ? previewCache[selected.serviceOrderId] : null
@@ -279,46 +285,45 @@ export default function AdminOppsHandoffPanel() {
   const canSend = selected && selected.handoffStatus !== 'sent' && blockerItems.length === 0 && Boolean(preview)
 
   return (
-    <section className="handoff-section">
+    <section className={`handoff-section ${detailOpen ? 'order-detail-open' : 'order-list-open'}`}>
       <div className="handoff-heading">
         <div>
-          <span className="eyebrow">Orders · OPPS handoff</span>
-          <h2>Review the job. Then send it to operations.</h2>
-          <p>Quick Solution catches missing files and incomplete details before a job becomes an OPPS production order.</p>
+          <h2>Orders</h2>
         </div>
         <div className="handoff-heading-actions">
           <button type="button" onClick={() => loadQueue().catch(() => {})}><Icon name="refresh" size={16}/> Refresh orders</button>
         </div>
       </div>
 
-      <div className="handoff-summary-grid">
-        <article className="handoff-metric"><span>Orders in view</span><strong>{summary.total}</strong><small>Customer jobs visible to this Quick Solution tenant.</small></article>
-        <article className="handoff-metric good"><span>Ready for OPPS</span><strong>{summary.ready}</strong><small>No blocking handoff issues.</small></article>
-        <article className="handoff-metric bad"><span>Needs attention</span><strong>{summary.blocked}</strong><small>Missing or incomplete job information.</small></article>
-        <article className="handoff-metric neutral"><span>Sent to OPPS</span><strong>{summary.sent}</strong><small>Linked to operations already.</small></article>
+      <div className="order-overview" aria-label="Order totals">
+        <div><strong>{summary.today}</strong><span>Today</span></div>
+        <div><strong>{summary.total}</strong><span>Overall</span></div>
+      </div>
+      <div className="order-filters" aria-label="Filter orders">
+        {[['all', 'All'], ['today', 'Today'], ['attention', 'Needs attention']].map(([value, label]) => <button key={value} type="button" aria-pressed={orderFilter === value} onClick={() => setOrderFilter(value)}>{label}</button>)}
       </div>
 
       {(notice || error) && <div className={`admin-system-message ${error ? 'error' : ''}`}>{error || notice}</div>}
 
       <div className="handoff-layout">
         <aside className="handoff-queue">
-          <div className="handoff-queue-title"><strong>Customer orders</strong><small>{queue.length} visible</small></div>
+          <div className="handoff-queue-title"><strong>Customer orders</strong><small>{visibleQueue.length} shown</small></div>
           {loadState === 'loading' ? <div className="handoff-empty">Loading orders…</div> : null}
-          {loadState !== 'loading' && queue.length === 0 ? <div className="handoff-empty">No Quick Solution orders are available yet.</div> : null}
+          {loadState !== 'loading' && visibleQueue.length === 0 ? <div className="handoff-empty">No orders in this view.</div> : null}
           <div className="handoff-list">
-            {queue.map((item) => (
+            {visibleQueue.map((item) => (
               <button
                 key={item.serviceOrderId}
                 type="button"
                 className={`handoff-card ${selectedId === item.serviceOrderId ? 'active' : ''}`}
-                onClick={() => setSelectedId(item.serviceOrderId)}
+                onClick={() => { setSelectedId(item.serviceOrderId); setDetailOpen(true); if (window.matchMedia('(max-width: 760px)').matches) document.querySelector('.handoff-section')?.scrollIntoView({ block: 'start' }); }}
               >
                 <div className="handoff-card-top">
                   <div>
                     <strong>{item.orderNumber}</strong>
                     <small>{item.customerName}</small>
                   </div>
-                  <StatusPill label={HANDOFF_LABELS[item.handoffStatus] || item.handoffStatus} tone={toneForStatus(item.handoffStatus)} />
+                  <StatusPill label={SERVICE_STATUS_LABELS[item.serviceStatus] || item.serviceStatus || 'Submitted'} tone={['cancelled'].includes(item.serviceStatus) ? 'bad' : item.serviceStatus === 'completed' ? 'good' : 'neutral'} />
                 </div>
                 <div className="handoff-card-meta">
                   <span>{money(item.totalAmount)}</span>
@@ -326,9 +331,9 @@ export default function AdminOppsHandoffPanel() {
                 </div>
                 <div className="handoff-card-tags">
                   <StatusPill label={paymentLabel(item.paymentStatus)} tone={toneForStatus(item.paymentStatus)} />
-                  {item.oppsOrderId ? <StatusPill label="OPPS linked" tone="good" /> : null}
+                  {['blocked', 'failed'].includes(item.handoffStatus) ? <StatusPill label="Needs attention" tone="bad" /> : null}
                 </div>
-                <div className="handoff-card-flags">
+                <div className="handoff-card-flags" hidden>
                   <span>{Array.isArray(item.blockers) ? item.blockers.length : 0} issue(s)</span>
                   <span>{Array.isArray(item.warnings) ? item.warnings.length : 0} note(s)</span>
                 </div>
@@ -338,6 +343,7 @@ export default function AdminOppsHandoffPanel() {
         </aside>
 
         <section className="handoff-preview">
+          <button type="button" className="order-back" onClick={() => setDetailOpen(false)}>← All orders</button>
           {selected ? (
             <>
               <div className="handoff-preview-top">
@@ -359,35 +365,29 @@ export default function AdminOppsHandoffPanel() {
                 <StatusPill label={HANDOFF_LABELS[selected.handoffStatus] || selected.handoffStatus} tone={toneForStatus(selected.handoffStatus)} />
                 <StatusPill label={paymentLabel(selected.paymentStatus)} tone={toneForStatus(selected.paymentStatus)} />
                 {preview ? <StatusPill label={fileCount ? `${fileCount} file${fileCount === 1 ? '' : 's'} received` : 'No file attached'} tone={fileCount ? 'good' : 'neutral'} /> : null}
-                {proposedOppsOrder ? <StatusPill label={handoffPoint?.name ? `${handoffPointKind || 'Collection'} · ${handoffPoint.name}` : fulfilmentLabel(proposedOppsOrder.fulfillment_type)} tone="neutral" /> : null}
               </div>
 
+              {blockerItems.length > 0 && <MessageList title="Needs attention" icon="alertCircle" tone="bad" items={blockerItems} />}
+              {warningItems.length > 0 && <details className="order-warning"><summary>{warningItems.length} staff note{warningItems.length === 1 ? '' : 's'} · review before handoff</summary><MessageList title="Staff notes" icon="alertCircle" tone="warn" items={warningItems} /></details>}
+              <details className="order-more" key={selected.serviceOrderId}><summary>Order details</summary>
               <div className="handoff-detail-grid">
                 <DetailRow label="Order state" value={SERVICE_STATUS_LABELS[selected.serviceStatus] || selected.serviceStatus} />
                 <DetailRow label="Last checked" value={selected.lastPreviewedAt ? dateTime(selected.lastPreviewedAt) : previewingId === selected.serviceOrderId ? 'Checking now…' : 'Checking automatically…'} />
                 <DetailRow label="OPPS link" value={selected.oppsOrderId ? 'Created and linked' : 'Not created yet'} />
-                <DetailRow label="Operational handoff" value={HANDOFF_LABELS[selected.handoffStatus] || selected.handoffStatus} />
-              </div>
-
-              <div className="handoff-message-grid">
-                <MessageList title={blockerItems.length ? "Needs attention" : "Job checks"} icon={blockerItems.length ? "xCircle" : "checkCircle"} tone={blockerItems.length ? 'bad' : 'good'} items={blockerItems} emptyLabel="No blocking issues found." />
-                <MessageList title="Staff notes" icon="alertCircle" tone={warningItems.length ? 'warn' : 'neutral'} items={warningItems} emptyLabel="No extra warnings right now." />
               </div>
 
               <div className="handoff-preview-body">
                 <div className="handoff-subsection">
-                  <div className="handoff-subsection-title"><Icon name="layers" size={16}/><strong>What OPPS will receive</strong></div>
+                  <div className="handoff-subsection-title"><strong>Job & collection</strong></div>
                   {proposedOppsOrder ? (
                     <>
                       <div className="handoff-detail-grid compact">
                         <DetailRow label="Starting stage" value="Received" />
                         <DetailRow label="Fulfilment" value={fulfilmentDisplay} />
                         {handoffPointArea ? <DetailRow label="Collection area" value={handoffPointArea} /> : null}
-                        <DetailRow label="Payment" value={paymentLabel(proposedOppsOrder.payment_status)} />
-                        <DetailRow label="Total" value={money(proposedOppsOrder.total_amount)} />
                       </div>
                       <div className="handoff-lines">
-                        <div className="handoff-lines-header"><strong>Production lines</strong><small>{proposedLines.length} line(s)</small></div>
+                        <div className="handoff-lines-header"><strong>Items</strong><small>{proposedLines.length} line(s)</small></div>
                         {proposedLines.length ? proposedLines.map((line, index) => (
                           <div className="handoff-line" key={`${line.line_id || index}-${index}`}>
                             <div>
@@ -399,7 +399,7 @@ export default function AdminOppsHandoffPanel() {
                         )) : <div className="handoff-empty small">No production lines found.</div>}
                       </div>
                       <div className="handoff-lines">
-                        <div className="handoff-lines-header"><strong>Private customer files</strong><small>{proposedFiles.length} file(s)</small></div>
+                        <div className="handoff-lines-header"><strong>Files</strong><small>{proposedFiles.length} file(s)</small></div>
                         {proposedFiles.length ? proposedFiles.map((file, index) => (
                           <div className="handoff-line file" key={`${file.id || file.name || index}-${index}`}>
                             <div>
@@ -416,16 +416,13 @@ export default function AdminOppsHandoffPanel() {
                   )}
                 </div>
 
-                <div className="handoff-subsection handoff-after-send">
+                {selected.oppsOrderId && <div className="handoff-subsection handoff-after-send">
                   <div className="handoff-subsection-title"><Icon name="external" size={16}/><strong>{selected.oppsOrderId ? 'Continue in OPPS' : 'After handoff'}</strong></div>
-                  <p>{selected.oppsOrderId
-                    ? 'The customer order is linked. OPPS is now the production home for this job.'
-                    : 'Sending creates one canonical OPPS order and keeps the Quick Solution backlink for tracking.'}</p>
                   <div className="handoff-follow-up-actions">
                     <button type="button" onClick={() => window.open(buildOppsAppUrl(selected.oppsOrderId || ''), '_blank', 'noopener,noreferrer')}><Icon name="external" size={16}/> Open OPPS</button>
                     <button type="button" onClick={copyOppsId} disabled={!selected.oppsOrderId}><Icon name="copy" size={16}/> Copy order ID</button>
                   </div>
-                </div>
+                </div>}
 
                 <details className="handoff-technical-details">
                   <summary>Technical details</summary>
@@ -437,6 +434,7 @@ export default function AdminOppsHandoffPanel() {
                   </div>
                 </details>
               </div>
+              </details>
             </>
           ) : <div className="handoff-empty large">Select a Quick Solution order to review the OPPS handoff.</div>}
         </section>

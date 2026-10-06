@@ -445,7 +445,7 @@ test('the sale screens have no payment controls: payment is recorded only from a
   const productNames = ready.entries.map((item) => item.product.name)
   const optionLabels = counterFields(byId.get('a4-print')).flatMap((field) => (field.options || []).map((option) => option.label.replace(/&/g, '&amp;')))
   for (const text of buttons) {
-    assert.ok(productNames.some((name) => text.startsWith(name.replace(/&/g, '&amp;'))) || optionLabels.includes(text) || ['Sign out', 'Review order', 'New sale', 'Today’s orders', 'Unpaid', 'Cash-up'].includes(text), `unexpected button: ${text}`)
+    assert.ok(productNames.some((name) => text.startsWith(name.replace(/&/g, '&amp;'))) || optionLabels.includes(text) || ['Sign out', 'Review order', 'New sale', 'Today’s orders', 'Unpaid', 'Cash-up', '← Change service', '−', '+'].includes(text), `unexpected button: ${text}`)
   }
 })
 
