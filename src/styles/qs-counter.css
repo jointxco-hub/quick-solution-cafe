@@ -329,7 +329,9 @@ button.qsc-order:focus-visible{border-color:var(--green);box-shadow:0 0 0 3px rg
 .qsc-preview .qsc-preview-rows dd { font-weight: 600; }
 .qsc-preview .qsc-estimate small, .qsc-preview .qsc-preview-note, .qsc-preview .qsc-preview-foot { color: #707871; }
 .qsc-preview .qsc-badge-order { background: #f0f3f0; color: #667269; }
-.qsc-preview .qsc-errors { background: #fff7e9; color: #886020; }
+.qsc-preview .qsc-errors { background: transparent; }
+.qsc-preview .qsc-errors li { background: #fff7e9; color: #886020; border-radius: 8px; }
+.qsc-preview .qsc-not-ready { background: #f2f4f1; color: #68716a; border-radius: 8px; }
 .qsc-preview .qsc-action { background: #246b54; color: #fff; border-color: #246b54; }
 .qsc-preview .qsc-action:disabled { background: #edf0ec; color: #8a928b; border-color: #edf0ec; opacity: 1; }
 @media (max-width:899px) {
