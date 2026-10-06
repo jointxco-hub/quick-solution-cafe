@@ -133,3 +133,10 @@
   .admin-app .message-card { margin: 8px 0; padding: 12px; border-radius: 8px; }
   .admin-app .message-card.warn { background: #fff7e9; border-color: #f0dfc2; }
 }
+
+@media (max-width:760px) {
+  .admin-app .admin-header .admin-counter-link { display: inline-flex; min-height: 40px; padding: 8px 12px; font-size: 13px; color: #346957; background: #f4f7f4; border-color: #e2e7e1; }
+  .admin-app .admin-header-actions { gap: 8px; }
+  .admin-app .handoff-card-top > div > span, .admin-app .handoff-card-meta, .admin-app .handoff-preview-top p { color: #747a74; }
+  .admin-app .order-more .detail-row span, .admin-app .handoff-line small { color: #747a74; }
+}

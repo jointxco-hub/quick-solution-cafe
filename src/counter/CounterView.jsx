@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
+import ProductScene from '../components/ProductScene.jsx'
+import { resolveProductMedia } from '../lib/productContent.js'
 import FieldControl from '../components/FieldControl.jsx'
 import { formatMoney } from '../lib/pricing.js'
 import { COUNTER_ACTIONS } from '../lib/counterCatalogue.js'
@@ -20,6 +22,14 @@ import { COUNTER_UNKNOWN_RESULT_MESSAGE, EMPTY_COUNTER_CUSTOMER, SALE_PHASES, in
 // handlers. It never calls the API and never decides who may use the counter or which product may be
 // written - the server's answer arrives as `state`, and write readiness comes from
 // counterSubmissionReadiness.js.
+
+function CounterProductImage({ product }) {
+  const [failed, setFailed] = useState(false)
+  const source = resolveProductMedia(product).hero
+  return <span className="qsc-product-image" aria-hidden="true">
+    {source && !failed ? <img src={source} alt="" loading="lazy" onError={() => setFailed(true)}/> : <ProductScene productId={product.id}/>}
+  </span>
+}
 
 function TopBar({ signedIn, onSignOut }) {
   return (
@@ -103,6 +113,7 @@ function ProductList({ sections, selectedId, onSelect, locked }) {
                     }
                   }}
                 >
+                  <CounterProductImage product={entry.product}/>
                   <span className="qsc-tile-top"><strong>{entry.product.name}</strong><ActionBadge action={entry.action}/></span>
                   {entry.product.description ? <small>{entry.product.description}</small> : null}
                 </button>
@@ -1002,6 +1013,7 @@ export default function CounterView({
             <>
               <div className="qsc-config">
                 <div className="qsc-config-head">
+                  <CounterProductImage key={selected.product.id} product={selected.product}/>
                   <div><span className="eyebrow">{selected.group}</span><h2>{selected.product.name}</h2></div>
                   <ActionBadge action={selected.action}/>
                 </div>
