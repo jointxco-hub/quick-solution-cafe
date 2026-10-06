@@ -110,7 +110,7 @@ export default function ProductConfigurator({
         >
           {result.metrics?.quoteRequired ? 'Request a quote' : itemAdded ? 'Added to order' : 'Add to order'}
         </button>
-        <p className="qs-shop-first-note">Add this item to your order. You will choose collection or delivery and enter your details once at checkout.</p>
+        <p className="qs-shop-first-note">{result.metrics?.quoteRequired ? 'Send your specifications and contact details. We confirm the quote before payment.' : 'Add this item to your order. You will choose collection or delivery and enter your details once at checkout.'}</p>
         <button
           className="secondary-dark"
           type="button"
