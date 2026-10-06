@@ -32,6 +32,12 @@ function cleanConfig(config) {
 }
 
 function priceArea(product, config) {
+  if (product.id === 'contravision') {
+    const sizes = [config.width, config.height].map(Number)
+    if (sizes.some(size => !Number.isFinite(size) || size < 0.1 || size > 20)) {
+      return { total: 0, summary: 'Enter valid width and height between 0.1 and 20 metres.', lines: [], metrics: { invalid: true } }
+    }
+  }
   const width = Math.max(Number(config.width || 0), 0)
   const height = Math.max(Number(config.height || 0), 0)
   const rawArea = width * height
@@ -204,6 +210,13 @@ export function filterCompatibleAccessories(product, accessoryIds, variantId) {
 }
 
 function priceSupplierMargin(product, config) {
+  if (product.id === 'correx-boards') {
+    const quantity = config.quantity == null ? 1 : Number(config.quantity)
+    const unsupported = (config.sides && config.sides !== 'single') || (config.mounting && config.mounting !== 'none') || (config.installation && config.installation !== 'supply') || config.width != null || config.height != null || config.size != null
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10000 || unsupported) {
+      return { total: 0, summary: unsupported ? 'Custom sizes, double sides and mounting need a Shop Signs quote.' : 'Enter a whole number of boards between 1 and 10000.', lines: [], metrics: { invalid: true } }
+    }
+  }
   const variant = product.pricing.variants?.[config.variant]
   const { minQuantity, quantityStep } = getVariantQuantityRule(product, config.variant)
   // Deliberately NOT clamped up to minQuantity here (unlike most other
@@ -312,8 +325,8 @@ function priceEnquiry(product, config) {
     total: 0,
     summary: 'Quote after review',
     lines: [
-      { label: 'Service request', text: 'Photo / video brief captured' },
-      { label: 'Pricing', text: 'Confirmed after crew, location and scope review' }
+      { label: 'Service request', text: product.serviceType === 'print-signage' ? 'Print / signage requirements captured' : 'Photo / video brief captured' },
+      { label: 'Pricing', text: product.serviceType === 'print-signage' ? 'Confirmed after specifications and fulfilment review' : 'Confirmed after crew, location and scope review' }
     ],
     metrics: {
       quoteRequired: true,

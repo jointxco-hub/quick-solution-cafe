@@ -238,6 +238,7 @@ export default function GuidedOrder({
 
   const result = useMemo(() => calculateProductPrice(product, config), [product, config])
   const isServiceRequest = product?.pricing?.strategy === 'ENQUIRY' || product?.serviceType === 'media'
+  const isMediaRequest = product?.serviceType === 'media' || product?.pricing?.strategy === 'PHOTOGRAPHY_SESSION'
   const shoppingSteps = isServiceRequest
     ? journey.steps
     : journey.steps.filter((item) => item.type !== 'fulfilment')
@@ -358,12 +359,12 @@ export default function GuidedOrder({
       return
     }
 
-    if (isServiceRequest && !config.preferredDate) {
+    if (isMediaRequest && !config.preferredDate) {
       setSubmitError('Choose a preferred shoot date. We will confirm availability before the booking is final.')
       return
     }
 
-    if (isServiceRequest && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
+    if (isMediaRequest && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
       setSubmitError('Add the area or address where the shoot should happen.')
       return
     }
@@ -391,12 +392,12 @@ export default function GuidedOrder({
             customerName: customerName.trim(),
             customerPhone: customerPhone.trim(),
             customerEmail: customerEmail.trim(),
-            serviceLocation: {
+            serviceLocation: isMediaRequest ? {
               type: config.shootLocation || 'cafe',
               address: String(config.shootAddress || '').trim() || null,
               preferredDate: config.preferredDate || null,
               preferredTime: config.preferredTime || null
-            },
+            } : { type: config.installation === 'install' ? 'installation' : 'supply', address: String(config.site || '').trim() || null },
             customerNotes: customerNotes.trim(),
             idempotencyKey
           })
@@ -534,7 +535,7 @@ export default function GuidedOrder({
         <div className="complete-mark"><Icon name="bag" size={28}/></div>
         <span className="eyebrow">{isServiceRequest ? 'Request received' : 'Order received'}</span>
         <h2>{orderNumber}</h2>
-        <p>{isServiceRequest ? (isPricedResponse ? 'We saved your booking request at the price shown below. Quick Solution will confirm your schedule and arrange payment separately — nothing is charged yet.' : 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.') : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
+        <p>{isServiceRequest ? (isPricedResponse ? 'We saved your booking request at the price shown below. Quick Solution will confirm your schedule and arrange payment separately — nothing is charged yet.' : (isMediaRequest ? 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.' : 'We saved your print or signage request. Quick Solution will confirm specifications, fulfilment and price before payment.')) : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
         <div className="complete-summary"><strong>{resolveProductDisplayName(product, mode)}</strong><span>{isServiceRequest && !isPricedResponse ? 'Quote after review' : formatMoney(total)}</span></div>
 
         {isServiceRequest && config.shootLocation && (
@@ -891,7 +892,7 @@ export default function GuidedOrder({
             </button>
           ) : isServiceRequest ? (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-              {submitState === 'submitting' ? 'Sending request…' : 'Send media request'}
+              {submitState === 'submitting' ? 'Sending request…' : (isMediaRequest ? 'Send media request' : 'Send quote request')}
               {submitState !== 'submitting' && <Icon name="arrowRight" size={17}/>}
             </button>
           ) : (
@@ -899,7 +900,7 @@ export default function GuidedOrder({
               <button
                 className={`button primary-green ${itemAdded ? 'added' : ''}`}
                 type="button"
-                disabled={itemAdded}
+                disabled={itemAdded || result.metrics?.invalid}
                 onClick={addCurrentItemToCart}
               >
                 {itemAdded ? 'Added to order' : 'Add to order'} <Icon name={itemAdded ? 'check' : 'bag'} size={17}/>
@@ -912,7 +913,7 @@ export default function GuidedOrder({
       <aside className="guided-summary" aria-live="polite">
         <span className="eyebrow inverse">{isServiceRequest && !isPricedServiceRequest ? 'Request type' : 'Estimated total'}</span>
         <div className="guided-price">{isServiceRequest && !isPricedServiceRequest ? 'Quote' : formatMoney(estimatedOrderTotal)}</div>
-        <p>{isServiceRequest && !isPricedServiceRequest ? 'We will confirm pricing after reviewing the crew, location and scope.' : result.summary}</p>
+        <p>{isServiceRequest && !isPricedServiceRequest ? (isMediaRequest ? 'We will confirm pricing after reviewing the crew, location and scope.' : 'We will confirm pricing after reviewing your specifications and fulfilment needs.') : result.summary}</p>
         <div className="price-lines compact-lines">
           {result.lines.map((line, index) => (
             <div key={`${line.label}-${index}`}><span>{line.label}</span><strong>{line.text ?? formatMoney(line.value)}</strong></div>

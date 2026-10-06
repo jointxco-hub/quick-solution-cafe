@@ -60,7 +60,7 @@ export default function ProductConfigurator({
             <h2>{resolveProductDisplayName(product, mode)}</h2>
             <p className="section-copy">{product.plainDescription}</p>
           </div>
-          <span className="pricing-pill">Live price</span>
+          <span className="pricing-pill">{result.metrics?.quoteRequired ? 'Quote after review' : 'Live price'}</span>
         </div>
 
         <div className="plain-language-note">
@@ -85,7 +85,7 @@ export default function ProductConfigurator({
 
       <aside className="price-card" aria-live="polite">
         <span className="eyebrow inverse">Estimated total</span>
-        <div className="price">{formatMoney(result.total)}</div>
+        <div className="price">{result.metrics?.quoteRequired ? 'Quote' : formatMoney(result.total)}</div>
         <p>{result.summary}</p>
 
         <div className="price-lines">
@@ -105,12 +105,12 @@ export default function ProductConfigurator({
         <button
           className={`primary-light ${itemAdded ? 'added' : ''}`}
           type="button"
-          disabled={itemAdded}
-          onClick={addCurrentItemToCart}
+          disabled={itemAdded || result.metrics?.invalid}
+          onClick={result.metrics?.quoteRequired ? onGuided : addCurrentItemToCart}
         >
-          {itemAdded ? 'Added to order' : 'Add to order'}
+          {result.metrics?.quoteRequired ? 'Request a quote' : itemAdded ? 'Added to order' : 'Add to order'}
         </button>
-        <p className="qs-shop-first-note">Add this item to your order. You will choose collection or delivery and enter your details once at checkout.</p>
+        <p className="qs-shop-first-note">{result.metrics?.quoteRequired ? 'Send your specifications and contact details. We confirm the quote before payment.' : 'Add this item to your order. You will choose collection or delivery and enter your details once at checkout.'}</p>
         <button
           className="secondary-dark"
           type="button"

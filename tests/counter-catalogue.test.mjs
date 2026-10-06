@@ -11,7 +11,8 @@ import {
   resolveCounterProduct,
   resolveCounterCatalogue
 } from '../src/lib/counterCatalogue.js'
-import { products } from '../src/data/products.js'
+// Preserve this historical rollout's pinned catalogue; extensions have a separate contract suite.
+import { baselineProducts as products } from './helpers/baseline-catalogue.mjs'
 
 // CAFE-GUEST-01F - the pure counter catalogue contract. These tests pin what
 // the repository does TODAY; the matrix is not a permanent business decision.

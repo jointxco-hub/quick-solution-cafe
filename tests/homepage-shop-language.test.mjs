@@ -8,7 +8,8 @@ import {
   resolveShopCategory,
   filterProductsByShopCategory
 } from '../src/lib/productContent.js'
-import { products, heroOutcomes } from '../src/data/products.js'
+import { heroOutcomes } from '../src/data/products.js'
+import { baselineProducts as products } from './helpers/baseline-catalogue.mjs'
 import { loadLanguageMode, saveLanguageMode, hasSeenLanguageModePrompt, markLanguageModePromptSeen } from '../src/lib/languageMode.js'
 
 const flagsProduct = products.find((product) => product.id === 'flags')

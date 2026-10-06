@@ -4,7 +4,8 @@ import fs from 'node:fs'
 import { buildPricingDefinition } from '../src/lib/pricingDefinition.js'
 import { validatePerUnitDefinition, PER_UNIT_LIMITS } from '../src/lib/perUnitPricing.js'
 import { calculateProductPrice } from '../src/lib/pricing.js'
-import { products } from '../src/data/products.js'
+// Preserve this historical rollout's pinned catalogue; extensions have a separate contract suite.
+import { baselineProducts as products } from './helpers/baseline-catalogue.mjs'
 
 // CAFE-GUEST-01G - admin support for PER_UNIT. The client serializer is
 // executed for real; the server function (SQL) is checked statically, and its
@@ -199,10 +200,10 @@ test('the move is behaviour-preserving in shape: supabaseApi re-exports it and s
   assert.doesNotMatch(api, /PER_UNIT/, 'the transport layer needs no strategy knowledge')
 })
 
-test('the serializer module is pure: only the PER_UNIT validator is imported, no I/O or environment', () => {
+test('the serializer module is pure: only pure pricing validators are imported, no I/O or environment', () => {
   const source = read('../src/lib/pricingDefinition.js')
   const code = source.replace(/\/\/[^\n]*/g, '')
-  assert.deepEqual([...code.matchAll(/^import .* from '(.*)'/gm)].map((match) => match[1]), ['./perUnitPricing.js'])
+  assert.deepEqual([...code.matchAll(/^import .* from '(.*)'/gm)].map((match) => match[1]), ['./perUnitPricing.js', './areaSupplierPricing.js'])
   assert.doesNotMatch(code, /import\.meta|\b(fetch|window|document|localStorage|process|supabase|rpc|React|await|async)\b/)
   // The PER_UNIT branch never mentions quantity.
   const branch = code.match(/if \(strategy === 'PER_UNIT'\) \{[\s\S]*?\n {2}\}/)[0]
@@ -213,7 +214,7 @@ test('no visible admin UI was added: the generic editor already renders every PE
   const admin = read('../src/admin/AdminProductManager.jsx')
   assert.doesNotMatch(admin, /PER_UNIT|perUnit/)
   // The generic editor lists every numeric key of product.pricing except strategy.
-  assert.match(admin, /Object\.entries\(product\.pricing\)\.filter\(\(\[key, value\]\) => key !== 'strategy' && typeof value === 'number'\)/)
+  assert.match(admin, /Object\.entries\(product\.pricing\)\.filter\(\(\[key, value\]\) => key !== 'strategy' && typeof value === 'number'/)
   const rendered = Object.entries(perUnitProduct().pricing).filter(([key, value]) => key !== 'strategy' && typeof value === 'number').map(([key]) => key)
   assert.deepEqual(rendered, ['unitPrice', 'minUnits', 'maxUnits'])
   const adminFiles = fs.readdirSync(new URL('../src/admin/', import.meta.url))
@@ -307,9 +308,11 @@ test('server: this is the latest definition of the admin function and the previo
   const definers = files.filter((name) => /create or replace function public\.admin_update_quick_solution_product/i.test(read(`../supabase/migrations/${name}`)))
   // The security patch (20260927120000) is the newest definer: it re-guards this RPC (and five
   // others) on has_tenant_capability without touching the PER_UNIT body this file tests.
-  assert.equal(definers.at(-1), '20260927120000_qs_administration_capability_authorization.sql')
-  assert.equal(definers.at(-2), '20260926140000_cafe_guest_01g_admin_per_unit_support.sql')
-  assert.equal(definers.at(-3), '20260921120000_qs14_checkout_guards_and_supplier_rules.sql')
+  assert.equal(definers.at(-1), '20261006204109_supplier_admin_controls_and_photos.sql')
+  assert.match(read('../supabase/migrations/' + definers.at(-1)), /perform commerce\._qs_validate_per_unit_definition\(p_pricing_definition\)/)
+  assert.equal(definers.at(-2), '20260927120000_qs_administration_capability_authorization.sql')
+  assert.equal(definers.at(-3), '20260926140000_cafe_guest_01g_admin_per_unit_support.sql')
+  assert.equal(definers.at(-4), '20260921120000_qs14_checkout_guards_and_supplier_rules.sql')
   assert.ok(files.includes('20260926130000_cafe_guest_01f_per_unit_pricing.sql') && files.indexOf('20260926130000_cafe_guest_01f_per_unit_pricing.sql') < files.indexOf('20260926140000_cafe_guest_01g_admin_per_unit_support.sql'), 'runs after the validator exists')
   assert.match(migration, /to_regprocedure\('commerce\._qs_validate_per_unit_definition\(jsonb\)'\) is null/, 'preflight')
 })

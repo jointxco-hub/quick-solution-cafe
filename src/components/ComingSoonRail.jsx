@@ -17,6 +17,7 @@ const comingSoonItems = [
   },
   {
     id: 'signage',
+    liveAliases: ['rigid-signage', 'correx-boards'],
     icon: 'signpost',
     name: 'Signage',
     copy: 'Shop signs, correx boards and wall signage beyond PVC banners.'
@@ -37,7 +38,7 @@ export default function ComingSoonRail({ liveProductIds = [] }) {
   // card — showing both at once is confusing and was happening during
   // this feature's rollout (flags/gazebos briefly existed only as local
   // fallback data, appearing here AND as an orderable card).
-  const items = comingSoonItems.filter((item) => !liveProductIds.includes(item.id))
+  const items = comingSoonItems.filter((item) => ![item.id, ...(item.liveAliases || [])].some((id) => liveProductIds.includes(id)))
 
   if (items.length === 0) return null
 

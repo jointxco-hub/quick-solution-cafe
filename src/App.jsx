@@ -4,6 +4,7 @@ import Header from './components/Header.jsx'
 import ProductCard from './components/ProductCard.jsx'
 import ProductHub from './components/ProductHub.jsx'
 import ProductConfigurator from './components/ProductConfigurator.jsx'
+import ContravisionAddons from './components/ContravisionAddons.jsx'
 import GuidedOrder from './components/GuidedOrder.jsx'
 import PaymentReturn from './components/PaymentReturn.jsx'
 import TrackOrder from './components/TrackOrder.jsx'
@@ -1076,6 +1077,13 @@ export default function App() {
             makes the exact same 4 verified-true claims once per page;
             this was a straight duplicate a few hundred pixels below it. */}
 
+        {selectedProduct.id === 'contravision' && customerProducts.some(product => product.id === 'rigid-signage') && (
+          <ContravisionAddons onRequestQuote={(quotePreset) => {
+            const quoteProduct = customerProducts.find(product => product.id === 'rigid-signage')
+            openGuided(quoteProduct, quoteProduct.guidedJourneyId, quotePreset)
+          }} />
+        )}
+
         <section id="configure" ref={configureRef} className="configurator-section">
           <div className="shell">
             {/* QS-21.3 section 2/5: shortened - "Start with Guided mode
@@ -1224,4 +1232,3 @@ export default function App() {
     </div>
   )
 }
-
