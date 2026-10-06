@@ -39,4 +39,14 @@
   .quick-point-form-section { padding: 14px; }
   .rate-row { gap: 10px; flex-wrap: wrap; }
   .rate-inputs { justify-content: flex-start; }
+  .admin-section-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; overflow: visible; gap: 4px; }
+  .admin-section-tabs button { justify-content: center; padding: 8px; white-space: normal; }
+  .handoff-preview-actions, .handoff-follow-up-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .handoff-preview-actions button, .handoff-follow-up-actions button { min-height: 44px; padding: 10px 14px; border-radius: 12px; overflow-wrap: normal; }
+  .handoff-preview-actions svg, .handoff-follow-up-actions svg { flex-shrink: 0; }
+  .handoff-line { align-items: flex-start; gap: 12px; }
+  .handoff-line > div { min-width: 0; display: grid; gap: 5px; }
+  .handoff-line > span { flex-shrink: 0; }
+  .handoff-line strong, .handoff-line small { display: block; }
+  .handoff-card-top > div { display: grid; gap: 4px; }
 }
