@@ -680,7 +680,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
       </header>
 
       <main className="admin-shell">
-        <section className="admin-intro compact-admin-intro">
+        <section className={`admin-intro compact-admin-intro ${activeSection === 'orders' ? 'orders-intro' : ''}`}>
           <div>
             <span className="eyebrow">Quick Solution Admin · Location 001</span>
             <h1>{activeSection === 'orders' ? 'Orders first.' : activeSection === 'quick-points' ? 'Local fulfilment, one source.' : 'Product & pricing control.'}</h1>
