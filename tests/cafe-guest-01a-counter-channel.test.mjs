@@ -48,7 +48,7 @@ test('the counter-channel migration exists, is additive, and is owned by the Caf
   // (20260928170000) legitimately sort after all of CAFE-GUEST-01* too:
   // both build on RPCs/columns that only exist once the counter work (and
   // the primitive it depends on) is in place.
-  const earlier = migrationFiles.filter((name) => !/cafe_guest_01/.test(name) && name !== '20260927120000_qs_administration_capability_authorization.sql' && name !== '20260928170000_qs_payment_eligibility_v1.sql')
+  const earlier = migrationFiles.filter((name) => !/cafe_guest_01/.test(name) && name !== '20260927120000_qs_administration_capability_authorization.sql' && name !== '20260928170000_qs_payment_eligibility_v1.sql' && name !== '20261006181706_supplier_catalogue_signage.sql')
   assert.ok(earlier.every((name) => name < NEW_MIGRATION), 'it must sort after every pre-CAFE-GUEST migration')
   assert.doesNotMatch(foundation.bare, /create\s+(or\s+replace\s+)?function/i, 'no RPC is created or replaced in this slice')
   assert.doesNotMatch(foundation.bare, /\b(create|drop)\s+(table|policy|trigger|index|type|domain|schema)\b/i)

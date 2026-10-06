@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
-import { products } from '../src/data/products.js'
+// Preserve this historical rollout's pinned catalogue; extensions have a separate contract suite.
+import { baselineProducts as products } from './helpers/baseline-catalogue.mjs'
 import { isCounterProduct } from '../src/lib/counterCatalogue.js'
 
 // CAFE-GUEST-01E - the reviewed channels.pos decisions.

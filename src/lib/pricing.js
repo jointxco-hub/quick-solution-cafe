@@ -32,6 +32,12 @@ function cleanConfig(config) {
 }
 
 function priceArea(product, config) {
+  if (product.id === 'contravision') {
+    const sizes = [config.width, config.height].map(Number)
+    if (sizes.some(size => !Number.isFinite(size) || size < 0.1 || size > 20)) {
+      return { total: 0, summary: 'Enter valid width and height between 0.1 and 20 metres.', lines: [], metrics: { invalid: true } }
+    }
+  }
   const width = Math.max(Number(config.width || 0), 0)
   const height = Math.max(Number(config.height || 0), 0)
   const rawArea = width * height
@@ -312,8 +318,8 @@ function priceEnquiry(product, config) {
     total: 0,
     summary: 'Quote after review',
     lines: [
-      { label: 'Service request', text: 'Photo / video brief captured' },
-      { label: 'Pricing', text: 'Confirmed after crew, location and scope review' }
+      { label: 'Service request', text: product.serviceType === 'print-signage' ? 'Print / signage requirements captured' : 'Photo / video brief captured' },
+      { label: 'Pricing', text: product.serviceType === 'print-signage' ? 'Confirmed after specifications and fulfilment review' : 'Confirmed after crew, location and scope review' }
     ],
     metrics: {
       quoteRequired: true,

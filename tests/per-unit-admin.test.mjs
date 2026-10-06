@@ -4,7 +4,8 @@ import fs from 'node:fs'
 import { buildPricingDefinition } from '../src/lib/pricingDefinition.js'
 import { validatePerUnitDefinition, PER_UNIT_LIMITS } from '../src/lib/perUnitPricing.js'
 import { calculateProductPrice } from '../src/lib/pricing.js'
-import { products } from '../src/data/products.js'
+// Preserve this historical rollout's pinned catalogue; extensions have a separate contract suite.
+import { baselineProducts as products } from './helpers/baseline-catalogue.mjs'
 
 // CAFE-GUEST-01G - admin support for PER_UNIT. The client serializer is
 // executed for real; the server function (SQL) is checked statically, and its

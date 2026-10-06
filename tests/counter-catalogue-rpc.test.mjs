@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
-import { products } from '../src/data/products.js'
+// Preserve this historical rollout's pinned catalogue; extensions have a separate contract suite.
+import { baselineProducts as products } from './helpers/baseline-catalogue.mjs'
 import { isCounterProduct, resolveCounterCatalogue, resolveCounterAction, resolveCounterGroup } from '../src/lib/counterCatalogue.js'
 
 // CAFE-GUEST-01L - static guards for public.get_quick_solution_counter_catalog(). The

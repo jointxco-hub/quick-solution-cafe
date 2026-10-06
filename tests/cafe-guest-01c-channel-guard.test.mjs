@@ -302,7 +302,8 @@ test('backward compatibility: no create RPC or public catalogue is replaced, and
   }
   assert.equal(latestFunctionBody('create_quick_solution_cart_order').file, '20260921120000_qs14_checkout_guards_and_supplier_rules.sql')
   assert.equal(latestFunctionBody('create_quick_solution_order').file, '20260921120000_qs14_checkout_guards_and_supplier_rules.sql')
-  assert.equal(latestFunctionBody('create_quick_solution_service_request').file, '20260921090000_qs14_catalog_margin_photography.sql')
+  // The supplier rollout preserves this RPC signature and classifies print enquiries.
+  assert.equal(latestFunctionBody('create_quick_solution_service_request').file, '20261006181706_supplier_catalogue_signage.sql')
 })
 
 test('backward compatibility: every existing service_order_items INSERT names order_id, tenant_id and product_key, so the guard sees them', () => {

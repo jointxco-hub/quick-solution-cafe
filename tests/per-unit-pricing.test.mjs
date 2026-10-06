@@ -10,7 +10,8 @@ import {
 } from '../src/lib/perUnitPricing.js'
 import { calculateProductPrice, getDefaultConfig } from '../src/lib/pricing.js'
 import { resolveCounterAction } from '../src/lib/counterCatalogue.js'
-import { products } from '../src/data/products.js'
+// Preserve this historical rollout's pinned catalogue; extensions have a separate contract suite.
+import { baselineProducts as products } from './helpers/baseline-catalogue.mjs'
 
 // CAFE-GUEST-01F - the neutral PER_UNIT pricing strategy. The client mirror is
 // executed for real; the server (SQL) is checked statically, and its rollback
@@ -275,8 +276,8 @@ test('server regression: the wrapper is the latest previous definition plus exac
   assert.equal(squash(withoutBlock), squash(previous), 'every existing strategy is byte-for-byte the previous definition')
   assert.equal(next.split("v_strategy = 'PER_UNIT'").length - 1, 1, 'PER_UNIT is dispatched exactly once')
 
-  // No later migration redefines the wrapper, so this really is the latest.
-  const files = fs.readdirSync(new URL('../supabase/migrations/', import.meta.url)).sort()
+  // Pin this historical rollout; the supplier catalogue delegates through its preserved base.
+  const files = fs.readdirSync(new URL('../supabase/migrations/', import.meta.url)).filter((name) => name < '20261006181706_supplier_catalogue_signage.sql').sort()
   const definers = files.filter((name) => /create or replace function commerce\.qs_calculate_price\(/i.test(read(`../supabase/migrations/${name}`)))
   assert.equal(definers.at(-1), '20260926130000_cafe_guest_01f_per_unit_pricing.sql')
   assert.equal(definers.at(-2), '20260921120000_qs14_checkout_guards_and_supplier_rules.sql')
@@ -369,7 +370,7 @@ test('only Scan and the two Lamination products use PER_UNIT, and the nine origi
     if (!/^a[34]-lamination$/.test(product.id)) assert.doesNotMatch(`${product.id} ${product.name}`, /lamin/i)
     if (product.id !== 'scan') assert.doesNotMatch(`${product.id} ${product.name}`, /\bscan/i)
   }
-  const files = fs.readdirSync(new URL('../supabase/migrations/', import.meta.url)).sort()
+  const files = fs.readdirSync(new URL('../supabase/migrations/', import.meta.url)).filter((name) => name < '20261006181706_supplier_catalogue_signage.sql').sort()
   const users = files.filter((name) => /PER_UNIT/.test(read(`../supabase/migrations/${name}`)))
   assert.deepEqual(
     users,

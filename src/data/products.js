@@ -1,3 +1,5 @@
+import { supplierProducts, supplierJourneys } from './supplierProducts.js'
+
 export const brand = {
   green: '#008B72',
   orange: '#CC3300',
@@ -1702,10 +1704,12 @@ export const products = [
   fields: [
     { id: 'units', type: 'number', label: 'How many A3 sheets need laminating?', shortLabel: 'Sheets to laminate', suffix: 'sheets', help: 'Count each sheet once, even if it is printed on both sides.', min: 1, step: 1, required: true }
   ]
-}
+},
+  ...supplierProducts
 ]
 
 export const guidedJourneys = [
+  ...supplierJourneys,
   {
     id: 'media-guided',
     productId: 'media-services',
