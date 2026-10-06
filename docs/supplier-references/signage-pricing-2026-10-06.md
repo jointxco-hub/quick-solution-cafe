@@ -1,3 +1,13 @@
+## Current catalogue scope — owner refinement, 6 October 2026
+
+Seven new storefront products remain: Flyers, Correx Boards, Pull-up Banners, Car Magnets, Posters, Shop Signs & Rigid Signage, and Contravision Window Printing. Folded Leaflets & Menus, Booklets, Branded Notepads, Presentation Folders, Branded Calendars and the standalone Contravision with Installation listing are archived. Historical order records are retained.
+
+Contravision print supply remains R300/m², based on the confirmed R150/m² supplier cost with no supplier VAT. Application is an optional separately quoted add-on, not a paid print option. The product page offers a shop-window application-only request and a distinct Car Contravision vehicle quote through the signage enquiry flow. Customers should include their separate print order reference in an application request; automatic order linking is not implemented.
+
+Car Magnets capture standard/custom size, sets of two and vehicle placement. Posters capture A3–A0/custom size, paper, finish and quantity. Shop Signs capture job type, supply versus application-only scope, material, panel dimensions, sides, frame, fitting and site/vehicle details. All three require a confirmed quote before payment. No unverified supplier rate is used for checkout. Admin configuration and controls are the next phase.
+
+Earlier research below is retained as supplier reference; it does not describe the current live catalogue scope.
+
 # Signage supplier research and Café rollout
 
 Checked 6 October 2026. Public catalogue prices are references, not approved reseller quotations. No supplier has been contacted or endorsed for quality.

@@ -44,24 +44,20 @@ export const supplierProducts = [
     productPage: { headline: 'Choose your Correx board', intro: 'Standard sizes, single-sided printing, supplied without mounting. Ask for a Shop Signs quote for custom sizes, double sides or fitting.', showStartingPrice: true }
   },
   enquiry('pull-up-banners', 'Pull-up Banners', 'Flags & Events', 'Portable printed displays for shops, events and presentations.', [select('kit', 'What do you need?', [['complete', 'Complete printed kit with stand'], ['reprint', 'Replacement print — match my existing stand']]), select('style', 'Stand type', [['economy', 'Economy'], ['deluxe', 'Deluxe']]), count]),
-  enquiry('car-magnets', 'Car Magnets', 'Signs & Large Format', 'Removable printed vehicle advertising magnets.', [select('size', 'Magnet size', [['500x300', '500 × 300 mm'], ['custom', 'Custom — describe below']]), { ...count, label: 'How many sets of two?', default: 1 }]),
-  enquiry('posters', 'Posters', 'Business Essentials', 'Posters for events, shop offers and displays.', [select('size', 'Poster size', [['a3', 'A3'], ['a2', 'A2'], ['a1', 'A1']]), count]),
+  enquiry('car-magnets', 'Car Magnets', 'Signs & Large Format', 'Removable printed vehicle advertising magnets.', [select('size', 'Magnet size', [['500x300', '500 × 300 mm'], ['custom', 'Custom — enter measurements below']]), { id: 'customSize', type: 'textarea', label: 'Custom dimensions in mm', placeholder: 'Width × height for each magnet, if custom.' }, { ...count, label: 'How many sets of two?', default: 1 }, { id: 'vehicle', type: 'textarea', label: 'Vehicle and placement', placeholder: 'Make/model, door or panel location. Attach a photo for suitability review.' }]),
+  enquiry('posters', 'Posters', 'Business Essentials', 'Posters for events, shop offers and displays.', [select('size', 'Poster size', [['a3', 'A3'], ['a2', 'A2'], ['a1', 'A1'], ['a0', 'A0'], ['custom', 'Custom — describe below']]), select('paper', 'Paper / material', [['standard', 'Standard poster paper'], ['photo', 'Photo-quality paper'], ['weatherproof', 'Outdoor / weatherproof — please advise']]), select('finish', 'Finish', [['none', 'Print only'], ['laminated', 'Laminated — confirm availability and price']]), count, { id: 'customSize', type: 'textarea', label: 'Custom dimensions in mm', placeholder: 'Width × height, if custom.' }]),
   enquiry('rigid-signage', 'Shop Signs & Rigid Signage', 'Signs & Large Format', 'Configure a printed sign, frame and installation request.', [
-    select('material', 'Sign material', [['unsure', 'Recommend the right material'], ['correx', 'Correx — custom size, double-sided or mounting'], ['chromadek', 'Chromadek steel'], ['acm', 'Aluminium composite'], ['abs', 'ABS plastic'], ['pvc-frame', 'Stretched PVC on a frame']]),
-    ...dimensions, count, select('frame', 'Frame', [['none', 'No frame'], ['steel', 'Steel frame'], ['aluminium', 'Aluminium frame'], ['unsure', 'Please advise']]),
+    select('jobType', 'Job type', [['sign', 'Shop sign / rigid board'], ['window-application', 'Shop window vinyl application add-on'], ['vehicle-contravision', 'Car Contravision — vehicle rear window']]),
+    select('supplyScope', 'What should we quote?', [['print-and-application', 'Print / sign supply and selected fitting'], ['application-only', 'Application only — I have or will order the print separately']]),
+    select('material', 'Sign material', [['unsure', 'Recommend the right material'], ['correx', 'Correx — custom size, double-sided or mounting'], ['chromadek', 'Chromadek steel'], ['acm', 'Aluminium composite'], ['abs', 'ABS plastic'], ['pvc-frame', 'Stretched PVC on a frame'], ['contravision', 'Contravision perforated window vinyl']]),
+    ...dimensions, count, sides, select('frame', 'Frame', [['none', 'No frame'], ['steel', 'Steel frame'], ['aluminium', 'Aluminium frame'], ['unsure', 'Please advise']]),
     select('installation', 'Installation', [['supply', 'Supply only'], ['install', 'Install for me — quote after checking site']]),
-    { id: 'site', type: 'textarea', label: 'Installation site / area', placeholder: 'Area, wall or fence, mounting height and access. Add a photo below.' }
+    { id: 'site', type: 'textarea', label: 'Site / vehicle details', placeholder: 'Address/area, wall or glass surface, mounting height and access; or vehicle make/model and window shape. Add a photo below.' }
   ]),
-  enquiry('folded-leaflets', 'Folded Leaflets & Menus', 'Business Essentials', 'Folded menus, brochures and service leaflets.', [paperSize, select('fold', 'Fold', [['half', 'Half fold'], ['three', 'Three panels'], ['unsure', 'Please advise']]), { ...count, default: 500 }]),
-  enquiry('booklets', 'Booklets', 'Business Essentials', 'Printed booklets for programmes, catalogues and information.', [paperSize, { id: 'pages', type: 'number', label: 'Total pages including cover', default: 8, min: 4, step: 4 }, { ...count, default: 100 }]),
-  enquiry('notepads', 'Branded Notepads', 'Business Essentials', 'Branded tear-off pads for business use.', [select('sheets', 'Sheets per pad', [['25', '25'], ['50', '50']]), count]),
-  enquiry('presentation-folders', 'Presentation Folders', 'Business Essentials', 'Printed folders for proposals and business documents.', [count]),
-  enquiry('calendars', 'Branded Calendars', 'Business Essentials', 'Calendars produced to order for your business or campaign.', [select('format', 'Calendar format', [['tent', 'Desk tent'], ['wall', 'Wall'], ['fridge', 'Fridge'], ['wiro', 'Wiro bound'], ['deskpad', 'Desk pad']]), { id: 'year', type: 'number', label: 'Calendar year', default: 2027, min: 2026, max: 2100, step: 1 }, count]),
-  enquiry('contravision-installation', 'Contravision with Installation', 'Signs & Large Format', 'Printed window branding with fitting assessed and quoted separately.', [...dimensions, select('application', 'Where will it go?', [['vehicle', 'Vehicle rear window'], ['shop', 'Shop window or door']]), { id: 'site', type: 'textarea', label: 'Vehicle / site details', placeholder: 'Vehicle model or installation address; attach a window photo.' }]),
   {
     id: 'contravision', name: 'Contravision Window Printing', shortName: 'Contravision', category: 'Signs & Large Format',
     description: 'Full-colour perforated window vinyl, supplied as a rectangular print for one panel.',
-    plainDescription: 'Enter one panel’s width and height. Print only, minimum 1 m² billed. Shaped trimming and installation need a separate quote.',
+    plainDescription: 'Enter one panel’s width and height. Print only, minimum 1 m² billed. Application is an optional separately quoted add-on based on the job. Car Contravision needs a vehicle-specific quote.',
     active: true, popular: false, keywords: ['contravision', 'window branding', 'one way vision'],
     channels: { storefront: true, guided: true, pos: true, quote: true }, guidedJourneyId: 'contravision-guided',
     nextActionLabel: 'Continue to collection', pricingVersion: '2026-10-contravision-local-02',
@@ -72,7 +68,7 @@ export const supplierProducts = [
       { ...select('finishing', 'Supply format', [['print-only', 'Rectangular print only — no fitting']]), options: [{ id: 'print-only', label: 'Rectangular print only — no fitting', fee: 0 }] },
       { ...artwork, options: [{ id: 'ready', label: 'My artwork is ready', fee: 0 }, { id: 'check', label: 'Please check my artwork', fee: 75 }, { id: 'design', label: 'I need design help', fee: 250 }] },
       { ...select('turnaround', 'Turnaround', [['standard', 'Standard — production timing confirmed after artwork review']]), options: [{ id: 'standard', label: 'Standard — timing confirmed after artwork review', multiplier: 1 }] }, file],
-    productPage: { headline: 'Print your window branding', intro: 'Print only. Vehicle contour cutting, fitting and installation are quoted separately.', showStartingPrice: true }
+    productPage: { headline: 'Print your window branding', intro: 'Live price for rectangular print supply. Request shop-window application as an add-on, or a separate Car Contravision quote for a shaped vehicle window.', showStartingPrice: true }
   }
 ].map(product => ['contravision', 'correx-boards', 'flyers', 'pull-up-banners'].includes(product.id)
   ? { ...product, media: { hero: `/qs-catalogue/${product.id}-v1.webp`, gallery: [] } }

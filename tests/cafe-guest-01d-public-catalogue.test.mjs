@@ -216,11 +216,12 @@ function channelBlocks() {
   return blocks
 }
 
-test('legacy behaviour is preserved: every product defined in the repository is still returned, except the deliberate counter-only Scan and Lamination (CAFE-GUEST-01H, 01I, 01J)', () => {
+test('legacy behaviour is preserved: every original product definition is still returned, except the deliberate counter-only Scan and Lamination (CAFE-GUEST-01H, 01I, 01J)', () => {
   // 01I is the historical generic placeholder (retired by 01J); 01J defines A4 and A3 Lamination (two blocks).
   const COUNTER_ONLY = ['20260926150000_cafe_guest_01h_scan_product.sql', '20260926160000_cafe_guest_01i_lamination_product.sql', '20260926170000_cafe_guest_01j_lamination_a4_a3.sql']
   const parsed = parseCase(cataloguePredicate())
-  const blocks = channelBlocks()
+  // Catalogue archival disables every channel and is covered by supplier-catalogue tests.
+  const blocks = channelBlocks().filter(block => block.file !== '20261006202950_refine_signage_catalogue_application_addons.sql')
   assert.ok(blocks.length >= 9, `expected the known channel blocks, found ${blocks.length}`)
   const hidden = blocks.filter((block) => COUNTER_ONLY.includes(block.file))
   assert.deepEqual(hidden.map((block) => block.file), [COUNTER_ONLY[0], COUNTER_ONLY[1], COUNTER_ONLY[2], COUNTER_ONLY[2]], 'exactly these definitions are hidden from the storefront: Scan, the retired placeholder, A4 and A3 Lamination')

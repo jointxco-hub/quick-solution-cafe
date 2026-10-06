@@ -397,7 +397,7 @@ export default function GuidedOrder({
               address: String(config.shootAddress || '').trim() || null,
               preferredDate: config.preferredDate || null,
               preferredTime: config.preferredTime || null
-            } : { type: config.installation === 'install' || product.id === 'contravision-installation' ? 'installation' : 'supply', address: String(config.site || '').trim() || null },
+            } : { type: config.installation === 'install' ? 'installation' : 'supply', address: String(config.site || '').trim() || null },
             customerNotes: customerNotes.trim(),
             idempotencyKey
           })

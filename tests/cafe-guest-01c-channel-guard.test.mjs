@@ -340,8 +340,9 @@ const LAMINATION_PLACEHOLDER_MIGRATION = '20260926160000_cafe_guest_01i_laminati
 const LAMINATION_MIGRATION = '20260926170000_cafe_guest_01j_lamination_a4_a3.sql'
 const COUNTER_ONLY_MIGRATIONS = [SCAN_MIGRATION, LAMINATION_PLACEHOLDER_MIGRATION, LAMINATION_MIGRATION]
 
-test('backward compatibility: every product defined in the repository is explicitly storefront=true, except the deliberate counter-only Scan and Lamination definitions', () => {
-  const blocks = channelsBlocks()
+test('backward compatibility: every original product definition is explicitly storefront=true, except the deliberate counter-only Scan and Lamination definitions', () => {
+  // Catalogue archival disables every channel and is covered by supplier-catalogue tests.
+  const blocks = channelsBlocks().filter(block => block.file !== '20261006202950_refine_signage_catalogue_application_addons.sql')
   assert.ok(blocks.length >= 9, `expected the known channel blocks, found ${blocks.length}`)
   const exceptions = blocks.filter((block) => COUNTER_ONLY_MIGRATIONS.includes(block.file))
   assert.deepEqual(exceptions.map((block) => block.file), [SCAN_MIGRATION, LAMINATION_PLACEHOLDER_MIGRATION, LAMINATION_MIGRATION, LAMINATION_MIGRATION], 'exactly these exceptions: Scan, the retired placeholder, and A4 + A3 Lamination')
