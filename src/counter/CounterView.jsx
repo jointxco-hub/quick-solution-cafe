@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import ProductScene from '../components/ProductScene.jsx'
+import { resolveVisualAxisOption } from '../lib/configuratorVisuals.js'
 import { resolveProductMedia, deriveVariantAxisValues } from '../lib/productContent.js'
 import FieldControl from '../components/FieldControl.jsx'
 import { formatMoney } from '../lib/pricing.js'
@@ -163,6 +164,14 @@ function CounterVariantField({ product, field, value, onChange }) {
     <span className="qsc-variant-heading">{field.label}</span>
     {axes.map((axis) => {
       const options = axis.options.filter((option) => !option.availableWhen || Object.entries(option.availableWhen).every(([id, allowed]) => allowed.includes(choices[id])))
+      const visuals = options.map((option) => ({ option, visual: resolveVisualAxisOption(product, axis.id, option) }))
+      if (visuals.length && visuals.every(({ visual }) => visual?.image)) return <fieldset className="field qsc-visual-field" key={axis.id}>
+        <legend>{axis.label}</legend>
+        <div className="qsc-visual-choices">{visuals.map(({ option, visual }) => <button type="button" key={option.id} className={`qsc-visual-choice ${choices[axis.id] === option.id ? 'selected' : ''}`} aria-pressed={choices[axis.id] === option.id} onClick={() => choose(axis.id, option.id)}>
+          <img src={visual.image} alt="" loading="lazy"/>
+          <span>{option.label}</span>
+        </button>)}</div>
+      </fieldset>
       return <FieldControl key={axis.id} field={{ ...axis, label: axis.label, type: options.length <= 3 ? 'segmented' : 'select', options }} value={choices[axis.id] || ''} onChange={(id) => choose(axis.id, id)}/>
     })}
     <small>Choose each option to identify the exact product.</small>
