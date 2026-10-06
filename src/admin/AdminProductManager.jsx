@@ -13,6 +13,7 @@ import {
   startAdminGoogleSignIn
 } from '../lib/supabaseApi.js'
 import { resolveProductPaymentEligibility } from '../lib/paymentEligibility.js'
+import { AreaSupplierEditor, QuoteRequestEditor, CataloguePhotoEditor } from './SupplierCatalogueControls.jsx'
 
 const modifierKeys = ['rate', 'fee', 'multiplier', 'total', 'unitFee']
 
@@ -38,7 +39,7 @@ function PricingEditor({ product, onChange }) {
         <span className="schema-tag">Pricing version · {product.pricingVersion}</span>
       </div>
 
-      {Object.entries(product.pricing).filter(([key, value]) => key !== 'strategy' && typeof value === 'number').map(([key, value]) => (
+      {Object.entries(product.pricing).filter(([key, value]) => key !== 'strategy' && typeof value === 'number' && !(product.id === 'contravision' && product.pricingDefinition?.areaSupplier && key === 'baseRate')).map(([key, value]) => (
         <label className="admin-field" key={key}>
           <span>{key}</span>
           <input min="0" type="number" step="0.01" value={value} onChange={(event) => updatePricing(key, event.target.value)}/>
@@ -770,7 +771,11 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
                     </div>
                   </div>
 
-                  {product.pricing?.strategy === 'SUPPLIER_MARGIN' ? (
+                  <CataloguePhotoEditor product={product} onChange={replaceSelected}/>
+                  {product.id === 'contravision' && <AreaSupplierEditor product={product} onChange={replaceSelected}/>}
+                  {product.pricing?.strategy === 'ENQUIRY' && product.serviceType === 'print-signage' ? (
+                    <QuoteRequestEditor product={product} onChange={replaceSelected}/>
+                  ) : product.pricing?.strategy === 'SUPPLIER_MARGIN' ? (
                     <SupplierMarginPricingEditor product={product} onChange={replaceSelected}/>
                   ) : product.pricing?.strategy === 'PHOTOGRAPHY_SESSION' ? (
                     <PhotographySessionPricingEditor product={product} onChange={replaceSelected}/>

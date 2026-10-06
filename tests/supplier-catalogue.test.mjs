@@ -10,6 +10,7 @@ import { resolveCounterProduct } from '../src/lib/counterCatalogue.js'
 import { supplierPricingDefinition, supplierOperations } from '../scripts/supplier-catalogue-reference-models.mjs'
 import { isCounterSubmissionEnabled } from '../src/lib/counterSubmissionReadiness.js'
 import { contravisionQuotePreset } from '../src/lib/contravisionAddons.js'
+import { areaSupplierRate } from '../src/lib/areaSupplierPricing.js'
 globalThis.File ??= class File {}
 const product = supplierProducts.find(p => p.id === 'contravision')
 const quoteKeys = ['flyers','pull-up-banners','car-magnets','posters','rigid-signage']
@@ -106,4 +107,20 @@ test('removed listings are archived with every channel disabled, preserving hist
   assert.match(sql,/"active":false,"channels":\{"storefront":false,"guided":false,"advanced":false,"pos":false,"quote":false\}/)
   for(const id of ['folded-leaflets','booklets','notepads','presentation-folders','calendars','contravision-installation']) assert.ok(sql.includes("'"+id+"'"))
   assert.doesNotMatch(sql,/\bdelete\s+from|\bdrop\b/i)
+})
+test('private area model derives supplier VAT and gross margin without trusting a stale selling rate', () => {
+  const model={supplierCost:150,marginRate:0.5,vatBasis:'none',vatRate:0}
+  assert.equal(areaSupplierRate(model),300)
+  assert.equal(areaSupplierRate({...model,vatBasis:'excl_vat',vatRate:0.15}),345)
+  assert.equal(areaSupplierRate({...model,vatBasis:'incl_vat',vatRate:0.15}),300)
+  for(const patch of [{supplierCost:0},{supplierCost:null},{marginRate:1},{marginRate:-1},{vatRate:2},{vatBasis:'unknown'}]) assert.throws(()=>areaSupplierRate({...model,...patch}))
+  assert.equal(buildPricingDefinition({...product,pricing:{...product.pricing,baseRate:1},pricingDefinition:{areaSupplier:{...model,supplierCost:180}}}).baseRate,360)
+})
+test('quote configuration validates bounds and retains sourcing notes only in the private pricing definition', () => {
+  const p=supplierProducts.find(p=>p.id==='car-magnets')
+  const definition=buildPricingDefinition({...p,pricingDefinition:{quoteOperations:{sourceName:'Private merchant'}}})
+  assert.equal(definition.quoteRequired,true)
+  assert.equal(definition.quoteOperations.sourceName,'Private merchant')
+  assert.throws(()=>buildPricingDefinition({...p,fields:p.fields.map(f=>f.id==='quantity'?{...f,default:0}:f)}))
+  assert.throws(()=>buildPricingDefinition({...p,fields:p.fields.map(f=>f.id==='size'?{...f,default:'unknown'}:f)}))
 })

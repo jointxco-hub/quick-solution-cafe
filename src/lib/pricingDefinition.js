@@ -6,6 +6,7 @@
 // re-exports it, so every caller is unaffected. The only behavioural addition
 // is the PER_UNIT branch (CAFE-GUEST-01G).
 import { validatePerUnitDefinition } from './perUnitPricing.js'
+import { areaSupplierRate, validateRequestFields } from './areaSupplierPricing.js'
 
 function optionMap(product, fieldId, valueKey) {
   const field = product.fields?.find((item) => item.id === fieldId)
@@ -32,7 +33,9 @@ export function buildPricingDefinition(product) {
   if (strategy === 'PER_AREA') {
     return {
       strategy,
-      baseRate: Number(product.pricing.baseRate || 0),
+      baseRate: product.id === 'contravision' && product.pricingDefinition?.areaSupplier
+        ? areaSupplierRate(product.pricingDefinition.areaSupplier) : Number(product.pricing.baseRate || 0),
+      ...(product.id === 'contravision' && product.pricingDefinition?.areaSupplier ? { areaSupplier: product.pricingDefinition.areaSupplier } : {}),
       minimumBillableArea: Number(product.pricing.minimumBillableArea || 0),
       materials: optionMap(product, 'material', 'multiplier'),
       finishing: optionMap(product, 'finishing', 'fee'),
@@ -87,10 +90,12 @@ export function buildPricingDefinition(product) {
     return definition
   }
   if (strategy === 'ENQUIRY') {
+    if (product.serviceType === 'print-signage') validateRequestFields(product.fields || [])
     return {
       strategy,
       quoteRequired: true,
-      serviceType: product?.serviceType || 'service'
+      serviceType: product?.serviceType || 'service',
+      ...(product.pricingDefinition?.quoteOperations ? { quoteOperations: product.pricingDefinition.quoteOperations } : {})
     }
   }
   if (strategy === 'SUPPLIER_MARGIN' || strategy === 'PHOTOGRAPHY_SESSION') {

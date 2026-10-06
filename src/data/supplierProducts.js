@@ -70,7 +70,7 @@ export const supplierProducts = [
       { ...select('turnaround', 'Turnaround', [['standard', 'Standard — production timing confirmed after artwork review']]), options: [{ id: 'standard', label: 'Standard — timing confirmed after artwork review', multiplier: 1 }] }, file],
     productPage: { headline: 'Print your window branding', intro: 'Live price for rectangular print supply. Request shop-window application as an add-on, or a separate Car Contravision quote for a shaped vehicle window.', showStartingPrice: true }
   }
-].map(product => ['contravision', 'correx-boards', 'flyers', 'pull-up-banners'].includes(product.id)
+].map(product => ['contravision', 'correx-boards', 'flyers', 'pull-up-banners', 'car-magnets', 'posters', 'rigid-signage'].includes(product.id)
   ? { ...product, media: { hero: `/qs-catalogue/${product.id}-v1.webp`, gallery: [] } }
   : product)
 export const supplierJourneys = supplierProducts.map(product => ({

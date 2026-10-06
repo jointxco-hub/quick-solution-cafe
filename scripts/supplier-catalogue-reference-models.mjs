@@ -19,6 +19,10 @@ export const supplierOperations = {
 }
 
 export function supplierPricingDefinition(product, buildDefault) {
+  if (product.id === 'contravision') return { ...buildDefault(product), areaSupplier: {
+    supplierCost: 150, marginRate: 0.5, vatBasis: 'none', vatRate: 0,
+    sourceName: supplierOperations.contravision.sourceName
+  } }
   if (product.id !== 'correx-boards') return buildDefault(product)
   return {
     strategy: 'SUPPLIER_MARGIN', marginRate: 0.5, minQuantity: 1,

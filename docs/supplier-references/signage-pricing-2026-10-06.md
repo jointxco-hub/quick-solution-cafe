@@ -1,10 +1,24 @@
+## Photos and admin controls — 6 October 2026
+
+The seven new products now have individual catalogue photographs. The three latest built-in image-generation prompts used premium commercial product photography, warm off-white backgrounds, abstract lilac/deep-green print with a tiny red accent, and no text or logos:
+
+- Car Magnets: matching flexible magnets, one on a white compact car door and one detached showing its magnetic reverse. Saved as `public/qs-catalogue/car-magnets-v1.webp`.
+- Posters: three overlapping paper posters with realistic paper texture and slight curl. Saved as `public/qs-catalogue/posters-v1.webp`.
+- Shop Signs: a framed rigid sign mounted on a wall with a smaller frameless panel beside it. Saved as `public/qs-catalogue/rigid-signage-v1.webp`.
+
+Admin → Products now includes photo URL/path controls. Contravision has a private supplier-cost, VAT-basis, gross-margin and merchant-reference editor; the server derives its public selling rate on save. Initial settings remain R150/m² supplier cost, no supplier VAT, 50% gross margin and R300/m² selling. Its minimum area and artwork fees remain editable through the generic pricing rules below that model. Correx uses its existing supplier-margin editor for A3–A0.
+
+Print/signage quote products have editable choice labels, defaults, number ranges and customer prompts, plus private merchant, lead-time and sourcing notes. Option IDs and the product pricing strategy stay stable. The admin save RPC now accepts ENQUIRY and always enforces quote-required pricing. This phase does not introduce a multi-supplier comparison engine or automatic application-order linking.
+
+Validation covers derived pricing, invalid margins, quote protection, private notes, member rejection, stale-save rejection and public photo references. Database QA uses disposable identities and transactional rollback. Production is untouched.
+
 ## Current catalogue scope — owner refinement, 6 October 2026
 
 Seven new storefront products remain: Flyers, Correx Boards, Pull-up Banners, Car Magnets, Posters, Shop Signs & Rigid Signage, and Contravision Window Printing. Folded Leaflets & Menus, Booklets, Branded Notepads, Presentation Folders, Branded Calendars and the standalone Contravision with Installation listing are archived. Historical order records are retained.
 
 Contravision print supply remains R300/m², based on the confirmed R150/m² supplier cost with no supplier VAT. Application is an optional separately quoted add-on, not a paid print option. The product page offers a shop-window application-only request and a distinct Car Contravision vehicle quote through the signage enquiry flow. Customers should include their separate print order reference in an application request; automatic order linking is not implemented.
 
-Car Magnets capture standard/custom size, sets of two and vehicle placement. Posters capture A3–A0/custom size, paper, finish and quantity. Shop Signs capture job type, supply versus application-only scope, material, panel dimensions, sides, frame, fitting and site/vehicle details. All three require a confirmed quote before payment. No unverified supplier rate is used for checkout. Admin configuration and controls are the next phase.
+Car Magnets capture standard/custom size, sets of two and vehicle placement. Posters capture A3–A0/custom size, paper, finish and quantity. Shop Signs capture job type, supply versus application-only scope, material, panel dimensions, sides, frame, fitting and site/vehicle details. All three require a confirmed quote before payment. No unverified supplier rate is used for checkout. Admin controls are now available as described above.
 
 Earlier research below is retained as supplier reference; it does not describe the current live catalogue scope.
 
