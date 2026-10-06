@@ -210,6 +210,13 @@ export function filterCompatibleAccessories(product, accessoryIds, variantId) {
 }
 
 function priceSupplierMargin(product, config) {
+  if (product.id === 'correx-boards') {
+    const quantity = config.quantity == null ? 1 : Number(config.quantity)
+    const unsupported = (config.sides && config.sides !== 'single') || (config.mounting && config.mounting !== 'none') || (config.installation && config.installation !== 'supply') || config.width != null || config.height != null || config.size != null
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10000 || unsupported) {
+      return { total: 0, summary: unsupported ? 'Custom sizes, double sides and mounting need a Shop Signs quote.' : 'Enter a whole number of boards between 1 and 10000.', lines: [], metrics: { invalid: true } }
+    }
+  }
   const variant = product.pricing.variants?.[config.variant]
   const { minQuantity, quantityStep } = getVariantQuantityRule(product, config.variant)
   // Deliberately NOT clamped up to minQuantity here (unlike most other

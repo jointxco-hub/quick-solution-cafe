@@ -11,7 +11,12 @@ const file = { id: 'file', type: 'file', label: 'Artwork or reference', help: 'U
 const brief = { id: 'brief', type: 'textarea', label: 'Anything we should know?', placeholder: 'Intended use, deadline, measurements or finishing requirements.' }
 const paperSize = select('size', 'Which size?', [['a5', 'A5'], ['a6', 'A6'], ['a4', 'A4']])
 const sides = select('sides', 'Printed sides', [['single', 'Single sided'], ['double', 'Double sided']])
-const boardSize = select('size', 'Which size?', [['a2', 'A2'], ['a1', 'A1'], ['custom', 'Custom — describe measurements below']])
+const correxSizes = [
+  ['a3', 'A3 · 297 × 420 mm', 87.5],
+  ['a2', 'A2 · 420 × 594 mm', 175],
+  ['a1', 'A1 · 594 × 841 mm', 350],
+  ['a0', 'A0 · 841 × 1189 mm', 700]
+]
 function enquiry(id, name, category, description, specificationFields) {
   return {
     id, name, shortName: name, category, description, plainDescription: `${description} Configure your request; we confirm the quote before payment.`,
@@ -24,12 +29,25 @@ function enquiry(id, name, category, description, specificationFields) {
 }
 export const supplierProducts = [
   enquiry('flyers', 'Flyers', 'Business Essentials', 'Printed flyers for local promotions and events.', [paperSize, sides, { ...count, default: 500 }]),
-  enquiry('correx-boards', 'Correx Boards', 'Signs & Large Format', 'Lightweight boards for business notices, directions and promotions.', [boardSize, sides, count, select('mounting', 'Mounting', [['none', 'Board only'], ['eyelets', 'Eyelets — confirm in quote']])]),
+  {
+    id: 'correx-boards', name: 'Correx Boards', shortName: 'Correx', category: 'Signs & Large Format',
+    description: 'Single-sided printed Correx boards for notices, directions and promotions.',
+    plainDescription: 'Choose a standard size and quantity. Single-sided print, board only. Custom sizes, double-sided printing, eyelets and mounting need a Shop Signs quote.',
+    active: true, popular: false, keywords: ['correx', 'boards', 'signs'],
+    channels: { storefront: true, guided: true, advanced: true, pos: false, quote: true },
+    guidedJourneyId: 'correx-boards-guided', nextActionLabel: 'Continue to collection', pricingVersion: '2026-10-correx-local-02',
+    pricing: { strategy: 'SUPPLIER_MARGIN', minQuantity: 1,
+      variants: Object.fromEntries(correxSizes.map(([id, label, price]) => [id, { label: `${label} · single-sided, unmounted`, price }])),
+      accessories: {}, artwork: { ready: { label: 'Print-ready artwork', fee: 0 }, check: { label: 'Artwork check', fee: 75 }, design: { label: 'Design help', fee: 250 } }
+    },
+    fields: [select('variant', 'Board size', correxSizes), count, artwork, brief, file],
+    productPage: { headline: 'Choose your Correx board', intro: 'Standard sizes, single-sided printing, supplied without mounting. Ask for a Shop Signs quote for custom sizes, double sides or fitting.', showStartingPrice: true }
+  },
   enquiry('pull-up-banners', 'Pull-up Banners', 'Flags & Events', 'Portable printed displays for shops, events and presentations.', [select('kit', 'What do you need?', [['complete', 'Complete printed kit with stand'], ['reprint', 'Replacement print — match my existing stand']]), select('style', 'Stand type', [['economy', 'Economy'], ['deluxe', 'Deluxe']]), count]),
   enquiry('car-magnets', 'Car Magnets', 'Signs & Large Format', 'Removable printed vehicle advertising magnets.', [select('size', 'Magnet size', [['500x300', '500 × 300 mm'], ['custom', 'Custom — describe below']]), { ...count, label: 'How many sets of two?', default: 1 }]),
   enquiry('posters', 'Posters', 'Business Essentials', 'Posters for events, shop offers and displays.', [select('size', 'Poster size', [['a3', 'A3'], ['a2', 'A2'], ['a1', 'A1']]), count]),
   enquiry('rigid-signage', 'Shop Signs & Rigid Signage', 'Signs & Large Format', 'Configure a printed sign, frame and installation request.', [
-    select('material', 'Sign material', [['unsure', 'Recommend the right material'], ['chromadek', 'Chromadek steel'], ['acm', 'Aluminium composite'], ['abs', 'ABS plastic'], ['pvc-frame', 'Stretched PVC on a frame']]),
+    select('material', 'Sign material', [['unsure', 'Recommend the right material'], ['correx', 'Correx — custom size, double-sided or mounting'], ['chromadek', 'Chromadek steel'], ['acm', 'Aluminium composite'], ['abs', 'ABS plastic'], ['pvc-frame', 'Stretched PVC on a frame']]),
     ...dimensions, count, select('frame', 'Frame', [['none', 'No frame'], ['steel', 'Steel frame'], ['aluminium', 'Aluminium frame'], ['unsure', 'Please advise']]),
     select('installation', 'Installation', [['supply', 'Supply only'], ['install', 'Install for me — quote after checking site']]),
     { id: 'site', type: 'textarea', label: 'Installation site / area', placeholder: 'Area, wall or fence, mounting height and access. Add a photo below.' }
@@ -46,9 +64,9 @@ export const supplierProducts = [
     plainDescription: 'Enter one panel’s width and height. Print only, minimum 1 m² billed. Shaped trimming and installation need a separate quote.',
     active: true, popular: false, keywords: ['contravision', 'window branding', 'one way vision'],
     channels: { storefront: true, guided: true, pos: true, quote: true }, guidedJourneyId: 'contravision-guided',
-    nextActionLabel: 'Continue to collection', pricingVersion: '2026-10-contravision-01',
+    nextActionLabel: 'Continue to collection', pricingVersion: '2026-10-contravision-local-02',
     // Customer selling rate only. The supplier basis stays in staff metadata.
-    pricing: { strategy: 'PER_AREA', baseRate: 414, minimumBillableArea: 1, unit: 'm²' },
+    pricing: { strategy: 'PER_AREA', baseRate: 300, minimumBillableArea: 1, unit: 'm²' },
     fields: [...dimensions,
       { ...select('material', 'Material', [['standard', 'Perforated one-way-vision vinyl']]), options: [{ id: 'standard', label: 'Perforated one-way-vision vinyl', multiplier: 1 }] },
       { ...select('finishing', 'Supply format', [['print-only', 'Rectangular print only — no fitting']]), options: [{ id: 'print-only', label: 'Rectangular print only — no fitting', fee: 0 }] },
@@ -56,7 +74,9 @@ export const supplierProducts = [
       { ...select('turnaround', 'Turnaround', [['standard', 'Standard — production timing confirmed after artwork review']]), options: [{ id: 'standard', label: 'Standard — timing confirmed after artwork review', multiplier: 1 }] }, file],
     productPage: { headline: 'Print your window branding', intro: 'Print only. Vehicle contour cutting, fitting and installation are quoted separately.', showStartingPrice: true }
   }
-]
+].map(product => ['contravision', 'correx-boards', 'flyers', 'pull-up-banners'].includes(product.id)
+  ? { ...product, media: { hero: `/qs-catalogue/${product.id}-v1.webp`, gallery: [] } }
+  : product)
 export const supplierJourneys = supplierProducts.map(product => ({
   id: product.guidedJourneyId, productId: product.id, title: product.name, intro: product.plainDescription,
   steps: [

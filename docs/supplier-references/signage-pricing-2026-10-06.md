@@ -4,7 +4,7 @@ Checked 6 October 2026. Public catalogue prices are references, not approved res
 
 ## Catalogue additions
 
-Added Flyers, Correx Boards, Pull-up Banners, Car Magnets, Posters, Shop Signs & Rigid Signage, Folded Leaflets & Menus, Booklets, Branded Notepads, Presentation Folders, Branded Calendars and Contravision with Installation as guided quote requests. They capture specifications and artwork without presenting a zero-cost payable product. Existing media requests retain their date/location requirements. Print/signage requests use supply/site details and a distinct `print_signage` request type.
+Added Flyers, Pull-up Banners, Car Magnets, Posters, Shop Signs & Rigid Signage, Folded Leaflets & Menus, Booklets, Branded Notepads, Presentation Folders, Branded Calendars and Contravision with Installation as guided quote requests. Correx Boards now use standard-size supply pricing; bespoke Correx uses Shop Signs. Quote products capture specifications and artwork without presenting a zero-cost payable product. Existing media requests retain their date/location requirements. Print/signage requests use supply/site details and a distinct `print_signage` request type.
 
 Contravision Window Printing is a thirteenth addition with a configurable rectangular print-only price. One panel per configuration; installation and contour cutting are separate requests. Existing checkout calculates the final authoritative total and stores its pricing snapshot.
 
@@ -21,11 +21,28 @@ Signmart framed supply references, metres: 1×1 R1,750; 1.2×0.8 R1,750; 1.2×1 
 
 Price clarity does not establish the best supplier. Compare a matching job's delivered cost, workmanship, material thickness, turnaround and installation coverage before selecting one. Old PDFs and snippets with uncertain VAT are not executable rates.
 
-## Contravision staging model
+## Owner-confirmed local rate revision
 
-Supplier reference R180 ex VAT × 1.15 = R207 cash cost. Existing Café gross-margin convention: R207 ÷ (1 − 0.50) = **R414/m²** selling rate. This is a suggested staging rate, not a market-price finding. A 1m² minimum is a disclosed Café policy, not an asserted supplier minimum. Existing artwork fees are R0 ready / R75 check / R250 design. Freight, installation and shaped trimming are excluded. The current model uses VAT-inclusive cash cost conservatively; finance should confirm recoverable-input-VAT treatment and output-tax presentation before launch.
+The owner confirmed **R150/m² Contravision with no supplier VAT**. Current staging selling rate is **R300/m²** at 50% gross margin, with the disclosed 1m² minimum. The earlier AdverTech-derived R414 model is superseded; its web source remains a comparison reference. Existing artwork fees are R0 ready / R75 check / R250 design. Fitting, shaped trimming and protective laminate are not assumed included. Merchant name, usable roll width and fulfilment arrangements remain to be recorded. No supplier VAT is added; this does not determine Joint X's separate output-VAT obligations.
 
-The existing PER_AREA admin can edit the selling rate and minimum. Supplier source/cost/margin metadata resides in staff-only `operations_definition`, outside the public catalogue. Reconfirm delivered cost and maximum workable panel width before production rollout. The 0.1–20m input range validates numeric input; it is not a promise that a seamless 20m print can be supplied. Counter visibility is a preview: existing counter submission readiness is unchanged.
+For Correx the owner recalled a possible R200 A0 supplier price, but explicitly directed an **R350 A0 cost allowance**. Smaller sizes use exact A-series halving factors, not rounded physical-dimension multiplication and not new merchant quotations:
+
+| Standard size | Finished dimensions | Internal cost allowance | Selling price per board |
+| --- | --- | ---: | ---: |
+| A3 | 297 × 420 mm | R43.75 | R87.50 |
+| A2 | 420 × 594 mm | R87.50 | R175.00 |
+| A1 | 594 × 841 mm | R175.00 | R350.00 |
+| A0 | 841 × 1189 mm | R350.00 | R700.00 |
+
+Prices cover single-sided printed supply without mounting, plus artwork fees once per configured line. Custom dimensions, double sides, eyelets and installation use Shop Signs & Rigid Signage, now including Correx as a material. The standard product rejects unpriced extra specifications rather than silently ignoring them. Thickness, waste/yield and merchant minimums remain operational checks; no fabricated thickness or lead-time promise appears in the customer definition.
+
+Correx uses the existing SUPPLIER_MARGIN admin editor in cost-margin mode; the zero VAT rate prevents a supplier-VAT uplift. Its staff cost fields are explicitly labelled as owner-approved allowances. Contravision uses the existing PER_AREA rate/minimum editor. Staff provenance is outside the public catalogue. Counter submission readiness is unchanged.
+
+## Priority product imagery
+
+Built-in image generation produced four matching studio product mockups. They are illustrative catalogue imagery, not photographs of fulfilled customer jobs. Final repo assets: `public/qs-catalogue/contravision-v1.webp`, `correx-boards-v1.webp`, `flyers-v1.webp` and `pull-up-banners-v1.webp`. They are wired through customer-safe `media.hero` metadata.
+
+Prompt set: square, premium realistic studio product photography; warm off-white background; lilac/deep-green abstract print with restrained warm-red accent; centred whole product and no people, readable text, QR codes, price claims or watermarks. Subjects: white hatchback rear glass with perforated window vinyl; two unframed Correx boards showing fluted edges; a stacked A5 flyer set; and a complete upright pull-up banner with cassette, top bar and stabilising feet. Originals remain unchanged; web assets use compressed WebP derivatives.
 
 ## Alethea pricing model to build when rates are confirmed
 
@@ -37,7 +54,7 @@ Keep supplier selection behind the customer configuration. Give each supplier ra
 4. Compare complete landed costs and supplier capability. Compute selling price as `landed cost / (1 − target gross margin) + design/service fees`, with tax treatment applied consistently. Preserve the current order's supplier reference and price snapshot; changing a rate must not reprice previous orders.
 5. Let staff approve exceptions and record the reason. Promote only verified repeatable variants to instant checkout; leave bespoke/structural/illuminated work in the guided quotation flow.
 
-This change implements the guided intake and the simple Contravision area model. Automatic multi-supplier selection and installation pricing are deliberately deferred until the required rate data exists.
+This change implements guided intake, Contravision area pricing and standard-size Correx pricing. Automatic multi-supplier selection and installation pricing are deliberately deferred until the required rate data exists.
 
 ## Implementation and validation
 
@@ -45,4 +62,6 @@ Migration `20261006181706_supplier_catalogue_signage.sql` inserts missing produc
 
 `scripts/build-supplier-catalogue-sql.mjs` regenerates additive catalogue data from the customer definitions into a temporary SQL file. Historical rollout tests use an explicit baseline of the original 12 products; the new catalogue suite tests the complete 25-product seed and all 13 additions.
 
-Validation: full Node test suite and Vite production build; staging transaction tests for pricing, invalid dimensions, unpriced installation rejection, quote contracts, public supplier-data privacy and a service-request creation with no media date. Test orders are rolled back. Staging migration applied successfully; the committed catalogue, privacy checks and private delegate permissions were verified. Full suite: 765 passed, 8 skipped, no failures; production build passed. Existing security advisor findings were not expanded by this change. Production deployment is not part of the staging validation.
+Validation: full Node test suite and Vite production build; staging transaction tests for pricing, invalid dimensions, unpriced installation rejection, quote contracts, public supplier-data privacy and a service-request creation with no media date. Test orders are rolled back. Staging migration applied successfully; the committed catalogue, privacy checks and private delegate permissions were verified. Full suite: 766 passed, 8 skipped, no failures; production build passed. Existing security advisor findings were not expanded by this change. Production deployment is not part of the staging validation.
+
+The follow-up migration `20261006200200_local_contravision_correx_rates.sql` updates only the two rate models, the Correx bespoke intake option and four media references. Browser/server size and quantity calculations agree; staff normalization keeps the zero-VAT cost basis. Transaction tests additionally exercise a print order and a signage request, inspect their saved records and roll back. Production remains unmodified.
