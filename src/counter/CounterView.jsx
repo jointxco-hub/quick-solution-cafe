@@ -131,12 +131,13 @@ function ProductForm({ entry, draft, onChange }) {
   return (
     <div className="field-grid qsc-fields">
       {counterFields(product).map((field) => (
-        <FieldControl
-          key={`${product.id}:${field.id}`}
-          field={field}
-          value={draft?.values?.[field.id] ?? ''}
-          onChange={(value) => onChange?.(field.id, value)}
-        />
+        <div key={`${product.id}:${field.id}`} className={`qsc-form-field qsc-form-field-${field.id}`}>
+          <FieldControl
+            field={field}
+            value={draft?.values?.[field.id] ?? ''}
+            onChange={(value) => onChange?.(field.id, value)}
+          />
+        </div>
       ))}
     </div>
   )
@@ -912,6 +913,8 @@ function UnpaidPanel({ unpaid, entries, onRefresh, onOpenOrder, onSignIn, signIn
 export default function CounterView({
   state,
   selectedId = null,
+  choosingService = false,
+  onChooseService,
   draft = null,
   customer = EMPTY_COUNTER_CUSTOMER,
   sale = initialSale(),
@@ -989,9 +992,10 @@ export default function CounterView({
     const writable = selected ? resolveCounterSubmission(selected).status === COUNTER_SUBMISSION.WRITABLE : false
     const inSale = sale.phase !== SALE_PHASES.EDITING && sale.attempt !== null
     const saleBody = (
-      <div className="qsc-layout">
+      <div className={`qsc-layout ${(choosingService || !selected) && !inSale ? 'qsc-choosing-service' : 'qsc-configuring-service'}`}>
         <ProductList sections={groupCounterEntries(entries)} selectedId={selected?.product.id || null} onSelect={onSelect} locked={isSaleLocked(sale)}/>
         <section className="qsc-work" aria-label="Configure">
+          {!inSale && selected ? <button type="button" className="qsc-change-service" onClick={() => { onChooseService?.(); window.requestAnimationFrame?.(() => document.querySelector('.qsc-layout')?.scrollIntoView({ block: 'start' })); }}>← Change service</button> : null}
           {inSale ? (
             <SalePanel sale={sale} onBackToEdit={onBackToEdit} onSubmit={onSubmit} onNewSale={onNewSale} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
           ) : selected ? (

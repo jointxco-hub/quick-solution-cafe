@@ -280,3 +280,29 @@ button.qsc-order:focus-visible{border-color:var(--green);box-shadow:0 0 0 3px rg
   .qsc-preview { padding: 16px; border-radius: 20px; }
   .qsc-order-head, .qsc-order-body { flex-wrap: wrap; }
 }
+.qsc-change-service { display: none; }
+.qsc-form-field { min-width: 0; }
+@media (max-width:899px) {
+  .qsc-configuring-service > .qsc-products, .qsc-choosing-service > .qsc-work { display: none; }
+  .qsc-change-service { display: block; grid-column: 1 / -1; text-align: left; min-height: 44px; border: 0; background: transparent; color: #176953; padding: 8px 0; font-size: 15px; cursor: pointer; }
+  .qsc-config { padding: 14px; border-radius: 14px; }
+  .qsc-config-head { margin-bottom: 12px; }
+  .qsc-config-head .eyebrow, .qsc-config-head .qsc-badge { display: none; }
+  .qsc-config-head h2 { margin: 0; font-size: 22px; }
+  .qsc-fields { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px 10px; }
+  .qsc-form-field { grid-column: 1 / -1; }
+  .qsc-form-field-pages, .qsc-form-field-copies { grid-column: auto; }
+  .qsc-fields .field { gap: 6px; }
+  .qsc-fields .field > span, .qsc-fields legend { font-size: 13px; line-height: 1.4; }
+  .qsc-fields .field input, .qsc-fields .field select { min-height: 44px; padding: 10px 12px; }
+  .qsc-fields .segment { min-height: 44px; padding: 10px 8px; font-size: 14px; }
+  .qsc-customer-details { margin-top: 8px; }
+  .qsc-customer-details summary { font-size: 14px; }
+  .qsc-preview { gap: 10px; padding: 14px; border-radius: 14px; }
+  .qsc-preview > .eyebrow, .qsc-preview h2 { display: none; }
+  .qsc-preview-rows div { padding: 8px 0; }
+  .qsc-estimate strong { font-size: 32px; }
+  .qsc-tile .qsc-badge-order { background: transparent; color: #75756d; padding: 0; font-size: 10px; }
+  .qsc-tabs { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .qsc-tabs button { padding: 8px 5px; font-size: 12px; }
+}
