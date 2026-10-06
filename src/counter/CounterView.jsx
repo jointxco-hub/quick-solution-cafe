@@ -93,7 +93,15 @@ function ProductList({ sections, selectedId, onSelect, locked }) {
                   aria-pressed={selected}
                   data-product-id={entry.product.id}
                   disabled={locked}
-                  onClick={() => onSelect?.(entry.product.id)}
+                  onClick={(event) => {
+                    onSelect?.(entry.product.id)
+                    const screen = event?.currentTarget?.ownerDocument?.defaultView
+                    if (screen?.matchMedia('(max-width: 899px)').matches) {
+                      screen.requestAnimationFrame(() => {
+                        screen.document.querySelector('.qsc-work')?.scrollIntoView({ block: 'start' })
+                      })
+                    }
+                  }}
                 >
                   <span className="qsc-tile-top"><strong>{entry.product.name}</strong><ActionBadge action={entry.action}/></span>
                   {entry.product.description ? <small>{entry.product.description}</small> : null}
@@ -145,6 +153,8 @@ function CustomerFields({ customer, onChange }) {
     </label>
   )
   return (
+    <details className="qsc-customer-details">
+      <summary>Customer details <small>Optional · Walk-in by default</small></summary>
     <fieldset className="qsc-customer">
       <legend>Customer <small>optional · leave blank for Walk-in</small></legend>
       <div className="field-grid">
@@ -153,6 +163,7 @@ function CustomerFields({ customer, onChange }) {
         {field('email', 'Email', { autoComplete: 'off', inputMode: 'email', placeholder: 'name@example.com' })}
       </div>
     </fieldset>
+    </details>
   )
 }
 

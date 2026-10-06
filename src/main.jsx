@@ -65,3 +65,5 @@ import './styles/qs21-3-product-detail.css'
 import './styles/qs21-4-polish.css'
 import './styles/qs21-5-mobile-shell.css'
 import './styles/qs21-8-routing.css'
+
+import './styles/qs-admin-mobile.css'

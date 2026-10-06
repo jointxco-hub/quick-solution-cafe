@@ -253,3 +253,30 @@ button.qsc-order:focus-visible{border-color:var(--green);box-shadow:0 0 0 3px rg
 
 /* CAFE-GUEST-01W: the audited cancelled-orders list reuses the order-list styles; only the reason line is new. */
 .qsc-cancel-why { color: #4a453d; font-style: normal; }
+
+/* Compact, optional customer information preserves the walk-in default. */
+.qsc-customer-details { margin-top: 16px; min-width: 0; }
+.qsc-customer-details summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 750; }
+.qsc-customer-details summary small { display: block; font-size: 12px; color: #6b6b65; font-weight: 500; margin-top: 4px; }
+.qsc-customer-details .qsc-customer { margin-top: 8px; }
+.qsc-layout > *, .qsc-work > *, .qsc-fields > *, .qsc-preview-rows dd { min-width: 0; }
+.qsc-preview-rows dd, .qsc-detail-rows dd { overflow-wrap: anywhere; }
+.qsc-fields fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+@media (max-width: 899px) {
+  .qsc-main { width: calc(100% - 24px); padding-top: 12px; }
+  .qsc-products { gap: 14px; }
+  .qsc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .qsc-tile { min-height: 64px; padding: 12px; border-radius: 14px; }
+  .qsc-tile-top { flex-wrap: wrap; gap: 6px; }
+  .qsc-tile strong { font-size: 14px; }
+  .qsc-tile small { display: none; }
+  .qsc-work { scroll-margin-top: 90px; }
+  .qsc-tabs { display: flex; flex-wrap: wrap; border-radius: 16px; gap: 4px; }
+  .qsc-tabs button { flex: 1 1 auto; min-height: 44px; padding: 8px 10px; font-size: 13px; }
+  .qsc-config-head h2 { font-size: 24px; }
+  .qsc-fields .field input, .qsc-fields .field select,
+  .qsc-fields .segment, .qsc-customer .field input { min-height: 48px; }
+  .qsc-fields .segmented-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qsc-preview { padding: 16px; border-radius: 20px; }
+  .qsc-order-head, .qsc-order-body { flex-wrap: wrap; }
+}

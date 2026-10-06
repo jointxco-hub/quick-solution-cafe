@@ -1,0 +1,42 @@
+/* Staff screens: allow grid children and long references to shrink on phones. */
+.admin-layout > *, .handoff-layout > *, .quick-points-layout > *,
+.admin-field, .handoff-card, .handoff-card-top > *, .quick-point-editor { min-width: 0; }
+.admin-app input, .admin-app select, .admin-app textarea { max-width: 100%; }
+.admin-app .handoff-card, .admin-app .quick-point-editor-head,
+.admin-app .handoff-preview, .admin-app .schema-tag { overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .admin-shell { width: calc(100% - 24px); padding: 20px 0 32px; }
+  .admin-header { height: auto; min-height: 64px; padding: 10px 12px; gap: 8px; flex-wrap: wrap; }
+  .admin-header-actions { gap: 6px; flex-wrap: wrap; }
+  .admin-header-actions .button { min-height: 44px; padding: 10px 12px; }
+  .admin-intro { margin-bottom: 18px; gap: 12px; }
+  .admin-intro h1 { font-size: 32px; }
+  .admin-layout, .handoff-layout, .quick-points-layout { grid-template-columns: minmax(0, 1fr); }
+  .admin-editor-heading, .admin-section-block { padding: 16px; border-radius: 18px; }
+  .admin-editor-heading h2 { font-size: 28px; }
+  .admin-two-col, .channel-grid, .quick-point-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-field input, .admin-field select, .admin-field textarea { font-size: 16px; min-height: 44px; }
+  .admin-section-title { flex-wrap: wrap; gap: 8px; }
+  .admin-products { position: static; max-height: 240px; overflow: auto; }
+  .admin-editor, .handoff-preview, .quick-point-editor { scroll-margin-top: 150px; }
+  /* Save stays in the document so it never obscures fields or the keyboard. */
+  .admin-save-bar { position: static; padding: 12px 14px; gap: 10px; border-radius: 16px; box-shadow: none; flex-direction: row; }
+  .admin-save-bar .button { min-height: 44px; width: auto; flex: 0 0 auto; padding: 10px 14px; }
+  .admin-save-bar strong { font-size: 14px; }
+  .handoff-summary-grid, .quick-points-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .handoff-metric, .quick-points-summary article { padding: 12px; border-radius: 16px; gap: 4px; }
+  .handoff-metric strong, .quick-points-summary strong { font-size: 28px; }
+  .handoff-metric span, .quick-points-summary span { font-size: 13px; }
+  .handoff-metric small, .quick-points-summary small { font-size: 11px; line-height: 1.35; }
+  .handoff-queue, .handoff-preview { min-height: 0; }
+  .handoff-card-top { flex-direction: column; gap: 4px; }
+  .handoff-card-meta, .handoff-card-tags, .handoff-card-flags,
+  .handoff-preview-actions { flex-wrap: wrap; }
+  .handoff-list { max-height: 360px; }
+  .quick-point-editor-head { flex-direction: column; padding: 16px; gap: 12px; }
+  .quick-point-status-field { width: 100%; }
+  .quick-point-form-grid { padding: 12px; gap: 12px; }
+  .quick-point-form-section { padding: 14px; }
+  .rate-row { gap: 10px; flex-wrap: wrap; }
+  .rate-inputs { justify-content: flex-start; }
+}
