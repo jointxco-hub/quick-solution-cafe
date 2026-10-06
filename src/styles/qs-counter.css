@@ -340,3 +340,17 @@ button.qsc-order:focus-visible{border-color:var(--green);box-shadow:0 0 0 3px rg
   .qsc-config-head > .qsc-product-image { width: 52px; height: 52px; }
   .qsc-config-head h2 { font-size: 20px; font-weight: 650; }
 }
+
+.qsc-product-image img { object-fit: cover; }
+.qsc-number-control { display: flex; align-items: center; border: 1px solid #dce0db; background: #fafbf9; border-radius: 12px; overflow: hidden; }
+.qsc-number-control button { flex: 0 0 40px; min-height: 44px; border: 0; background: transparent; color: #496456; font-size: 22px; cursor: pointer; }
+.qsc-number-control button:disabled { color: #b8beb8; cursor: default; }
+.qsc-fields .qsc-number-control input { width: 100%; min-width: 0; padding: 8px 2px; border: 0; border-radius: 0; text-align: center; box-shadow: none; -moz-appearance: textfield; }
+.qsc-number-control input::-webkit-inner-spin-button, .qsc-number-control input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.qsc-number-control input::placeholder { color: #9aa29b; opacity: 1; }
+.qsc-number-control:focus-within { outline: 2px solid #397260; outline-offset: 2px; }
+.qsc-fields .qsc-number-control input:focus-visible { outline: 0; }
+.qsc-fields .field > label { color: #555c58; font-weight: 600; font-size: 13px; line-height: 1.4; }
+.qsc-number-unit, .qsc-variant-choices > small { color: #747c75; font-size: 12px; }
+.qsc-variant-choices { display: grid; gap: 16px; }
+.qsc-variant-choices .segment { font-size: 13px; line-height: 1.4; }

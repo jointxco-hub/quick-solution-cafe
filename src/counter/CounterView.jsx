@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import ProductScene from '../components/ProductScene.jsx'
-import { resolveProductMedia } from '../lib/productContent.js'
+import { resolveProductMedia, deriveVariantAxisValues } from '../lib/productContent.js'
 import FieldControl from '../components/FieldControl.jsx'
 import { formatMoney } from '../lib/pricing.js'
 import { COUNTER_ACTIONS } from '../lib/counterCatalogue.js'
@@ -126,6 +126,49 @@ function ProductList({ sections, selectedId, onSelect, locked }) {
   )
 }
 
+function CounterNumberField({ field, value, onChange }) {
+  const minimum = Number(field.min ?? 1)
+  const step = Number(field.step || 1)
+  const blank = value === '' || value == null
+  const current = blank ? minimum : Number(value)
+  const adjust = (direction) => {
+    const next = blank ? minimum : Math.round((current + direction * step) * 10000) / 10000
+    onChange(String(Math.min(Number(field.max ?? Infinity), Math.max(minimum, next))))
+  }
+  return <div className="field">
+    <label htmlFor={`counter-${field.id}`}>{field.label}</label>
+    <div className="qsc-number-control">
+      <button type="button" aria-label={`Decrease ${field.shortLabel || field.label}`} disabled={!blank && current <= minimum} onClick={() => adjust(-1)}>−</button>
+      <input id={`counter-${field.id}`} type="number" inputMode={step % 1 ? 'decimal' : 'numeric'} min={field.min} max={field.max} step={step} value={value ?? ''} placeholder={String(minimum)} onChange={(event) => onChange(event.target.value)}/>
+      <button type="button" aria-label={`Increase ${field.shortLabel || field.label}`} disabled={!blank && current >= Number(field.max ?? Infinity)} onClick={() => adjust(1)}>+</button>
+    </div>
+    {field.suffix ? <small className="qsc-number-unit">{field.suffix}</small> : null}
+  </div>
+}
+
+function CounterVariantField({ product, field, value, onChange }) {
+  const axes = product.pricing.variantAxes
+  const [choices, setChoices] = useState(() => deriveVariantAxisValues(product, value) || {})
+  const choose = (axisId, optionId) => {
+    const next = { ...choices, [axisId]: optionId }
+    for (const axis of axes) {
+      const option = axis.options.find((item) => item.id === next[axis.id])
+      if (option?.availableWhen && !Object.entries(option.availableWhen).every(([id, allowed]) => allowed.includes(next[id]))) next[axis.id] = ''
+    }
+    setChoices(next)
+    const variant = product.pricing.variantTemplate.replace(/\{([^}]+)\}/g, (_, id) => next[id] || '')
+    onChange(axes.every((axis) => next[axis.id]) && product.pricing.variants?.[variant] ? variant : '')
+  }
+  return <div className="qsc-variant-choices">
+    <span className="qsc-variant-heading">{field.label}</span>
+    {axes.map((axis) => {
+      const options = axis.options.filter((option) => !option.availableWhen || Object.entries(option.availableWhen).every(([id, allowed]) => allowed.includes(choices[id])))
+      return <FieldControl key={axis.id} field={{ ...axis, label: axis.label, type: options.length <= 3 ? 'segmented' : 'select', options }} value={choices[axis.id] || ''} onChange={(id) => choose(axis.id, id)}/>
+    })}
+    <small>Choose each option to identify the exact product.</small>
+  </div>
+}
+
 function ProductForm({ entry, draft, onChange }) {
   const { product } = entry
   if (entry.action === COUNTER_ACTIONS.REQUEST) {
@@ -143,11 +186,11 @@ function ProductForm({ entry, draft, onChange }) {
     <div className="field-grid qsc-fields">
       {counterFields(product).map((field) => (
         <div key={`${product.id}:${field.id}`} className={`qsc-form-field qsc-form-field-${field.id}`}>
-          <FieldControl
+          {field.type === 'number' ? <CounterNumberField field={field} value={draft?.values?.[field.id] ?? ''} onChange={(value) => onChange?.(field.id, value)}/> : field.id === 'variant' && product.pricing?.variantAxes?.length && product.pricing?.variantTemplate ? <CounterVariantField product={product} field={field} value={draft?.values?.[field.id]} onChange={(value) => onChange?.(field.id, value)}/> : <FieldControl
             field={field}
             value={draft?.values?.[field.id] ?? ''}
             onChange={(value) => onChange?.(field.id, value)}
-          />
+          />}
         </div>
       ))}
     </div>
