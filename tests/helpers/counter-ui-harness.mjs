@@ -27,6 +27,7 @@ export const loadQuickSolutionCounterOrderCancelCheck = (...args) => (m().cancel
 export const cancelQuickSolutionCounterOrder = (...args) => m().cancel(...args)
 export const signInAdmin = (...args) => m().signIn(...args)
 export const signOutAdmin = (...args) => m().signOut(...args)
+export const staffPushRequest = (...args) => m().push ? m().push(...args) : Promise.resolve({ enabled: false })
 `
 
 const ENTRY = `

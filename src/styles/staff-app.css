@@ -1,0 +1,5 @@
+.qs-staff-app-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;max-width:100%}
+.qs-staff-app-controls button{font:inherit;font-size:14px;min-height:44px;padding:8px 12px;border:1px solid #d7d7dc;border-radius:12px;background:#fff;color:#193d32;cursor:pointer}
+.qs-staff-app-controls button:disabled{opacity:.6;cursor:wait}
+.qs-staff-app-controls p{flex-basis:100%;max-width:420px;margin:0;font-size:14px;line-height:1.5;color:#53535b;overflow-wrap:anywhere}
+@media print{.qs-staff-app-controls{display:none}}

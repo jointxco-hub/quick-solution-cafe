@@ -106,6 +106,16 @@ export async function signInAdmin(email, password) {
 }
 
 export async function signOutAdmin() {
+  // Revoke this browser's subscriptions before removing the staff identity.
+  try {
+    const registration = await navigator.serviceWorker?.getRegistration('/')
+    const subscription = await registration?.pushManager?.getSubscription()
+    if (subscription) {
+      await staffPushRequest('unsubscribe', { app: 'admin', endpoint: subscription.endpoint })
+      await staffPushRequest('unsubscribe', { app: 'counter', endpoint: subscription.endpoint })
+      await subscription.unsubscribe()
+    }
+  } catch { /* Local logout still proceeds if disconnected. */ }
   const session = readStoredSession()
   if (session?.access_token) {
     try {
@@ -118,6 +128,14 @@ export async function signOutAdmin() {
     }
   }
   if (typeof window !== 'undefined') window.localStorage.removeItem(ADMIN_SESSION_KEY)
+}
+
+export async function staffPushRequest(action, payload = {}) {
+  const accessToken = await getAdminAccessToken()
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/quick-solution-push`, {
+    method: 'POST', headers: apiHeaders(accessToken), body: JSON.stringify({ action, ...payload })
+  })
+  return parseResponse(response, 'Café notifications are not available yet')
 }
 
 // Google staff sign-in, added alongside the existing email/password path

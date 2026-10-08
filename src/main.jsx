@@ -1,6 +1,7 @@
 ﻿import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
+import { setupStaffPwa } from './lib/staffPwa.js'
 import './styles/app.css'
 import './styles/qs03.css'
 import './styles/qs031.css'
@@ -45,6 +46,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+setupStaffPwa()
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary><App /></ErrorBoundary>

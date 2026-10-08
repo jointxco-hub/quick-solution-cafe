@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
+import StaffAppControls from '../components/StaffAppControls.jsx'
 import ProductScene from '../components/ProductScene.jsx'
 import { resolveVisualAxisOption } from '../lib/configuratorVisuals.js'
 import { resolveProductMedia, deriveVariantAxisValues } from '../lib/productContent.js'
@@ -40,6 +41,7 @@ function TopBar({ signedIn, onSignOut }) {
         <span><strong>{BUSINESS_NAME}</strong><small>Counter</small></span>
       </a>
       <div className="qsc-bar-actions">
+        <StaffAppControls app="counter" signedIn={signedIn}/>
         <span className="qsc-mode">Cash &amp; card</span>
         {signedIn ? <button className="admin-signout-button" type="button" onClick={onSignOut}>Sign out</button> : null}
       </div>

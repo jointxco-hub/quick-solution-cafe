@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon.jsx'
+import StaffAppControls from '../components/StaffAppControls.jsx'
 import AdminOppsHandoffPanel from './AdminOppsHandoffPanel.jsx'
 import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'
 import { cloneCatalog, exportCatalog } from '../lib/catalogStore.js'
@@ -670,6 +671,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
       <header className="admin-header">
         <a className="brand" href="/"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
         <div className="admin-header-actions">
+          <StaffAppControls app="admin"/>
           {activeSection === 'products' ? <span>{activeCount} live products</span> : activeSection === 'quick-points' ? <span>Fulfilment network</span> : <span>Location 001</span>}
           <span className="admin-live-badge"><i/> XOS Staging</span>
           <a className="button ghost" href="#top">View storefront</a>
