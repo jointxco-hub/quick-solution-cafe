@@ -36,13 +36,15 @@ function CounterProductImage({ product }) {
 function TopBar({ signedIn, onSignOut }) {
   return (
     <header className="qsc-bar">
-      <a className="brand" href="/" aria-label={`${BUSINESS_NAME} home`}>
+      <a className="brand" href="/counter" aria-label={`${BUSINESS_NAME} Counter home`}>
         <img className="brand-mark-image" src="/jointx-mark.png" alt=""/>
         <span><strong>{BUSINESS_NAME}</strong><small>Counter</small></span>
       </a>
       <div className="qsc-bar-actions">
         <StaffAppControls app="counter" signedIn={signedIn}/>
         <span className="qsc-mode">Cash &amp; card</span>
+        {signedIn && <a className="button ghost" href="/admin">Admin</a>}
+        <a className="button ghost" href="/">Storefront</a>
         {signedIn ? <button className="admin-signout-button" type="button" onClick={onSignOut}>Sign out</button> : null}
       </div>
     </header>

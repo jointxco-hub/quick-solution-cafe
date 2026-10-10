@@ -3,3 +3,6 @@
 .qs-staff-app-controls button:disabled{opacity:.6;cursor:wait}
 .qs-staff-app-controls p{flex-basis:100%;max-width:420px;margin:0;font-size:14px;line-height:1.5;color:#53535b;overflow-wrap:anywhere}
 @media print{.qs-staff-app-controls{display:none}}
+
+.qs-staff-nav-link{min-height:44px;align-items:center;justify-content:center}
+@media(max-width:760px){.qsc-bar{flex-wrap:wrap}.qsc-bar-actions{width:100%;justify-content:flex-start}}
