@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '../components/Icon.jsx'
+import { readStaffOrderId } from '../lib/staffNotificationNavigation.js'
 import { orderDay, filterOrders } from './orderOverview.js'
 import {
   adminIssueQuickSolutionTrackingToken,
@@ -109,10 +110,11 @@ function MessageList({ title, icon, items = [], tone = 'neutral', emptyLabel }) 
 }
 
 export default function AdminOppsHandoffPanel() {
+  const [notificationOrderId] = useState(readStaffOrderId)
   const [queue, setQueue] = useState([])
   const [orderFilter, setOrderFilter] = useState('all')
-  const [detailOpen, setDetailOpen] = useState(false)
-  const [selectedId, setSelectedId] = useState('')
+  const [detailOpen, setDetailOpen] = useState(() => Boolean(notificationOrderId))
+  const [selectedId, setSelectedId] = useState(notificationOrderId)
   const [previewCache, setPreviewCache] = useState({})
   const [loadState, setLoadState] = useState('loading')
   const [previewingId, setPreviewingId] = useState('')
@@ -140,7 +142,10 @@ export default function AdminOppsHandoffPanel() {
       const list = Array.isArray(data) ? data : []
       setQueue(list)
       hydratePreviewCache(list)
-      setSelectedId((current) => list.some((item) => item.serviceOrderId === current) ? current : list[0]?.serviceOrderId || '')
+      setSelectedId((current) => list.some((item) => item.serviceOrderId === current) ? current : notificationOrderId || list[0]?.serviceOrderId || '')
+      if (notificationOrderId && !list.some((item) => item.serviceOrderId === notificationOrderId)) {
+        setNotice('The notified order is unavailable in this account. Choose another order or refresh.')
+      }
       setLoadState('ready')
       return list
     } catch (nextError) {
@@ -436,7 +441,7 @@ export default function AdminOppsHandoffPanel() {
               </div>
               </details>
             </>
-          ) : <div className="handoff-empty large">Select a Quick Solution order to review the OPPS handoff.</div>}
+          ) : <div className="handoff-empty large">{loadState === 'loading' ? 'Loading the order…' : notificationOrderId ? 'The notified order could not be found in this account.' : 'Select a Quick Solution order to review the OPPS handoff.'}</div>}
         </section>
       </div>
     </section>
