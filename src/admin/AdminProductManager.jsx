@@ -1,6 +1,7 @@
+import { initialStaffSection } from '../components/StaffNavigation.jsx'
+import StaffMenu from '../components/StaffMenu.jsx'
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon.jsx'
-import StaffAppControls from '../components/StaffAppControls.jsx'
 import AdminOppsHandoffPanel from './AdminOppsHandoffPanel.jsx'
 import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'
 import { cloneCatalog, exportCatalog } from '../lib/catalogStore.js'
@@ -500,7 +501,7 @@ function AdminSignIn({ onSignedIn }) {
   return (
     <div className="admin-auth-page">
       <div className="admin-auth-card">
-        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
+        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · {activeSection === 'products' ? 'Products' : activeSection === 'quick-points' ? 'Quick Points' : 'Orders'}</small></span></a>
         <span className="eyebrow">Secure staff access</span>
         <h1>Run orders. Control products.</h1>
         <p>Use your XOS / OPPS staff account. Customer ordering stays simple; operational controls stay staff-only.</p>
@@ -525,33 +526,6 @@ function AdminSignIn({ onSignedIn }) {
   )
 }
 
-function AdminSectionTabs({ activeSection, onChange }) {
-  const tabs = [
-    { id: 'orders', label: 'Orders' },
-    { id: 'products', label: 'Products' },
-    { id: 'quick-points', label: 'Quick Points' },
-    { id: 'settings', label: 'Settings', disabled: true, badge: 'Soon' }
-  ]
-
-  return (
-    <nav className="admin-section-tabs" aria-label="Quick Solution admin sections">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          className={activeSection === tab.id ? 'active' : ''}
-          disabled={tab.disabled}
-          aria-current={activeSection === tab.id ? 'page' : undefined}
-          onClick={() => !tab.disabled && onChange(tab.id)}
-        >
-          <span>{tab.label}</span>
-          {tab.badge ? <small>{tab.badge}</small> : null}
-        </button>
-      ))}
-    </nav>
-  )
-}
-
 export default function AdminProductManager({ initialProducts, onCatalogChange, onFulfilmentPointsChange }) {
   const [session, setSession] = useState(() => getAdminSession())
   const [draft, setDraft] = useState(() => cloneCatalog(initialProducts))
@@ -561,7 +535,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
   const [saveState, setSaveState] = useState('idle')
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
-  const [activeSection, setActiveSection] = useState('orders')
+  const [activeSection, setActiveSection] = useState(initialStaffSection)
 
   const activeCount = useMemo(() => draft.filter((item) => item.active !== false).length, [draft])
   const selectedIndex = draft.findIndex((product) => product.id === selectedId)
@@ -669,15 +643,10 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
   return (
     <div className="admin-app">
       <header className="admin-header">
-        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
+        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · {activeSection === 'products' ? 'Products' : activeSection === 'quick-points' ? 'Quick Points' : 'Orders'}</small></span></a>
         <div className="admin-header-actions">
-          <StaffAppControls app="admin"/>
-          {activeSection === 'products' ? <span>{activeCount} live products</span> : activeSection === 'quick-points' ? <span>Fulfilment network</span> : <span>Location 001</span>}
-          <span className="admin-live-badge"><i/> XOS Staging</span>
-          <a className="button ghost" href="/">View storefront</a>
-          <a className="button ghost admin-counter-link" href="/counter">Counter POS</a>
           {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
-          <button className="admin-signout-button" type="button" onClick={logout}>Sign out</button>
+          <StaffMenu app="admin" active={activeSection} onChange={setActiveSection} onSignOut={logout}/>
         </div>
       </header>
 
@@ -700,7 +669,6 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
           ) : null}
         </section>
 
-        <AdminSectionTabs activeSection={activeSection} onChange={setActiveSection}/>
 
         {activeSection === 'orders' ? <AdminOppsHandoffPanel /> : null}
 
