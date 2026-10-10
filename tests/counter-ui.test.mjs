@@ -79,10 +79,10 @@ test('no navigation entry was added: the route is reached directly, with no fake
   assert.equal((nav.match(/counter/gi) || []).length, 2, 'only the route line mentions the counter')
 })
 
-test('counter logo stays in Counter and staff have explicit Admin and Storefront links', () => {
+test('counter logo stays in Counter and staff have workspace and Storefront links', () => {
   const markup = screen()
   assert.match(markup, /class="brand" href="\/counter"/)
-  assert.match(markup, /href="\/admin">Admin<\/a>/)
+  assert.match(markup, /href="\/admin">Orders<\/a>/)
   assert.match(markup, /href="\/">Storefront<\/a>/)
 })
 

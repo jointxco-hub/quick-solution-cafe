@@ -1,3 +1,4 @@
+import StaffNavigation, { initialStaffSection } from '../components/StaffNavigation.jsx'
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import StaffAppControls from '../components/StaffAppControls.jsx'
@@ -525,33 +526,6 @@ function AdminSignIn({ onSignedIn }) {
   )
 }
 
-function AdminSectionTabs({ activeSection, onChange }) {
-  const tabs = [
-    { id: 'orders', label: 'Orders' },
-    { id: 'products', label: 'Products' },
-    { id: 'quick-points', label: 'Quick Points' },
-    { id: 'settings', label: 'Settings', disabled: true, badge: 'Soon' }
-  ]
-
-  return (
-    <nav className="admin-section-tabs" aria-label="Quick Solution admin sections">
-      {tabs.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          className={activeSection === tab.id ? 'active' : ''}
-          disabled={tab.disabled}
-          aria-current={activeSection === tab.id ? 'page' : undefined}
-          onClick={() => !tab.disabled && onChange(tab.id)}
-        >
-          <span>{tab.label}</span>
-          {tab.badge ? <small>{tab.badge}</small> : null}
-        </button>
-      ))}
-    </nav>
-  )
-}
-
 export default function AdminProductManager({ initialProducts, onCatalogChange, onFulfilmentPointsChange }) {
   const [session, setSession] = useState(() => getAdminSession())
   const [draft, setDraft] = useState(() => cloneCatalog(initialProducts))
@@ -561,7 +535,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
   const [saveState, setSaveState] = useState('idle')
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
-  const [activeSection, setActiveSection] = useState('orders')
+  const [activeSection, setActiveSection] = useState(initialStaffSection)
 
   const activeCount = useMemo(() => draft.filter((item) => item.active !== false).length, [draft])
   const selectedIndex = draft.findIndex((product) => product.id === selectedId)
@@ -675,7 +649,6 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
           {activeSection === 'products' ? <span>{activeCount} live products</span> : activeSection === 'quick-points' ? <span>Fulfilment network</span> : <span>Location 001</span>}
           <span className="admin-live-badge"><i/> {String(import.meta.env.VITE_SUPABASE_URL || '').includes('tijiamrfnxrbitafiflj.supabase.co') ? 'XOS Staging' : 'XOS Live'}</span>
           <a className="button ghost" href="/">View storefront</a>
-          <a className="button ghost admin-counter-link" href="/counter">Counter</a>
           {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
           <button className="admin-signout-button" type="button" onClick={logout}>Sign out</button>
         </div>
@@ -700,7 +673,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
           ) : null}
         </section>
 
-        <AdminSectionTabs activeSection={activeSection} onChange={setActiveSection}/>
+        <StaffNavigation active={activeSection} onChange={setActiveSection}/>
 
         {activeSection === 'orders' ? <AdminOppsHandoffPanel /> : null}
 

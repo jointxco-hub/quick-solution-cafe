@@ -1,3 +1,4 @@
+import StaffNavigation from '../components/StaffNavigation.jsx'
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import { readStaffOrderId } from '../lib/staffNotificationNavigation.js'
@@ -36,7 +37,6 @@ function CounterProductImage({ product }) {
 
 function TopBar({ signedIn, onSignOut }) {
   const notificationOrderId = readStaffOrderId()
-  const adminHref = notificationOrderId ? `/admin?order=${notificationOrderId}` : '/admin'
   return (
     <header className="qsc-bar">
       <a className="brand" href="/counter" aria-label={`${BUSINESS_NAME} Counter home`}>
@@ -46,10 +46,10 @@ function TopBar({ signedIn, onSignOut }) {
       <div className="qsc-bar-actions">
         <StaffAppControls app="counter" signedIn={signedIn}/>
         <span className="qsc-mode">Cash &amp; card</span>
-        {signedIn && <a className="button ghost" href={adminHref}>Admin</a>}
         <a className="button ghost" href="/">Storefront</a>
         {signedIn ? <button className="admin-signout-button" type="button" onClick={onSignOut}>Sign out</button> : null}
       </div>
+      {signedIn && <StaffNavigation active="counter" orderId={notificationOrderId}/>}
     </header>
   )
 }

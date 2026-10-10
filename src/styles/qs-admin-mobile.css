@@ -152,3 +152,6 @@
   .admin-app .admin-header-actions { flex-basis: 100%; justify-content: flex-start; }
   .admin-app .handoff-list { max-height: none; overflow: visible; }
 }
+
+/* The identity header scrolls away; workspaces remain in document flow. */
+.admin-app .admin-header { position: relative; top: auto; }
