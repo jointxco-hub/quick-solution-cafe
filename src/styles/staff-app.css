@@ -10,3 +10,14 @@
 .qs-staff-app-controls{min-width:0;flex-shrink:0}
 .qs-staff-app-controls button{white-space:nowrap}
 .qs-staff-app-controls p{padding:8px 10px;background:#f5f7f6;border-radius:8px}
+
+.qs-staff-settings{position:relative;flex-shrink:0}
+.qs-staff-settings summary{list-style:none;cursor:pointer;min-height:44px;display:flex;align-items:center;padding:10px 14px;border:1px solid #d7d7d1;border-radius:999px;font-size:13px;font-weight:600;background:#f8f8f5;color:#55564f}
+.qs-staff-settings summary::-webkit-details-marker{display:none}
+.qs-staff-settings summary:focus-visible{outline:2px solid #337763;outline-offset:3px}
+.qs-staff-settings[open] summary{background:#edf4f0;color:#245d4d}
+.qs-staff-settings .qs-staff-app-controls{position:absolute;right:0;top:calc(100% + 10px);width:min(360px,calc(100vw - 40px));max-width:none;padding:18px;background:#fff;border:1px solid #deded7;border-radius:18px;box-shadow:0 14px 40px #171b1720;z-index:60}
+.qs-staff-app-controls>strong{width:100%;font-size:16px}
+.qs-staff-app-controls p{background:transparent;padding:0;color:#707169;font-size:13px}
+@media(max-width:760px){.qs-staff-settings .qs-staff-app-controls{right:auto;left:0}}
+@media print{.qs-staff-settings{display:none}}

@@ -41,7 +41,7 @@ function TopBar({ signedIn, onSignOut }) {
     <header className="qsc-bar">
       <a className="brand" href="/counter" aria-label={`${BUSINESS_NAME} Counter home`}>
         <img className="brand-mark-image" src="/jointx-mark.png" alt=""/>
-        <span><strong>{BUSINESS_NAME}</strong><small>Counter</small></span>
+        <span><strong>{BUSINESS_NAME}</strong><small>Café · Counter</small></span>
       </a>
       <div className="qsc-bar-actions">
         <StaffAppControls app="counter" signedIn={signedIn}/>

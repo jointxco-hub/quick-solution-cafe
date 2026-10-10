@@ -500,7 +500,7 @@ function AdminSignIn({ onSignedIn }) {
   return (
     <div className="admin-auth-page">
       <div className="admin-auth-card">
-        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
+        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · Orders</small></span></a>
         <span className="eyebrow">Secure staff access</span>
         <h1>Run orders. Control products.</h1>
         <p>Use your XOS / OPPS staff account. Customer ordering stays simple; operational controls stay staff-only.</p>
@@ -669,13 +669,13 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
   return (
     <div className="admin-app">
       <header className="admin-header">
-        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>XOS Operations Admin</small></span></a>
+        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · Orders</small></span></a>
         <div className="admin-header-actions">
           <StaffAppControls app="admin"/>
           {activeSection === 'products' ? <span>{activeCount} live products</span> : activeSection === 'quick-points' ? <span>Fulfilment network</span> : <span>Location 001</span>}
           <span className="admin-live-badge"><i/> {String(import.meta.env.VITE_SUPABASE_URL || '').includes('tijiamrfnxrbitafiflj.supabase.co') ? 'XOS Staging' : 'XOS Live'}</span>
           <a className="button ghost" href="/">View storefront</a>
-          <a className="button ghost admin-counter-link" href="/counter">Counter POS</a>
+          <a className="button ghost admin-counter-link" href="/counter">Counter</a>
           {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
           <button className="admin-signout-button" type="button" onClick={logout}>Sign out</button>
         </div>

@@ -87,3 +87,30 @@ test('only a missing notified Counter order falls back to its Admin detail, neve
  assert.equal(counterNotificationAdminFallback('not-found', ORDER_ID, ''), null)
  assert.equal(counterNotificationAdminFallback('not-found', '00000000-0000-0000-0000-000000000000', search), null)
 })
+
+test('Counter and Admin select the same installable Café manifest', () => {
+ const manifest = JSON.parse(read('public/staff-cafe.webmanifest'))
+ assert.equal(manifest.id, '/staff-admin')
+ assert.equal(manifest.name, 'Quick Solution Café')
+ assert.equal(manifest.scope, '/')
+ assert.equal(manifest.start_url, '/counter')
+ assert.deepEqual(manifest.shortcuts.map((item) => item.url), ['/counter', '/admin'])
+ assert.ok(read('src/lib/staffPwa.js').includes('manifest.href = "/staff-cafe.webmanifest"'))
+})
+test('an order notification switches the existing Café window from Counter to Admin', async () => {
+ const navigated = [], focused = []
+ const client = { url: 'https://cafe.example/counter', async navigate(url) { navigated.push(url); return { async focus() { focused.push(url) } } } }
+ const w = worker([client])
+ await clickEvent(w, { app: 'admin', orderId: ORDER_ID })
+ assert.deepEqual(navigated, [`https://cafe.example/admin?order=${ORDER_ID}`])
+ assert.equal(focused.length, 1)
+ assert.equal(w.opened.length, 0)
+})
+test('a generic notification switches the existing Café window to the requested workspace', async () => {
+ const navigated = []
+ const client = { url: 'https://cafe.example/admin', async navigate(url) { navigated.push(url); return { async focus() {} } } }
+ const w = worker([client])
+ await clickEvent(w, { app: 'counter' })
+ assert.deepEqual(navigated, ['https://cafe.example/counter'])
+ assert.equal(w.opened.length, 0)
+})

@@ -25,10 +25,10 @@ self.addEventListener('notificationclick', (event) => {
   if (typeof orderId === 'string' && orderIdPattern.test(orderId)) targetUrl.searchParams.set('order', orderId)
   const target = targetUrl.href
   event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clients) => {
-    const existing = clients.find((client) => new URL(client.url).pathname === path)
+    const existing = clients.find((client) => new URL(client.url).pathname === path) || clients.find((client) => ['/admin', '/counter'].includes(new URL(client.url).pathname))
     if (existing) {
       // Focus alone retains the old tab/selection. Navigate to this event first.
-      if (targetUrl.search) {
+      if (targetUrl.search || new URL(existing.url).pathname !== path) {
         try {
           const navigated = existing.navigate && await existing.navigate(target)
           if (navigated) return navigated.focus()

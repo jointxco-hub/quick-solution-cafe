@@ -7,7 +7,9 @@ export default function StaffAppControls({ app, signedIn = true }) {
   // This app is client-rendered; node-only counter markup tests have no install surface.
   if (typeof window === 'undefined') return null
   const [installReady, setInstallReady] = useState(canPromptInstall)
-  const [enabled, setEnabled] = useState(false)
+  const [enabledApps, setEnabledApps] = useState([])
+  const enabled = enabledApps.length > 0
+  const notificationApp = enabledApps.includes(app) ? app : enabledApps[0] || app
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const browser = typeof window !== 'undefined'
@@ -21,8 +23,9 @@ export default function StaffAppControls({ app, signedIn = true }) {
     if (supported && signedIn) registerStaffWorker().then(async (registration) => {
       const subscription = await registration.pushManager.getSubscription()
       if (!subscription) return
-      const result = await staffPushRequest('status', { app, endpoint: subscription.endpoint })
-      if (alive) setEnabled(result.enabled)
+      const apps = ['admin', 'counter']
+      const results = await Promise.allSettled(apps.map((channel) => staffPushRequest('status', { app: channel, endpoint: subscription.endpoint })))
+      if (alive) setEnabledApps(apps.filter((channel, index) => results[index].status === 'fulfilled' && results[index].value.enabled))
     }).catch(() => {})
     return () => { alive = false; window.removeEventListener('qs-install-ready', update) }
   }, [browser, supported, signedIn, app])
@@ -44,24 +47,29 @@ export default function StaffAppControls({ app, signedIn = true }) {
         const config = await staffPushRequest('config', { app })
         subscription ||= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: decodeApplicationKey(config.publicKey) })
         await staffPushRequest('subscribe', { app, subscription: subscription.toJSON() })
-        setEnabled(true); setMessage('Notifications enabled on this device.')
+        setEnabledApps([app]); setMessage('Notifications enabled on this device.')
       } else if (action === 'disable') {
-        if (subscription) await staffPushRequest('unsubscribe', { app, endpoint: subscription.endpoint })
-        // One browser worker can serve both installed apps: disable only this app's subscription row.
-        setEnabled(false); setMessage('Notifications turned off for this app on this device.')
+        if (subscription) for (const channel of ['admin', 'counter']) await staffPushRequest('unsubscribe', { app: channel, endpoint: subscription.endpoint })
+        setEnabledApps([]); setMessage('Notifications turned off on this device.')
       } else {
         if (!subscription) throw new Error('Enable notifications first.')
-        await staffPushRequest('test', { app, endpoint: subscription.endpoint })
+        await staffPushRequest('test', { app: notificationApp, endpoint: subscription.endpoint })
         setMessage('Test alert queued. It should arrive within a minute.')
       }
     } catch (error) { setMessage(error.message || 'Could not update notifications. Try again.') }
     finally { setBusy(false) }
   }
   if (!browser) return null
-  return <div className="qs-staff-app-controls">
-    {!standalone && <button type="button" onClick={install}>Install {app === 'admin' ? 'Admin' : 'Counter'}</button>}
+  return <details className="qs-staff-settings">
+    <summary>App settings</summary>
+    <div className="qs-staff-app-controls">
+    <strong>Café app</strong>
+    <p>{standalone ? 'Installed · Counter and Orders in one app' : 'One app for Counter and Orders'}</p>
+    {signedIn && <p>{enabled ? 'Alerts enabled on this device' : 'Alerts are off on this device'}</p>}
+    {!standalone && <button type="button" onClick={install}>Install Café</button>}
     {signedIn && <button type="button" disabled={busy} onClick={() => notificationAction(enabled ? 'disable' : 'enable')}>{busy ? 'Please wait…' : enabled ? 'Turn alerts off' : 'Enable alerts'}</button>}
     {signedIn && enabled && <button type="button" disabled={busy} onClick={() => notificationAction('test')}>Test alert</button>}
     {message && <p role="status">{message}</p>}
-  </div>
+    </div>
+  </details>
 }
