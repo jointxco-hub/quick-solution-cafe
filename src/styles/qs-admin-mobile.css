@@ -140,3 +140,15 @@
   .admin-app .handoff-card-top > div > span, .admin-app .handoff-card-meta, .admin-app .handoff-preview-top p { color: #747a74; }
   .admin-app .order-more .detail-row span, .admin-app .handoff-line small { color: #747a74; }
 }
+
+/* Staff controls and help text must fit desktop and installed app windows too. */
+.admin-app .admin-header { height: auto; min-height: 76px; padding-top: 10px; padding-bottom: 10px; gap: 16px; flex-wrap: wrap; }
+.admin-app .admin-header > .brand { flex: 0 0 auto; }
+.admin-app .admin-header-actions { flex: 1 1 560px; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+.admin-app .admin-header-actions .button, .admin-app .admin-header-actions > span { flex-shrink: 0; white-space: nowrap; }
+.admin-app .handoff-card-top > div { display: grid; gap: 5px; }
+.admin-app .handoff-card-top small { color: #6d6d67; line-height: 1.4; }
+@media (max-width: 1100px) {
+  .admin-app .admin-header-actions { flex-basis: 100%; justify-content: flex-start; }
+  .admin-app .handoff-list { max-height: none; overflow: visible; }
+}

@@ -6,3 +6,7 @@
 
 .qs-staff-nav-link{min-height:44px;align-items:center;justify-content:center}
 @media(max-width:760px){.qsc-bar{flex-wrap:wrap}.qsc-bar-actions{width:100%;justify-content:flex-start}}
+
+.qs-staff-app-controls{min-width:0;flex-shrink:0}
+.qs-staff-app-controls button{white-space:nowrap}
+.qs-staff-app-controls p{padding:8px 10px;background:#f5f7f6;border-radius:8px}

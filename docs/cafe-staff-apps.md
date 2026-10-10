@@ -20,7 +20,7 @@ Generate a fresh P-256 VAPID keypair and a cryptographically random dispatcher s
 
 Deploy `supabase/functions/quick-solution-push/index.ts` with `verify_jwt=false`: the function explicitly verifies staff tokens with Auth, and a constant-time secret comparison authenticates the scheduler. RPCs enforce tenant/capability access. Sender/config RPCs are granted only to service_role. Do not reuse staging signing secrets in production.
 
-Backend migration, Vault setup and Edge Function were deployed only to Joint X XOS Staging (`tijiamrfnxrbitafiflj`) on 8 October 2026. No production database or production secrets were modified. The feature branch preview deploys through the Vercel GitHub integration.
+Staging deployment: 8 October 2026, Joint X XOS Staging (`tijiamrfnxrbitafiflj`). Production deployment: 10 October 2026, Alethea Ecosystem (`slhcvyeuqsduaglddqdb`), after confirming the active Café tenant and capability helper. Production received pg_net/pg_cron prerequisites, the tested push migration, Edge sender v1 and freshly generated production Vault values. The live `https://cafe.jointx.co.za` bundle points to this production database. Permission checks passed; unsigned staff/dispatcher requests returned 401 and Vault-authenticated dispatch returned 200. Device opt-in remains per origin and app; preview installs do not subscribe the live site.
 
 ## Validation
 

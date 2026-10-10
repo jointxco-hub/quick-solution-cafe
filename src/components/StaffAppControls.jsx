@@ -29,7 +29,9 @@ export default function StaffAppControls({ app, signedIn = true }) {
 
   const install = async () => {
     if (installReady) { await promptInstall(); setInstallReady(false) }
-    else setMessage('On iPhone: open this page in Safari, tap Share, then Add to Home Screen. On Android or desktop: use your browser’s Install app option.')
+    else setMessage(/iPhone|iPad|iPod/.test(navigator.userAgent)
+      ? 'In Safari, tap Share, then Add to Home Screen.'
+      : 'Use your browser’s Install app option or the install icon beside the address bar.')
   }
   const notificationAction = async (action) => {
     setBusy(true); setMessage('')

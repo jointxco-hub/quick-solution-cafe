@@ -673,7 +673,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
         <div className="admin-header-actions">
           <StaffAppControls app="admin"/>
           {activeSection === 'products' ? <span>{activeCount} live products</span> : activeSection === 'quick-points' ? <span>Fulfilment network</span> : <span>Location 001</span>}
-          <span className="admin-live-badge"><i/> XOS Staging</span>
+          <span className="admin-live-badge"><i/> {String(import.meta.env.VITE_SUPABASE_URL || '').includes('tijiamrfnxrbitafiflj.supabase.co') ? 'XOS Staging' : 'XOS Live'}</span>
           <a className="button ghost" href="/">View storefront</a>
           <a className="button ghost admin-counter-link" href="/counter">Counter POS</a>
           {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
