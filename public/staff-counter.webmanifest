@@ -1,0 +1,24 @@
+{
+  "id": "/staff-counter",
+  "name": "Caf\u00e9 Counter",
+  "short_name": "QS Counter",
+  "start_url": "/counter",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#164e3d",
+  "icons": [
+    {
+      "src": "/staff-counter-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/staff-counter-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

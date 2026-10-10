@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import CounterView from './CounterView.jsx'
+import { readStaffOrderId, counterNotificationAdminFallback } from '../lib/staffNotificationNavigation.js'
 import {
   cancelQuickSolutionCounterOrder,
   createQuickSolutionCounterOrder,
@@ -223,6 +224,11 @@ export default function CounterPage() {
     setOrderDetail((current) => (current.orderId === orderId && current.order ? { ...current, refreshing: true } : { status: 'loading', orderId }))
     const next = await loadCounterOrderDetailState(loadQuickSolutionCounterOrder, orderId)
     if (!alive.current || request !== detailRequest.current) return
+    const adminFallback = counterNotificationAdminFallback(next.status, orderId)
+    if (adminFallback) {
+      window.location.assign(adminFallback)
+      return
+    }
     setOrderDetail({ ...next, orderId })
     // The cancel offer comes from the server too, and only for an order that could still be cancelled; anything else offers nothing.
     if (next.status === 'ready' && next.order.status !== 'cancelled' && next.order.paymentStatus !== 'paid') {
@@ -232,6 +238,15 @@ export default function CounterPage() {
       setCancelCheck({ status: 'none', orderId })
     }
   }, [])
+
+  const notificationOrderId = readStaffOrderId()
+  useEffect(() => {
+    if (state.status !== 'ready' || !notificationOrderId) return
+    setOrderOrigin('orders')
+    setOpenOrderId(notificationOrderId)
+    setView('order')
+    loadDetail(notificationOrderId)
+  }, [state.status, notificationOrderId, loadDetail])
 
   const openOrder = (orderId, origin = 'orders') => {
     if (!orderId) return

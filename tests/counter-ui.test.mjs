@@ -79,6 +79,28 @@ test('no navigation entry was added: the route is reached directly, with no fake
   assert.equal((nav.match(/counter/gi) || []).length, 2, 'only the route line mentions the counter')
 })
 
+test('counter logo stays in Counter and staff have explicit Admin and Storefront links', () => {
+  const markup = screen()
+  assert.match(markup, /class="brand" href="\/counter"/)
+  assert.match(markup, /href="\/admin">Admin<\/a>/)
+  assert.match(markup, /href="\/">Storefront<\/a>/)
+})
+
+test('storefront offers a mobile-visible Admin return link for a saved staff session', () => {
+  const previousWindow = globalThis.window
+  globalThis.window = { location: { pathname: '/' } }
+  try {
+    setApiMock({ session: { access_token: 'staff-token' } })
+    const staffMarkup = html(h(ui.Header))
+    assert.match(staffMarkup, /qs18-header-actions"><a[^>]+href="\/admin">Admin<\/a>/)
+    setApiMock({ session: null })
+    assert.doesNotMatch(html(h(ui.Header)), /href="\/admin"/)
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window
+    else globalThis.window = previousWindow
+  }
+})
+
 // ── catalogue loading: the RPC, never the static list ───────────────────
 test('the screen loads through loadQuickSolutionCounterCatalog and never reads the static product array', () => {
   const page = read('../src/counter/CounterPage.jsx')

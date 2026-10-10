@@ -27,6 +27,7 @@ export const loadQuickSolutionCounterOrderCancelCheck = (...args) => (m().cancel
 export const cancelQuickSolutionCounterOrder = (...args) => m().cancel(...args)
 export const signInAdmin = (...args) => m().signIn(...args)
 export const signOutAdmin = (...args) => m().signOut(...args)
+export const staffPushRequest = (...args) => m().push ? m().push(...args) : Promise.resolve({ enabled: false })
 `
 
 const ENTRY = `
@@ -34,7 +35,8 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import CounterPage from './src/counter/CounterPage.jsx'
 import CounterView from './src/counter/CounterView.jsx'
-export { React, renderToStaticMarkup, CounterPage, CounterView }
+import Header from './src/components/Header.jsx'
+export { React, renderToStaticMarkup, CounterPage, CounterView, Header }
 `
 
 let loaded = null

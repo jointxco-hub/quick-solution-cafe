@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
+import { readStaffOrderId } from '../lib/staffNotificationNavigation.js'
+import StaffAppControls from '../components/StaffAppControls.jsx'
 import ProductScene from '../components/ProductScene.jsx'
 import { resolveVisualAxisOption } from '../lib/configuratorVisuals.js'
 import { resolveProductMedia, deriveVariantAxisValues } from '../lib/productContent.js'
@@ -33,14 +35,19 @@ function CounterProductImage({ product }) {
 }
 
 function TopBar({ signedIn, onSignOut }) {
+  const notificationOrderId = readStaffOrderId()
+  const adminHref = notificationOrderId ? `/admin?order=${notificationOrderId}` : '/admin'
   return (
     <header className="qsc-bar">
-      <a className="brand" href="/" aria-label={`${BUSINESS_NAME} home`}>
+      <a className="brand" href="/counter" aria-label={`${BUSINESS_NAME} Counter home`}>
         <img className="brand-mark-image" src="/jointx-mark.png" alt=""/>
         <span><strong>{BUSINESS_NAME}</strong><small>Counter</small></span>
       </a>
       <div className="qsc-bar-actions">
+        <StaffAppControls app="counter" signedIn={signedIn}/>
         <span className="qsc-mode">Cash &amp; card</span>
+        {signedIn && <a className="button ghost" href={adminHref}>Admin</a>}
+        <a className="button ghost" href="/">Storefront</a>
         {signedIn ? <button className="admin-signout-button" type="button" onClick={onSignOut}>Sign out</button> : null}
       </div>
     </header>

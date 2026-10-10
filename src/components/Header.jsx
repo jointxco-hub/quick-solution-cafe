@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
+import { getAdminSession } from '../lib/supabaseApi.js'
 
 // QS-18: mode/onModeChange add the subtle, always-available Simple|Pro
 // toggle (presentation-only - see src/lib/languageMode.js); onSendDocuments
@@ -15,6 +16,7 @@ import Icon from './Icon.jsx'
 // so Header keeps rendering even before App.jsx wires them up (falls
 // back to the old plain-anchor behavior in that case).
 export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickPoints }) {
+  const hasStaffSession = Boolean(getAdminSession()?.access_token)
   const homePrefix = window.location.pathname === '/' ? '' : '/'
   const [hidden, setHidden] = useState(false)
   const lastScrollY = useRef(0)
@@ -87,6 +89,7 @@ export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickP
         <a href="/track"><Icon name="search" size={15}/> Track order</a>
       </nav>
       <div className="qs18-header-actions">
+        {hasStaffSession && <a className="qs18-send-docs qs-staff-nav-link" href="/admin">Admin</a>}
         {onSendDocuments && (
           <button type="button" className="qs18-send-docs" onClick={onSendDocuments} aria-label="Send documents">
             <Icon name="document" size={16}/>
