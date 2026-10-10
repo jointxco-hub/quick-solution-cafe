@@ -155,3 +155,5 @@
 
 /* The identity header scrolls away; workspaces remain in document flow. */
 .admin-app .admin-header { position: relative; top: auto; }
+.admin-app .admin-header { flex-wrap: nowrap; min-height: 70px; padding: 10px 14px; gap: 8px; }
+.admin-app .admin-header-actions { flex: 0 1 auto; flex-wrap: nowrap; justify-content: flex-end; }

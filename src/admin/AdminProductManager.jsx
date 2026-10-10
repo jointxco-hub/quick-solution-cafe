@@ -1,7 +1,7 @@
-import StaffNavigation, { initialStaffSection } from '../components/StaffNavigation.jsx'
+import { initialStaffSection } from '../components/StaffNavigation.jsx'
+import StaffMenu from '../components/StaffMenu.jsx'
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon.jsx'
-import StaffAppControls from '../components/StaffAppControls.jsx'
 import AdminOppsHandoffPanel from './AdminOppsHandoffPanel.jsx'
 import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'
 import { cloneCatalog, exportCatalog } from '../lib/catalogStore.js'
@@ -501,7 +501,7 @@ function AdminSignIn({ onSignedIn }) {
   return (
     <div className="admin-auth-page">
       <div className="admin-auth-card">
-        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · Orders</small></span></a>
+        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · {activeSection === 'products' ? 'Products' : activeSection === 'quick-points' ? 'Quick Points' : 'Orders'}</small></span></a>
         <span className="eyebrow">Secure staff access</span>
         <h1>Run orders. Control products.</h1>
         <p>Use your XOS / OPPS staff account. Customer ordering stays simple; operational controls stay staff-only.</p>
@@ -643,14 +643,10 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
   return (
     <div className="admin-app">
       <header className="admin-header">
-        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · Orders</small></span></a>
+        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · {activeSection === 'products' ? 'Products' : activeSection === 'quick-points' ? 'Quick Points' : 'Orders'}</small></span></a>
         <div className="admin-header-actions">
-          <StaffAppControls app="admin"/>
-          {activeSection === 'products' ? <span>{activeCount} live products</span> : activeSection === 'quick-points' ? <span>Fulfilment network</span> : <span>Location 001</span>}
-          <span className="admin-live-badge"><i/> {String(import.meta.env.VITE_SUPABASE_URL || '').includes('tijiamrfnxrbitafiflj.supabase.co') ? 'XOS Staging' : 'XOS Live'}</span>
-          <a className="button ghost" href="/">View storefront</a>
           {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
-          <button className="admin-signout-button" type="button" onClick={logout}>Sign out</button>
+          <StaffMenu app="admin" active={activeSection} onChange={setActiveSection} onSignOut={logout}/>
         </div>
       </header>
 
@@ -673,7 +669,6 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
           ) : null}
         </section>
 
-        <StaffNavigation active={activeSection} onChange={setActiveSection}/>
 
         {activeSection === 'orders' ? <AdminOppsHandoffPanel /> : null}
 

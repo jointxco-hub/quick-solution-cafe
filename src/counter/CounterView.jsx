@@ -1,8 +1,7 @@
-import StaffNavigation from '../components/StaffNavigation.jsx'
+import StaffMenu from '../components/StaffMenu.jsx'
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import { readStaffOrderId } from '../lib/staffNotificationNavigation.js'
-import StaffAppControls from '../components/StaffAppControls.jsx'
 import ProductScene from '../components/ProductScene.jsx'
 import { resolveVisualAxisOption } from '../lib/configuratorVisuals.js'
 import { resolveProductMedia, deriveVariantAxisValues } from '../lib/productContent.js'
@@ -43,13 +42,7 @@ function TopBar({ signedIn, onSignOut }) {
         <img className="brand-mark-image" src="/jointx-mark.png" alt=""/>
         <span><strong>{BUSINESS_NAME}</strong><small>Café · Counter</small></span>
       </a>
-      <div className="qsc-bar-actions">
-        <StaffAppControls app="counter" signedIn={signedIn}/>
-        <span className="qsc-mode">Cash &amp; card</span>
-        <a className="button ghost" href="/">Storefront</a>
-        {signedIn ? <button className="admin-signout-button" type="button" onClick={onSignOut}>Sign out</button> : null}
-      </div>
-      {signedIn && <StaffNavigation active="counter" orderId={notificationOrderId}/>}
+      <StaffMenu app="counter" active="counter" signedIn={signedIn} onSignOut={onSignOut} orderId={notificationOrderId}/>
     </header>
   )
 }
@@ -416,9 +409,14 @@ function ViewTabs({ view, onView, saleWaiting, showCancelled }) {
         New sale{saleWaiting ? <i className="qsc-dot" title="A sale is waiting on an unconfirmed result"/> : null}
       </button>
       <button type="button" className={view === 'orders' ? 'active' : ''} aria-current={view === 'orders' ? 'page' : undefined} onClick={() => onView?.('orders')}>Today’s orders</button>
+      <details className="qsc-more-views">
+        <summary>{({ unpaid: 'Unpaid', cashup: 'Cash-up', cancelled: 'Cancelled' })[view] || 'More'} <span aria-hidden="true">⌄</span></summary>
+        <div onClick={(event) => { if (event.target.closest('button')) event.currentTarget.parentElement.open = false }}>
       <button type="button" className={view === 'unpaid' ? 'active' : ''} aria-current={view === 'unpaid' ? 'page' : undefined} onClick={() => onView?.('unpaid')}>Unpaid</button>
       <button type="button" className={view === 'cashup' ? 'active' : ''} aria-current={view === 'cashup' ? 'page' : undefined} onClick={() => onView?.('cashup')}>Cash-up</button>
       {showCancelled ? <button type="button" className={view === 'cancelled' ? 'active' : ''} aria-current={view === 'cancelled' ? 'page' : undefined} onClick={() => onView?.('cancelled')}>Cancelled</button> : null}
+        </div>
+      </details>
     </div>
   )
 }
