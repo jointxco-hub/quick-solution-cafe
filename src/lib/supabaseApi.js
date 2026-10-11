@@ -1,6 +1,14 @@
 import { buildPricingDefinition } from './pricingDefinition.js'
 import { parseOAuthRedirectHash } from './oauthRedirect.js'
 
+export async function getQuickJobState(orderId) {
+  return rpc('qs_staff_quick_job', { p_order_id: orderId }, { accessToken: await getAdminAccessToken() })
+}
+
+export async function updateQuickJob(orderId, action) {
+  return rpc('qs_staff_quick_job', { p_order_id: orderId, p_action: action }, { accessToken: await getAdminAccessToken() })
+}
+
 const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
 const SUPABASE_KEY = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '')
 const TENANT_SLUG = String(import.meta.env.VITE_QS_TENANT_SLUG || 'quick-solution')
