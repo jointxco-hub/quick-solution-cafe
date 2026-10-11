@@ -9,7 +9,7 @@ Implemented in PR 21, on top of the unified staff app. Backend deployed only to 
 - File lookup uses the caller's existing Café operations capability and exact order/file relationship. Private files receive 120-second signed URLs only after authorization. Deleted files and unrelated order/file pairs are denied. The Edge Function uses `verify_jwt=false` because it validates the bearer token with Auth explicitly before any lookup. Service/anon tokens are rejected. Storage is not made public.
 - Menus dismiss on outside pointer/focus and Escape. Counter secondary selection uses the same muted green as its main selection. Corrected a pre-existing undefined section reference on Admin sign-in.
 
-Validation: 778 automated tests passed, 8 skipped, 0 failed; production build passed. Rolled-back staging SQL verifies workspace loading, idempotent views, first-operator acknowledgement, matching private-file access, deleted-file denial, non-admin/non-member/anonymous denial, and restricted grants. Edge handler tests verify authorization before signing, expiry, server-resolved paths, forced office-document download and failure handling. Security advisor flags the private no-policy activity table and authenticated security-definer RPCs by design; direct table grants are revoked, RPCs explicitly enforce tenant capability, and search paths are fixed.
+Validation: 783 automated tests passed, 8 skipped, 0 failed; production build passed. Rolled-back staging SQL verifies workspace loading, idempotent views, first-operator acknowledgement, matching private-file access, deleted-file denial, non-admin/non-member/anonymous denial, and restricted grants. Edge handler tests verify authorization before signing, expiry, server-resolved paths, forced office-document download and failure handling. Security advisor flags the private no-policy activity table and authenticated security-definer RPCs by design; direct table grants are revoked, RPCs explicitly enforce tenant capability, and search paths are fixed.
 
 Device review:
 1. Open the preview Orders page and check service thumbnails, including a configured flag order.
@@ -19,3 +19,9 @@ Device review:
 5. Open each menu, then tap outside; verify Escape on desktop and unchanged Counter sale/payment navigation.
 
 Still planned: local quick-job completion/collection workflow, operator greeting/counts, expenses, PVC/vinyl/DTF catalogue/pricing work and analytics. Existing OPPS handoff remains available. No production finance changes are included here.
+
+## Attachment save correction
+
+Download now fetches the authorized file inside the app and presents Save file. On supported touch devices the second tap shares the prepared File, preserving fresh user activation for the native share sheet and Save to Files. Desktop/unsupported sharing uses a blob download with the original filename. Download does not open a popup. Cancellation keeps the file ready to retry; leaving the detail aborts preparation and releases its blob URL. Open / print retains the working viewer flow.
+
+Five regression tests cover file bytes/name/type, failed and aborted fetches, synchronous share invocation, share cancellation, and desktop fallback. Build and full suite pass. iPhone device save verification remains pending: Download → Save file → Save to Files, then open the saved file in Files.

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { mergeOrderActivity } from './orderActivity.js'
 import OrderServiceSummary from './OrderServiceSummary.jsx'
+import OrderFileDownload from './OrderFileDownload.jsx'
 import Icon from '../components/Icon.jsx'
 import { readStaffOrderId } from '../lib/staffNotificationNavigation.js'
 import { orderDay, filterOrders } from './orderOverview.js'
@@ -267,16 +268,16 @@ export default function AdminOppsHandoffPanel() {
     } catch (error) { setError(error.message || 'Could not acknowledge the order.') }
     finally { setActivityBusy('') }
   }
-  const openFile = async (file, mode) => {
+  const openFile = async (file) => {
     // Open during the click so mobile popup blockers do not discard the async result.
     const target = window.open('about:blank', '_blank')
     if (!target) { setError('Allow pop-ups for this app, then open the file again.'); return }
     target.opener = null
     setFileBusy(file.id); setError('')
     try {
-      const result = await getStaffOrderFile(selectedId, file.id, mode)
+      const result = await getStaffOrderFile(selectedId, file.id, 'open')
       target.location.replace(result.url)
-      setNotice(mode === 'open' ? 'File opened. Use the viewer’s Print or Share → Print action to print.' : 'Download opened in a new window.')
+      setNotice('File opened. Use the viewer’s Print or Share → Print action to print.')
     } catch (error) { target.close(); setError(error.message || 'Could not open the file.') }
     finally { setFileBusy('') }
   }
@@ -429,8 +430,8 @@ export default function AdminOppsHandoffPanel() {
                   {workspace.files.map(file => <div className="order-file" key={file.id}>
                     <div><strong>{file.name}</strong><small>{Math.max(1, Math.ceil(file.size / 1024))} KB</small></div>
                     <div className="order-file-actions">
-                      {['application/pdf', 'image/png', 'image/jpeg', 'image/webp'].includes(file.mime) && <button type="button" disabled={fileBusy === file.id} onClick={() => openFile(file, 'open')}>Open / print</button>}
-                      <button type="button" disabled={fileBusy === file.id} onClick={() => openFile(file, 'download')}>{fileBusy === file.id ? 'Opening…' : 'Download'}</button>
+                      {['application/pdf', 'image/png', 'image/jpeg', 'image/webp'].includes(file.mime) && <button type="button" disabled={fileBusy === file.id} onClick={() => openFile(file)}>{fileBusy === file.id ? 'Opening…' : 'Open / print'}</button>}
+                      <OrderFileDownload key={`${selectedId}:${file.id}`} orderId={selectedId} attachment={file}/>
                     </div>
                   </div>)}
                 </div>}

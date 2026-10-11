@@ -176,6 +176,9 @@
 .admin-app .order-file{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 0;border-top:1px solid #e3e5df}
 .admin-app .order-file>div:first-child{flex:1;min-width:150px;overflow-wrap:anywhere}
 .admin-app .order-file-actions{display:flex;gap:8px;flex-wrap:wrap}
+.admin-app .order-file-actions{align-items:flex-start}
+.admin-app .order-file-download{display:grid;gap:6px;max-width:240px}
+.admin-app .order-file-download small{max-width:240px}
 .admin-app .order-file-actions button{min-height:44px;padding:8px 12px;border-radius:10px;font-size:13px}
 .admin-app .order-activity summary{padding:12px 0;cursor:pointer;font-size:14px;color:#58635b}
 .admin-app .order-activity ul{padding-left:20px;color:#697169;font-size:13px;line-height:1.7}
