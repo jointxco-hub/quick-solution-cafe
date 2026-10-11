@@ -33,12 +33,12 @@ export function setupStaffPwa() {
   if (!kind) return
   const manifest = document.createElement('link')
   manifest.rel = 'manifest'
-  manifest.href = `/staff-${kind}.webmanifest`
+  manifest.href = "/staff-cafe.webmanifest"
   document.head.appendChild(manifest)
-  const title = kind === 'admin' ? 'Café Admin' : 'Café Counter'
+  const title = 'Quick Solution Café'
   document.title = title
   const appleIcon = document.querySelector('link[rel="apple-touch-icon"]')
-  if (appleIcon) appleIcon.href = `/staff-${kind}-192.png`
+  if (appleIcon) appleIcon.href = '/staff-admin-192.png'
   for (const [name, content] of [['apple-mobile-web-app-capable', 'yes'], ['apple-mobile-web-app-title', title]]) {
     const meta = document.createElement('meta'); meta.name = name; meta.content = content; document.head.appendChild(meta)
   }

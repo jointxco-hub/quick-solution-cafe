@@ -20,7 +20,7 @@ Generate a fresh P-256 VAPID keypair and a cryptographically random dispatcher s
 
 Deploy `supabase/functions/quick-solution-push/index.ts` with `verify_jwt=false`: the function explicitly verifies staff tokens with Auth, and a constant-time secret comparison authenticates the scheduler. RPCs enforce tenant/capability access. Sender/config RPCs are granted only to service_role. Do not reuse staging signing secrets in production.
 
-Backend migration, Vault setup and Edge Function were deployed only to Joint X XOS Staging (`tijiamrfnxrbitafiflj`) on 8 October 2026. No production database or production secrets were modified. The feature branch preview deploys through the Vercel GitHub integration.
+Staging deployment: 8 October 2026, Joint X XOS Staging (`tijiamrfnxrbitafiflj`). Production deployment: 10 October 2026, Alethea Ecosystem (`slhcvyeuqsduaglddqdb`), after confirming the active Café tenant and capability helper. Production received pg_net/pg_cron prerequisites, the tested push migration, Edge sender v1 and freshly generated production Vault values. The live `https://cafe.jointx.co.za` bundle points to this production database. Permission checks passed; unsigned staff/dispatcher requests returned 401 and Vault-authenticated dispatch returned 200. Device opt-in remains per origin and app; preview installs do not subscribe the live site.
 
 ## Validation
 
@@ -31,3 +31,11 @@ Backend migration, Vault setup and Edge Function were deployed only to Joint X X
 - Device tests confirmed installs, test delivery on both phones, locked-screen delivery, new-order delivery on both phones and staff navigation. Order-specific tap routing after the follow-up fix still requires a fresh device test: install Admin and Counter, sign in with the corresponding staff access, enable alerts, tap Test alert, close the app, and verify delivery and correct route on tap. Disable alerts and repeat to confirm no notification. Also confirm denied-permission guidance, mobile header wrapping and that existing counter sale/payment/receipt flows still work.
 
 Push delivery is best effort: a process crash after a push service accepts an alert but before the database acknowledgment can cause a retry. The stable event tag replaces the same displayed alert rather than accumulating duplicates.
+
+## Unified Café app transition
+
+Both staff routes now advertise `staff-cafe.webmanifest`, with one stable app identity (`/staff-admin`) and Counter/Orders shortcuts. The existing Admin identity is retained to allow compatible browsers to update it. Legacy manifests remain available so existing separate shortcuts do not break. Existing Counter installations may need a one-time removal and install of the Café app; browser/OS handling must be checked on the real devices. No installed-app detection is assumed for ordinary browser tabs.
+
+App settings contains installation help and notification controls, including the test button. Installed windows do not offer installation. Notification status checks both existing subscription channels so switching workspaces does not ask an opted-in operator to enable again. Existing server capability checks remain in place; unavailable channels are not enabled. Turning alerts off removes both channels for the signed-in user's current endpoint. Notification clicks navigate an existing staff window across workspaces while retaining the order target.
+
+Validation: manifest/worker contract tests and production build. Real iPhone and desktop install/update behavior still requires device review.
