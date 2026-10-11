@@ -157,3 +157,26 @@
 .admin-app .admin-header { position: relative; top: auto; }
 .admin-app .admin-header { flex-wrap: nowrap; min-height: 70px; padding: 10px 14px; gap: 8px; }
 .admin-app .admin-header-actions { flex: 0 1 auto; flex-wrap: nowrap; justify-content: flex-end; }
+/* Operator workspace: imagery identifies the service; colour identifies action/state. */
+.admin-app .status-pill.new{background:#edf3fb;color:#315f90}
+.admin-app .order-services{display:grid;gap:12px;margin:12px 0}
+.admin-app .order-service{display:flex;align-items:center;gap:12px;min-width:0;text-align:left}
+.admin-app .order-service img,.admin-app .order-service-placeholder{width:58px;height:58px;border-radius:12px;object-fit:cover;flex:0 0 58px;background:#eef1ed}
+.admin-app .order-service-placeholder{display:grid;place-items:center;color:#61796f;font-size:25px}
+.admin-app .order-service>div{display:grid;gap:4px;min-width:0}
+.admin-app .order-service strong{font-size:15px;overflow-wrap:anywhere}
+.admin-app .order-service small,.admin-app .order-operator-action small,.admin-app .order-file small{display:block;color:#6d746e;font-size:12px;line-height:1.5}
+.admin-app .order-services.compact{margin:8px 0}
+.admin-app .order-services.compact img,.admin-app .order-services.compact .order-service-placeholder{width:44px;height:44px;flex-basis:44px}
+.admin-app .order-workspace{margin:16px 0;padding:16px 0;border-top:1px solid #e3e5df;border-bottom:1px solid #e3e5df}
+.admin-app .order-operator-action{display:grid;gap:7px;margin:16px 0}
+.admin-app button.order-acknowledge{background:#e8f1ed;color:#235b49;border:1px solid #c6ded3;padding:12px 18px;border-radius:12px;min-height:44px;font-weight:650}
+.admin-app .order-acknowledged{color:#235b49;font-size:14px}
+.admin-app .order-files h4{margin:18px 0 8px}
+.admin-app .order-file{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 0;border-top:1px solid #e3e5df}
+.admin-app .order-file>div:first-child{flex:1;min-width:150px;overflow-wrap:anywhere}
+.admin-app .order-file-actions{display:flex;gap:8px;flex-wrap:wrap}
+.admin-app .order-file-actions button{min-height:44px;padding:8px 12px;border-radius:10px;font-size:13px}
+.admin-app .order-activity summary{padding:12px 0;cursor:pointer;font-size:14px;color:#58635b}
+.admin-app .order-activity ul{padding-left:20px;color:#697169;font-size:13px;line-height:1.7}
+.admin-app .order-filters button[aria-pressed="true"]{background:#e8f1ed;color:#235b49;border-color:#c6ded3}

@@ -559,3 +559,16 @@ export async function adminIssueQuickSolutionTrackingToken(serviceOrderId) {
     p_service_order_id: serviceOrderId
   }, { accessToken })
 }
+
+export async function loadStaffOrderWorkspace() {
+  return rpc('qs_staff_order_workspace', { p_tenant_slug: TENANT_SLUG }, { accessToken: await getAdminAccessToken() })
+}
+export async function recordStaffOrderActivity(orderId, event) {
+  return rpc('qs_staff_order_activity', { p_order_id: orderId, p_event: event }, { accessToken: await getAdminAccessToken() })
+}
+export async function getStaffOrderFile(orderId, fileId, mode = 'open') {
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/quick-solution-order-file`, {
+    method: 'POST', headers: apiHeaders(await getAdminAccessToken()), body: JSON.stringify({ orderId, fileId, mode })
+  })
+  return parseResponse(response, 'Could not open the file')
+}

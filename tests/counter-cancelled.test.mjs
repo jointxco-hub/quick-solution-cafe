@@ -36,6 +36,8 @@ const screen = (cancelled, extra = {}) => html(h(ui.CounterView, { state: ready,
 function hostNodes(node, found = []) {
   if (Array.isArray(node)) { node.forEach((child) => hostNodes(child, found)); return found }
   if (!node || typeof node !== 'object' || !('type' in node)) return found
+  // Event-walking tests inspect children; the popover's DOM lifecycle is not run outside React.
+  if (node.type?.name === 'StaffPopover') return hostNodes(node.props.children, found)
   if (typeof node.type === 'function') return hostNodes(node.type(node.props), found)
   if (typeof node.type === 'string') found.push(node)
   hostNodes(node.props?.children, found)

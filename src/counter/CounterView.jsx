@@ -1,3 +1,4 @@
+import StaffPopover from '../components/StaffPopover.jsx'
 import StaffMenu from '../components/StaffMenu.jsx'
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
@@ -409,14 +410,14 @@ function ViewTabs({ view, onView, saleWaiting, showCancelled }) {
         New sale{saleWaiting ? <i className="qsc-dot" title="A sale is waiting on an unconfirmed result"/> : null}
       </button>
       <button type="button" className={view === 'orders' ? 'active' : ''} aria-current={view === 'orders' ? 'page' : undefined} onClick={() => onView?.('orders')}>Today’s orders</button>
-      <details className="qsc-more-views">
+      <StaffPopover className="qsc-more-views">
         <summary>{({ unpaid: 'Unpaid', cashup: 'Cash-up', cancelled: 'Cancelled' })[view] || 'More'} <span aria-hidden="true">⌄</span></summary>
         <div onClick={(event) => { if (event.target.closest('button')) event.currentTarget.parentElement.open = false }}>
       <button type="button" className={view === 'unpaid' ? 'active' : ''} aria-current={view === 'unpaid' ? 'page' : undefined} onClick={() => onView?.('unpaid')}>Unpaid</button>
       <button type="button" className={view === 'cashup' ? 'active' : ''} aria-current={view === 'cashup' ? 'page' : undefined} onClick={() => onView?.('cashup')}>Cash-up</button>
       {showCancelled ? <button type="button" className={view === 'cancelled' ? 'active' : ''} aria-current={view === 'cancelled' ? 'page' : undefined} onClick={() => onView?.('cancelled')}>Cancelled</button> : null}
         </div>
-      </details>
+      </StaffPopover>
     </div>
   )
 }

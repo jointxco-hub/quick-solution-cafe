@@ -501,7 +501,7 @@ function AdminSignIn({ onSignedIn }) {
   return (
     <div className="admin-auth-page">
       <div className="admin-auth-card">
-        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · {activeSection === 'products' ? 'Products' : activeSection === 'quick-points' ? 'Quick Points' : 'Orders'}</small></span></a>
+        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · Staff sign-in</small></span></a>
         <span className="eyebrow">Secure staff access</span>
         <h1>Run orders. Control products.</h1>
         <p>Use your XOS / OPPS staff account. Customer ordering stays simple; operational controls stay staff-only.</p>

@@ -1,8 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { mergeOrderActivity } from './orderActivity.js'
+import OrderServiceSummary from './OrderServiceSummary.jsx'
 import Icon from '../components/Icon.jsx'
 import { readStaffOrderId } from '../lib/staffNotificationNavigation.js'
 import { orderDay, filterOrders } from './orderOverview.js'
 import {
+  loadStaffOrderWorkspace,
+  recordStaffOrderActivity,
+  getStaffOrderFile,
   adminIssueQuickSolutionTrackingToken,
   buildOppsAppUrl,
   loadQuickSolutionOppsHandoffs,
@@ -112,6 +117,19 @@ function MessageList({ title, icon, items = [], tone = 'neutral', emptyLabel }) 
 export default function AdminOppsHandoffPanel() {
   const [notificationOrderId] = useState(readStaffOrderId)
   const [queue, setQueue] = useState([])
+  const [workspaces, setWorkspaces] = useState({})
+  const [workspaceError, setWorkspaceError] = useState('')
+  const [activityBusy, setActivityBusy] = useState('')
+  const [fileBusy, setFileBusy] = useState('')
+  const viewed = useRef(new Set())
+  const workspaceGeneration = useRef(0)
+  const refreshWorkspace = async () => {
+    const generation = ++workspaceGeneration.current
+    try {
+      const data = await loadStaffOrderWorkspace()
+      if (generation === workspaceGeneration.current) { setWorkspaces(data || {}); setWorkspaceError('') }
+    } catch { setWorkspaceError('Order activity and files could not load. Refresh to try again.') }
+  }
   const [orderFilter, setOrderFilter] = useState('all')
   const [detailOpen, setDetailOpen] = useState(() => Boolean(notificationOrderId))
   const [selectedId, setSelectedId] = useState(notificationOrderId)
@@ -137,6 +155,7 @@ export default function AdminOppsHandoffPanel() {
   const loadQueue = async ({ silent = false } = {}) => {
     if (!silent) setLoadState('loading')
     setError('')
+    refreshWorkspace()
     try {
       const data = await loadQuickSolutionOppsHandoffs()
       const list = Array.isArray(data) ? data : []
@@ -170,6 +189,8 @@ export default function AdminOppsHandoffPanel() {
   }), [queue, todayKey])
 
   const selected = queue.find((item) => item.serviceOrderId === selectedId) || null
+  const workspace = workspaces[selectedId]
+  const acknowledgement = workspace?.activity?.find(entry => entry.event === 'acknowledged')
   const preview = selected ? previewCache[selected.serviceOrderId] : null
   const proposedOppsOrder = preview?.proposedOppsOrder || null
   const proposedLines = Array.isArray(proposedOppsOrder?.products) ? proposedOppsOrder.products : []
@@ -182,9 +203,8 @@ export default function AdminOppsHandoffPanel() {
     handoffPoint?.address?.area || handoffPoint?.address?.city,
     handoffPoint?.address?.line1
   ].filter(Boolean).join(' · ')
-  const handoffPointKind = quickSolutionMeta?.fulfilment_type === 'quick_point' ? 'Quick Point' : quickSolutionMeta?.fulfilment_type === 'cafe' ? 'Quick Solution café' : null
   const fulfilmentDisplay = handoffPoint?.name
-    ? `${handoffPointKind || 'Collection'} · ${handoffPoint.name}`
+    ? handoffPoint.name
     : fulfilmentLabel(proposedOppsOrder?.fulfillment_type)
   const blockerItems = preview?.blockers || selected?.blockers || []
   const warningItems = preview?.warnings || selected?.warnings || []
@@ -226,6 +246,40 @@ export default function AdminOppsHandoffPanel() {
     autoPreviewed.current.add(selected.serviceOrderId)
     refreshPreview(selected.serviceOrderId, { quiet: true })
   }, [selectedId, selected?.serviceOrderId, selected?.handoffStatus, selected?.oppsOrderId])
+
+  useEffect(() => {
+    if (!detailOpen || !selectedId || !workspace || viewed.current.has(selectedId)) return
+    viewed.current.add(selectedId)
+    const id = selectedId
+    recordStaffOrderActivity(id, 'viewed').then(activity => {
+      workspaceGeneration.current++
+      setWorkspaces(current => ({ ...current, [id]: { ...current[id], activity: mergeOrderActivity(current[id]?.activity, activity) } }))
+    }).catch(() => { viewed.current.delete(id); setWorkspaceError('Could not save your view. Refresh to retry.') })
+  }, [detailOpen, selectedId, workspace])
+
+  const acknowledgeOrder = async () => {
+    const id = selectedId
+    setActivityBusy(id); setError('')
+    try {
+      const activity = await recordStaffOrderActivity(id, 'acknowledged')
+      workspaceGeneration.current++
+      setWorkspaces(current => ({ ...current, [id]: { ...current[id], activity: mergeOrderActivity(current[id]?.activity, activity) } }))
+    } catch (error) { setError(error.message || 'Could not acknowledge the order.') }
+    finally { setActivityBusy('') }
+  }
+  const openFile = async (file, mode) => {
+    // Open during the click so mobile popup blockers do not discard the async result.
+    const target = window.open('about:blank', '_blank')
+    if (!target) { setError('Allow pop-ups for this app, then open the file again.'); return }
+    target.opener = null
+    setFileBusy(file.id); setError('')
+    try {
+      const result = await getStaffOrderFile(selectedId, file.id, mode)
+      target.location.replace(result.url)
+      setNotice(mode === 'open' ? 'File opened. Use the viewer’s Print or Share → Print action to print.' : 'Download opened in a new window.')
+    } catch (error) { target.close(); setError(error.message || 'Could not open the file.') }
+    finally { setFileBusy('') }
+  }
 
   const sendSelected = async () => {
     if (!selected?.serviceOrderId || sendingId) return
@@ -286,7 +340,7 @@ export default function AdminOppsHandoffPanel() {
     }
   }
 
-  const fileCount = proposedFiles.length
+  const fileCount = workspace?.files?.length ?? proposedFiles.length
   const canSend = selected && selected.handoffStatus !== 'sent' && blockerItems.length === 0 && Boolean(preview)
 
   return (
@@ -308,6 +362,7 @@ export default function AdminOppsHandoffPanel() {
         {[['all', 'All'], ['today', 'Today'], ['attention', 'Needs attention']].map(([value, label]) => <button key={value} type="button" aria-pressed={orderFilter === value} onClick={() => setOrderFilter(value)}>{label}</button>)}
       </div>
 
+      {workspaceError && <div className="admin-system-message error" role="alert">{workspaceError}</div>}
       {(notice || error) && <div className={`admin-system-message ${error ? 'error' : ''}`}>{error || notice}</div>}
 
       <div className="handoff-layout">
@@ -330,11 +385,16 @@ export default function AdminOppsHandoffPanel() {
                   </div>
                   <StatusPill label={SERVICE_STATUS_LABELS[item.serviceStatus] || item.serviceStatus || 'Submitted'} tone={['cancelled'].includes(item.serviceStatus) ? 'bad' : item.serviceStatus === 'completed' ? 'good' : 'neutral'} />
                 </div>
+                <OrderServiceSummary compact workspace={workspaces[item.serviceOrderId]}/>
                 <div className="handoff-card-meta">
                   <span>{money(item.totalAmount)}</span>
                   <span title={fullDateTime(item.submittedAt)}>{dateTime(item.submittedAt)}</span>
                 </div>
                 <div className="handoff-card-tags">
+                  {workspaces[item.serviceOrderId] && !workspaces[item.serviceOrderId].activity.some(entry => entry.event === 'viewed') && !['completed', 'cancelled'].includes(item.serviceStatus) && <StatusPill label="No recorded views" tone="new"/>}
+                  {workspaces[item.serviceOrderId]?.activity.some(entry => entry.event === 'acknowledged') && <StatusPill label="Acknowledged" tone="good"/>}
+                  {workspaces[item.serviceOrderId]?.channel && <StatusPill label={workspaces[item.serviceOrderId].channel === 'counter' ? 'Counter' : 'Online'} />}
+
                   <StatusPill label={paymentLabel(item.paymentStatus)} tone={toneForStatus(item.paymentStatus)} />
                   {['blocked', 'failed'].includes(item.handoffStatus) ? <StatusPill label="Needs attention" tone="bad" /> : null}
                 </div>
@@ -357,6 +417,29 @@ export default function AdminOppsHandoffPanel() {
                   <h3>{selected.orderNumber}</h3>
                   <p>{selected.customerName} · {money(selected.totalAmount)} · submitted {dateTime(selected.submittedAt)}</p>
                 </div>
+              </div>
+
+              {workspace && <div className="order-workspace">
+                <OrderServiceSummary workspace={workspace}/>
+                <div className="order-operator-action">
+                  {acknowledgement ? <p className="order-acknowledged">Acknowledged by {acknowledgement.name} · {fullDateTime(acknowledgement.at)}</p> : !['completed', 'cancelled'].includes(selected.serviceStatus) && <button className="order-acknowledge" type="button" onClick={acknowledgeOrder} disabled={activityBusy === selectedId}>{activityBusy === selectedId ? 'Saving…' : 'I’ll handle this'}</button>}
+                  {!acknowledgement && !['completed', 'cancelled'].includes(selected.serviceStatus) && <small>Let the team know you’re taking this order.</small>}
+                </div>
+                {workspace.files.length > 0 && <div className="order-files"><h4>Documents</h4>
+                  {workspace.files.map(file => <div className="order-file" key={file.id}>
+                    <div><strong>{file.name}</strong><small>{Math.max(1, Math.ceil(file.size / 1024))} KB</small></div>
+                    <div className="order-file-actions">
+                      {['application/pdf', 'image/png', 'image/jpeg', 'image/webp'].includes(file.mime) && <button type="button" disabled={fileBusy === file.id} onClick={() => openFile(file, 'open')}>Open / print</button>}
+                      <button type="button" disabled={fileBusy === file.id} onClick={() => openFile(file, 'download')}>{fileBusy === file.id ? 'Opening…' : 'Download'}</button>
+                    </div>
+                  </div>)}
+                </div>}
+                {workspace.activity.length > 0 && <details className="order-activity"><summary>Team activity</summary>
+                  <button type="button" onClick={refreshWorkspace}>Refresh activity</button>
+                  <ul>{workspace.activity.map(entry => <li key={`${entry.actorId}-${entry.event}`}>{entry.name} {entry.event} · {fullDateTime(entry.at)}</li>)}</ul>
+                </details>}
+              </div>}
+
                 <div className="handoff-preview-actions">
                   <button type="button" className="qs-track-copy-button" onClick={copyCustomerTrackingLink} disabled={issuingTrackingId === selected.serviceOrderId}><Icon name="copy" size={16}/> {issuingTrackingId === selected.serviceOrderId ? 'Creating…' : 'Copy tracking link'}</button>
                   <button type="button" onClick={() => refreshPreview(selected.serviceOrderId)} disabled={previewingId === selected.serviceOrderId || selected.handoffStatus === 'sent'}><Icon name="refresh" size={16}/> {previewingId === selected.serviceOrderId ? 'Checking…' : selected.handoffStatus === 'sent' ? 'Checks saved' : 'Re-check order'}</button>
@@ -364,7 +447,6 @@ export default function AdminOppsHandoffPanel() {
                     <Icon name="send" size={16}/> {selected.handoffStatus === 'sent' ? 'Sent to OPPS' : sendingId === selected.serviceOrderId ? 'Sending…' : blockerItems.length ? 'Fix issues first' : 'Send to OPPS'}
                   </button>
                 </div>
-              </div>
 
               <div className="handoff-status-row">
                 <StatusPill label={HANDOFF_LABELS[selected.handoffStatus] || selected.handoffStatus} tone={toneForStatus(selected.handoffStatus)} />
@@ -402,18 +484,6 @@ export default function AdminOppsHandoffPanel() {
                             <span>{money(line.line_total)}</span>
                           </div>
                         )) : <div className="handoff-empty small">No production lines found.</div>}
-                      </div>
-                      <div className="handoff-lines">
-                        <div className="handoff-lines-header"><strong>Files</strong><small>{proposedFiles.length} file(s)</small></div>
-                        {proposedFiles.length ? proposedFiles.map((file, index) => (
-                          <div className="handoff-line file" key={`${file.id || file.name || index}-${index}`}>
-                            <div>
-                              <strong>{file.original_filename || file.name || `File ${index + 1}`}</strong>
-                              <small>{file.mime_type || file.mimeType || 'Private upload'}{file.byte_size ? ` · ${file.byte_size} bytes` : ''}</small>
-                            </div>
-                            <span>Private</span>
-                          </div>
-                        )) : <div className="handoff-empty small">No private file upload is linked to this job.</div>}
                       </div>
                     </>
                   ) : (
