@@ -181,5 +181,9 @@
 .admin-app .order-file-download small{max-width:240px}
 .admin-app .order-file-actions button{min-height:44px;padding:8px 12px;border-radius:10px;font-size:13px}
 .admin-app .order-activity summary{padding:12px 0;cursor:pointer;font-size:14px;color:#58635b}
+.admin-app .quick-job-actions{margin:16px 0;padding:16px;border:1px solid #c6ded3;border-radius:12px;background:#f4f8f5}
+.admin-app .quick-job-actions p{font-size:14px;line-height:1.5;color:#58635b;margin:8px 0}
+.admin-app .quick-job-actions button{margin:4px 8px 4px 0;min-height:44px}
+.admin-app .quick-job-actions button:disabled{background:#eeefed;color:#73766f;border-color:#d9dcd5;cursor:not-allowed;box-shadow:none;opacity:1}
 .admin-app .order-activity ul{padding-left:20px;color:#697169;font-size:13px;line-height:1.7}
 .admin-app .order-filters button[aria-pressed="true"]{background:#e8f1ed;color:#235b49;border-color:#c6ded3}
