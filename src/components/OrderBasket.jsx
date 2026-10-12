@@ -94,6 +94,9 @@ export default function OrderBasket({
   const [submitState, setSubmitState] = useState('idle')
   const [submitError, setSubmitError] = useState('')
   const [orderResponse, setOrderResponse] = useState(null)
+  // The parent clears the live basket after creation. Keep the submitted
+  // lines for this order's payment choices and WhatsApp summary.
+  const [submittedItems, setSubmittedItems] = useState(null)
   const [uploadResults, setUploadResults] = useState([])
   const [paymentState, setPaymentState] = useState('idle')
   const [paymentError, setPaymentError] = useState('')
@@ -122,11 +125,11 @@ export default function OrderBasket({
   const visiblePoints = fulfilment === 'quick-point' ? quickPoints : cafePoints
 
   const basketEligibility = useMemo(
-    () => computeBasketPaymentEligibility(items, {
+    () => computeBasketPaymentEligibility(submittedItems || items, {
       payfastMinimumAmount: Number(paymentConfig?.payfastMinimumAmount) || DEFAULT_PAYFAST_MINIMUM_AMOUNT,
       eftBankDetails: paymentConfig?.eftBankDetails
     }),
-    [items, paymentConfig]
+    [items, submittedItems, paymentConfig]
   )
   const payfastShortfall = basketEligibility.payfastMeetsMinimum
     ? null
@@ -226,6 +229,7 @@ export default function OrderBasket({
       }
 
       setUploadResults(results)
+      setSubmittedItems(items.map(item => ({ ...item, paymentEligibility: item.paymentEligibility ? { ...item.paymentEligibility } : undefined })))
       setOrderResponse(response)
       if (response?.orderId && response?.orderNumber && response?.trackingToken) {
         saveQuickSolutionTrackingSession({
@@ -302,7 +306,7 @@ export default function OrderBasket({
     ? buildWhatsappUrl(encodeURIComponent(buildOrderHandoffMessage({
       orderNumber: orderResponse.orderNumber,
       customerName,
-      items,
+      items: submittedItems || items,
       total: orderResponse.totalAmount,
       fulfilmentLabel
     })))
@@ -328,7 +332,7 @@ export default function OrderBasket({
           </div>
           <div className="qs-cart-success">
             <div className="complete-mark"><Icon name="bag" size={26}/></div>
-            <h3>One order. {orderResponse.items?.length || 0} items.</h3>
+            <h3>One order. {orderResponse.items?.length || 0} item{orderResponse.items?.length === 1 ? '' : 's'}.</h3>
             <p>Quick Solution saved your basket as one XOS order with separate production items.</p>
             <div className="qs-checkout-total">
               <div><span>Total</span><small>{orderResponse.deliveryFeeStatus === 'pending_confirmation' ? 'Delivery fee still to be confirmed' : 'Order total'}</small></div>
