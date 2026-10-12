@@ -15,7 +15,7 @@ export default function QuickJobActions({ orderId, onChanged }) {
   }, [orderId, refresh])
 
   const act = async () => {
-    if (busy || !job?.nextAction) return
+    if (busy || !job?.nextAction || (job.nextAction === 'collected' && !job.canCollect)) return
     setBusy(true); setError('')
     try {
       setJob(await updateQuickJob(orderId, job.nextAction))
@@ -32,7 +32,7 @@ export default function QuickJobActions({ orderId, onChanged }) {
     {job.nextAction === 'ready' && <p>Finish printing, scanning or laminating, then mark this order ready.</p>}
     {job.nextAction === 'collected' && <p>{job.canCollect ? 'Payment settled. Confirm when the customer receives the finished job.' : `Ready for collection. Settle payment before handover${Number(job.outstanding) > 0 ? ` · R ${Number(job.outstanding).toFixed(2)} outstanding` : '.'}`}</p>}
     {error && <p role="alert">{error}</p>}
-    {job.nextAction && (!confirm ? <button type="button" className="order-acknowledge" disabled={busy || (job.nextAction === 'collected' && !job.canCollect)} onClick={() => setConfirm(true)}>{job.nextAction === 'ready' ? 'Mark ready' : 'Mark collected'}</button> : <div>
+    {job.nextAction && (!confirm ? <button type="button" className="order-acknowledge" disabled={busy || (job.nextAction === 'collected' && !job.canCollect)} onClick={() => setConfirm(true)}>{job.nextAction === 'ready' ? 'Mark ready' : job.canCollect ? 'Mark collected' : 'Awaiting payment'}</button> : <div>
       <p>{job.nextAction === 'ready' ? 'Is the finished job ready for the customer?' : 'Has the customer received the finished job?'}</p>
       <button type="button" className="order-acknowledge" disabled={busy} onClick={act}>{busy ? 'Saving…' : job.nextAction === 'ready' ? 'Yes, mark ready' : 'Yes, mark collected'}</button>
       <button type="button" disabled={busy} onClick={() => setConfirm(false)}>Not yet</button>
