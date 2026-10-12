@@ -1,0 +1,83 @@
+# Café shared payments and customer accounts
+
+## Approved direction
+
+Keep guest checkout. Add a lightweight verified customer account for order history,
+tracking, paying the original outstanding order and receipts. Build payment consistency
+before enabling customer payment resumption or staff cash/EFT recording on all orders.
+
+## Verified baseline, 12 October 2026
+
+Inspected Café main d36cf744 and OPPS main 079c1b03 plus staging database definitions.
+No production financial records changed.
+
+- Café balances read completed commerce.service_order_payments.
+- commerce._qs_sync_opps_payment_ledger copies an aggregate into public.transactions
+  at production handoff. It uses ON CONFLICT(order_id) DO NOTHING.
+- public.transactions has a unique order_id index. It is currently an order-level
+  aggregate, not a multiple-receipt ledger. Do not remove the index as an incidental fix.
+- OPPS OrderDrawer creates, edits and deletes transactions directly. Its payment
+  projection updates only the OPPS order; it does not update Café receipts.
+- OPPS invoices separately use invoice_payments and record_manual_invoice_payment.
+  Its cross-source guard checks X LAB payments, not Café payments.
+- The staging audit found a linked order with Café paid 0 / OPPS paid 14, and a
+  paid Café-only order with 60 received. These are staging observations, not live losses.
+- Tracking and payment tokens are separate. Tracking currently displays payment
+  status but does not provide a verified customer-account ownership relationship.
+
+## Implementation contract
+
+1. Assign each real receipt a stable identity; retries retain that identity. Keep
+   financial reporting projections distinguishable from original receipts.
+2. Route Café and OPPS actions for Café-originated payments through the same
+   server-side service. Check tenant, actor capability, currency, amount and order
+   state under a shared order lock. No client-computed paid flag is authoritative.
+3. Record cash received or verified EFT, reference, actor and server timestamp.
+   Checkout payment intent is not receipt. EFT proof alone is not verification.
+4. Publish Café income to OPPS Finance independently of production handoff.
+   Later handoff links the existing financial projection, never adds a second receipt.
+5. Replace editable/deletable projections for Café payments with audited correction
+   operations; include the OPPS invoice entry point in duplicate/overpayment guards.
+6. Reconcile legacy discrepancies explicitly. Never add both existing totals or
+   automatically overwrite manual entries. Keep unresolved records blocked for review.
+7. Collection, customer balance, OPPS order and linked invoice must consume the same
+   settled amount. Cash-up preserves original method/date; reversals stay auditable.
+
+## Delivery sequence
+
+First: shared receipt/projection schema and atomic write service, with OPPS integration.
+Second: Café Record payment UI and collection flow, then staging device verification.
+Third: customer account ownership, My orders and original-order payment resumption.
+
+Account sign-in uses the existing auth system, without granting staff membership.
+Historical guest orders require verified ownership; names, arbitrary supplied email,
+phone and order number alone are insufficient. Keep secure guest links. Do not store
+staff credentials in a new customer auth implementation. Validate configured email/
+OAuth delivery and redirect settings before choosing the first sign-in method.
+
+## Required acceptance checks
+
+- Cash/EFT recorded from either staff UI appears once, with equal balances everywhere.
+- Paid Café-only job appears in Finance without entering the production queue.
+- Subsequent production handoff cannot duplicate its receipt.
+- Retry, concurrent staff entry and gateway callback cannot double-settle an order.
+- Existing invoice/Café receipts block duplicate manual payment.
+- Corrections/reversals propagate with an audit trail; no direct projection edits.
+- Partial, outstanding, cancelled, refunded and cross-tenant cases fail safely.
+- Account A cannot read, claim or pay using account B's authorization.
+- Guest checkout remains available; return-to-pay uses the original order.
+- Release audit findings are reviewed rather than silently repaired.
+
+Status: investigation and read-only audit prepared. Payment schema/write changes and
+customer account UI are not implemented or deployed by this checkpoint.
+
+## Read-only implementation checkpoint
+
+Added qs_staff_payment_state and an Admin Payment record panel. The function is deployed
+to staging only. It exposes receipt history and compares linked balances without adding
+them together. Missing links, mismatches, unsupported invoice reconciliation and inconsistent
+paid flags return a null balance plus review reasons. This is read-only and does not yet
+guard existing payment writes, record cash/EFT, reconcile receipts, or implement accounts.
+Staging SQL verification checks staff/nonmember/anonymous access and balance behavior.
+Authenticated SECURITY DEFINER access is intentional, with tenant capability checks, revoked
+anonymous access and fixed empty search_path. No financial rows were changed.

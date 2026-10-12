@@ -183,3 +183,10 @@
 .admin-app .order-activity summary{padding:12px 0;cursor:pointer;font-size:14px;color:#58635b}
 .admin-app .order-activity ul{padding-left:20px;color:#697169;font-size:13px;line-height:1.7}
 .admin-app .order-filters button[aria-pressed="true"]{background:#e8f1ed;color:#235b49;border-color:#c6ded3}
+
+.admin-app .order-payment-state{margin:16px 0;padding:16px;border:1px solid #dedfd9;border-radius:12px;background:#fafbf8}
+.admin-app .order-payment-state h4{margin:0 0 12px}
+.admin-app .order-payment-state dl{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:14px}
+.admin-app .order-payment-state dd{margin:0}
+.admin-app .order-payment-state .payment-review{padding:12px;border-radius:8px;background:#fff4e3;color:#80591c}
+.admin-app .order-payment-state button{min-height:44px;margin-top:12px}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { mergeOrderActivity } from './orderActivity.js'
 import OrderServiceSummary from './OrderServiceSummary.jsx'
+import OrderPaymentState from './OrderPaymentState.jsx'
 import OrderFileDownload from './OrderFileDownload.jsx'
 import Icon from '../components/Icon.jsx'
 import { readStaffOrderId } from '../lib/staffNotificationNavigation.js'
@@ -422,6 +423,7 @@ export default function AdminOppsHandoffPanel() {
 
               {workspace && <div className="order-workspace">
                 <OrderServiceSummary workspace={workspace}/>
+                <OrderPaymentState key={selectedId} orderId={selectedId}/>
                 <div className="order-operator-action">
                   {acknowledgement ? <p className="order-acknowledged">Acknowledged by {acknowledgement.name} · {fullDateTime(acknowledgement.at)}</p> : !['completed', 'cancelled'].includes(selected.serviceStatus) && <button className="order-acknowledge" type="button" onClick={acknowledgeOrder} disabled={activityBusy === selectedId}>{activityBusy === selectedId ? 'Saving…' : 'I’ll handle this'}</button>}
                   {!acknowledgement && !['completed', 'cancelled'].includes(selected.serviceStatus) && <small>Let the team know you’re taking this order.</small>}

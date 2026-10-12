@@ -572,3 +572,7 @@ export async function getStaffOrderFile(orderId, fileId, mode = 'open') {
   })
   return parseResponse(response, 'Could not open the file')
 }
+
+export async function getStaffPaymentState(orderId) {
+  return rpc('qs_staff_payment_state', { p_order_id: orderId }, { accessToken: await getAdminAccessToken() })
+}
