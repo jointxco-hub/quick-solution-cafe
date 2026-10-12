@@ -14,6 +14,7 @@ import HelpCta from './components/HelpCta.jsx'
 import NotFound from './components/NotFound.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
 import OrderBasket from './components/OrderBasket.jsx'
+import BasketAddedNotice from './components/BasketAddedNotice.jsx'
 import OfferCard from './components/OfferCard.jsx'
 import QuickConfigureSheet from './components/QuickConfigureSheet.jsx'
 import { clearCart, loadCart, saveCart } from './lib/cartStore.js'
@@ -434,7 +435,6 @@ export default function App() {
     }])
     if (contextTag) setProductViewContext(null)
     setCartNotice(`${product.name} added to your order`)
-    window.setTimeout(() => setCartNotice(''), 2200)
   }
 
   // QS-20: "Offer expands into its real child product lines for pricing/
@@ -487,7 +487,6 @@ export default function App() {
     }
     setCart((items) => [...items, ...newItems])
     setCartNotice(`${offerName} added to your order — ${newItems.length} item${newItems.length === 1 ? '' : 's'}`)
-    window.setTimeout(() => setCartNotice(''), 2600)
   }
 
   const removeCartItem = (cartId) => setCart((items) => items.filter((item) => item.cartId !== cartId))
@@ -1185,7 +1184,7 @@ export default function App() {
         onContinueShopping={continueShopping}
         onOrderCreated={handleOrderCreated}
       />
-      {cartNotice ? <div className="qs-cart-toast" role="status"><Icon name="bag" size={16}/><span>{cartNotice}</span></div> : null}
+      {cartNotice && cart.length > 0 && !cartOpen ? <BasketAddedNotice message={cartNotice} count={cart.length} onView={() => { setCartNotice(''); setCartOpen(true) }} onDismiss={() => setCartNotice('')}/> : null}
       {/* QS-21.5: hidden on mobile via CSS once the bottom nav is
           present (its "Order" destination now covers this same "open my
           basket" purpose there) - still the real floating affordance on

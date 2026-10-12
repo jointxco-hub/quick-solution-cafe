@@ -835,3 +835,19 @@ html.qs217-header-hidden .qs217-config-context {
     transition: none;
   }
 }
+/* Addition feedback stays visible above browser/footer controls until acted on. */
+.qs-cart-toast.qs-cart-added-notice {
+  top: calc(env(safe-area-inset-top) + 12px); bottom: auto; left: auto; right: 16px;
+  max-width: min(620px, calc(100vw - 32px)); z-index: 150;
+  border-radius: 16px; padding: 12px; gap: 12px; background: #f4faf7; border-color: #bfdacf;
+  justify-content: flex-start; flex-wrap: wrap;
+}
+.qs-cart-added-notice > div { display: flex; align-items: center; gap: 9px; flex: 1 1 200px; min-width: 0; }
+.qs-cart-added-notice > div > svg { color: #246753; flex-shrink: 0; }
+.qs-cart-added-notice span { overflow-wrap: anywhere; }
+.qs-cart-added-notice small { display: block; margin-top: 3px; color: #64716a; font-weight: 400; }
+.qs-cart-notice-view { min-height: 44px; padding: 10px 14px; border: 0; border-radius: 10px; background: #246753; color: #fff; font: inherit; cursor: pointer; }
+.qs-cart-notice-dismiss { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: #53635b; font-size: 24px; cursor: pointer; }
+@media (max-width: 760px) {
+  .qs-cart-toast.qs-cart-added-notice { left: 12px; right: 12px; max-width: none; }
+}
