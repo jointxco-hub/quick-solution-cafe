@@ -68,8 +68,8 @@ OAuth delivery and redirect settings before choosing the first sign-in method.
 - Guest checkout remains available; return-to-pay uses the original order.
 - Release audit findings are reviewed rather than silently repaired.
 
-Status: investigation and read-only audit prepared. Payment schema/write changes and
-customer account UI are not implemented or deployed by this checkpoint.
+Status: staging manual-payment implementation below supersedes the read-only checkpoint.
+Customer accounts are not implemented.
 
 ## Read-only implementation checkpoint
 
@@ -81,3 +81,31 @@ guard existing payment writes, record cash/EFT, reconcile receipts, or implement
 Staging SQL verification checks staff/nonmember/anonymous access and balance behavior.
 Authenticated SECURITY DEFINER access is intentional, with tenant capability checks, revoked
 anonymous access and fixed empty search_path. No financial rows were changed.
+
+## Manual-payment staging checkpoint, 13 October 2026
+
+Café Admin now records the full outstanding balance as Cash or verified EFT. EFT requires
+bank reference and explicit verification. The atomic service stores actor, receipt identity,
+time and reference, and creates the OPPS Finance projection without creating a production job.
+Retries reuse the receipt. Later production handoff links the same Finance row. Direct
+staff edits to managed projections and duplicate invoice receipts are blocked.
+
+The quick-job flow from PR22 is included in this branch so a settled eligible job can move
+from ready to collected in the same preview. Production remains unchanged.
+
+Verified in rollback-only staging SQL: Cash/EFT, reference validation, retry identity,
+changed retry rejection, duplicate rejection, Finance before production, actual handoff
+reusing the Finance row, direct-edit protection, invoice duplicate guard, unauthorized
+replay, and ready/collected. Component tests cover explicit receipt confirmation, stable
+retry keys after network failure, EFT requirements and review/closed controls.
+
+Remaining gates: linked invoices and legacy discrepancies require reconciliation; OPPS's
+independent payment form is not yet routed through this service. Existing counter/gateway
+payment paths are not migrated by this slice. Pending PayFast attempts block manual receipt.
+Partial payments, audited corrections/reversals, concurrency integration testing, customer
+accounts and device acceptance remain outstanding. Keep PR24 draft and staging-only.
+
+Security advisor review: the new authenticated SECURITY DEFINER warning is intentional.
+The entry point performs tenant capability authorization before reads/replays, uses an empty
+search_path, and denies anonymous execution. Internal projection/trigger functions are revoked.
+Final local suite: 789 passed, 8 skipped; production build passed.
