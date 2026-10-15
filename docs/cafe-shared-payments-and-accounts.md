@@ -109,3 +109,31 @@ Security advisor review: the new authenticated SECURITY DEFINER warning is inten
 The entry point performs tenant capability authorization before reads/replays, uses an empty
 search_path, and denies anonymous execution. Internal projection/trigger functions are revoked.
 Final local suite: 789 passed, 8 skipped; production build passed.
+
+
+## OPPS shared-entry checkpoint, 15 October 2026
+
+The companion OPPS branch `feat/cafe-shared-payment-entry` routes Café-originated
+orders to the same receipt writer. A server-side OPPS order resolver checks the
+active Quick Solution tenant and `payments.manage`; it does not trust a browser
+Café order/tenant link. Existing Café operations access stays supported. This grants
+no new operational role: OPPS payment operators use their existing payment authority.
+
+Independent direct Finance income writes for Café orders are rejected, including
+legacy rows and new rows that omit the source marker. OPPS shows the original
+receipt record and removes edit/delete actions for those orders. Price differences
+between linked orders now block collection alongside legacy receipt/invoice issues.
+
+Applied the shared-entry and permission-alignment migrations to staging only.
+Bounded rollback SQL verified OPPS authenticated Cash/EFT, cross-app replay identity,
+one Finance row, equal balances, missing EFT reference, unauthorized read/replay,
+function grants, price mismatch and invoice conflicts. Independent Finance receipt
+insert was rejected. The full connector test stalled; it was split into bounded
+checks. Direct edit/delete execution is not claimed by this checkpoint.
+
+OPPS component tests cover confirmation, EFT reference, rapid double submission,
+stable retry identity, review/closed/paid/error states and query refresh. The
+focused OPPS suite passed 63 tests, Café receipt UI passed 3 tests, and OPPS build
+passed. Operator device acceptance of OPPS entry remains pending. No production
+financial records were changed. Linked-invoice settlement, corrections/reversals,
+partial payments and gateway concurrency remain release gates; PR24 stays draft.
