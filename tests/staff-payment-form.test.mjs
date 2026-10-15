@@ -54,3 +54,33 @@ test('payment refresh follows focus and polling, skips hidden pages and cleans u
   cleanup();assert.equal(events.size,0);assert.equal(tick,null)
  } finally {delete globalThis.__captureReceiptEffect;globalThis.window=oldWindow;globalThis.document=oldDocument}
 })
+
+test('a stalled payment check releases retry and ignores its late response', async () => {
+ const h=setup(); let tick,cleanup,expire,resolveOld,calls=0
+ const oldWindow=globalThis.window,oldDocument=globalThis.document
+ const oldTimeout=globalThis.setTimeout,oldClearTimeout=globalThis.clearTimeout
+ globalThis.window={setInterval(fn){tick=fn;return 1},clearInterval(){},addEventListener(){},removeEventListener(){}}
+ globalThis.document={hidden:false,addEventListener(){},removeEventListener(){}}
+ globalThis.setTimeout=(fn,delay)=>{assert.equal(delay,10000);expire=fn;return 1}
+ globalThis.clearTimeout=()=>{}
+ globalThis.__captureReceiptEffect=effect=>{cleanup=effect()}
+ globalThis.__loadReceipt=()=>{calls++;return calls===1?new Promise(resolve=>{resolveOld=resolve}):Promise.resolve({...state,balanceDue:0,cafePaid:5})}
+ const settle=()=>new Promise(resolve=>setImmediate(resolve))
+ try {
+  h.render();delete globalThis.__captureReceiptEffect
+  expire();await settle()
+  assert.match(txt(h.render()),/Could not refresh payments/)
+  assert.equal(button(h.render(),'Re-check payments').props.disabled,false)
+  tick();await settle();assert.equal(calls,2)
+  assert.match(txt(h.render()),/outstanding/)
+  assert.equal(globalThis.__receiptHooks.values[0].balanceDue,0)
+  resolveOld({...state,balanceDue:5});await settle()
+  assert.equal(globalThis.__receiptHooks.values[0].balanceDue,0)
+  assert.equal(globalThis.__receiptHooks.values[1],'')
+  cleanup()
+ } finally {
+  delete globalThis.__captureReceiptEffect
+  globalThis.window=oldWindow;globalThis.document=oldDocument
+  globalThis.setTimeout=oldTimeout;globalThis.clearTimeout=oldClearTimeout
+ }
+})

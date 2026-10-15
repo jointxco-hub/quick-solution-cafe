@@ -33,8 +33,14 @@ export default function OrderPaymentState({ orderId, onChanged }) {
       if (!active || pending || (!initial && (document.hidden || latest.current.saving || latest.current.draft))) return
       pending = true
       setLoading(true)
+      let timeout
       try {
-        const value = await getStaffPaymentState(orderId)
+        // Bound the read so a suspended mobile request cannot lock out retries.
+        // Promise.race also prevents a late timed-out result from replacing newer state.
+        const value = await Promise.race([
+          getStaffPaymentState(orderId),
+          new Promise((_, reject) => { timeout = setTimeout(() => reject(new Error('Payment check timed out')), 10000) })
+        ])
         if (!active) return
         const signature = JSON.stringify(value)
         setState(value); setError('')
@@ -43,6 +49,7 @@ export default function OrderPaymentState({ orderId, onChanged }) {
       } catch {
         if (active) setError('Could not refresh payments. The displayed balance may be out of date. Please re-check.')
       } finally {
+        clearTimeout(timeout)
         pending = false
         if (active) setLoading(false)
       }
@@ -64,7 +71,8 @@ export default function OrderPaymentState({ orderId, onChanged }) {
   return <section className="order-payment-state" aria-label="Payment record" aria-busy={loading}>
     <h4>Payment record</h4>
     <p><small>Payments refresh automatically while this page is open.</small></p>
-    {loading && <p role="status">Checking payments…</p>}
+    {loading && <p role="status">{state ? 'Updating payments…' : 'Checking payments…'}</p>}
+    {state && (loading || error) && <p><small>Last checked balance — waiting for an updated payment check.</small></p>}
     {error && <p role="alert">{error}</p>}
     {state && <>
       {state.reviewRequired ? <p className="payment-review" role="status">Payment review required. A reliable balance is unavailable until the linked records are reconciled.</p> : <p><strong>{money(state.balanceDue)}</strong> outstanding</p>}
