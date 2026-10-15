@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { getStaffPaymentState, recordStaffPayment } from '../lib/supabaseApi.js'
 
 const money = value => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(Number(value || 0))
@@ -10,6 +10,8 @@ export default function OrderPaymentState({ orderId, onChanged }) {
   const [draft, setDraft] = useState(null)
   const [saving, setSaving] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
+  const latest = useRef({ onChanged, draft, saving })
+  latest.current = { onChanged, draft, saving }
   const submit = async event => {
     event.preventDefault()
     if (saving || !confirmed || !draft) return
@@ -24,14 +26,44 @@ export default function OrderPaymentState({ orderId, onChanged }) {
   }
   useEffect(() => {
     let active = true
-    setLoading(true); setError(''); setState(null)
-    getStaffPaymentState(orderId).then(value => { if (active) setState(value) })
-      .catch(() => { if (active) setError('Could not check payments. Please try again.') })
-      .finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
+    let pending = false
+    let previous = null
+    setState(null); setDraft(null); setConfirmed(false)
+    const check = async (initial = false) => {
+      if (!active || pending || (!initial && (document.hidden || latest.current.saving || latest.current.draft))) return
+      pending = true
+      setLoading(true)
+      try {
+        const value = await getStaffPaymentState(orderId)
+        if (!active) return
+        const signature = JSON.stringify(value)
+        setState(value); setError('')
+        if ((previous !== null && previous !== signature) || (initial && refresh > 0)) latest.current.onChanged?.()
+        previous = signature
+      } catch {
+        if (active) setError('Could not refresh payments. The displayed balance may be out of date. Please re-check.')
+      } finally {
+        pending = false
+        if (active) setLoading(false)
+      }
+    }
+    const resume = () => { check() }
+    check(true)
+    const timer = window.setInterval(resume, 15000)
+    window.addEventListener('focus', resume)
+    window.addEventListener('online', resume)
+    document.addEventListener('visibilitychange', resume)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+      window.removeEventListener('focus', resume)
+      window.removeEventListener('online', resume)
+      document.removeEventListener('visibilitychange', resume)
+    }
   }, [orderId, refresh])
   return <section className="order-payment-state" aria-label="Payment record" aria-busy={loading}>
     <h4>Payment record</h4>
+    <p><small>Payments refresh automatically while this page is open.</small></p>
     {loading && <p role="status">Checking payments…</p>}
     {error && <p role="alert">{error}</p>}
     {state && <>
@@ -40,7 +72,7 @@ export default function OrderPaymentState({ orderId, onChanged }) {
         {state.oppsPaid !== null && <><dt>Recorded in OPPS</dt><dd>{money(state.oppsPaid)}</dd></>}
       </dl>
       {state.receipts.length > 0 && <details><summary>Received payments</summary><ul>{state.receipts.map(receipt => <li key={receipt.id}>{receipt.method === 'payfast' ? 'PayFast' : receipt.method.toUpperCase()} · {money(receipt.amount)}{receipt.receivedAt ? ` · ${new Date(receipt.receivedAt).toLocaleDateString('en-ZA')}` : ''}</li>)}</ul></details>}
-      {!state.reviewRequired && !state.closed && state.balanceDue > 0 && !draft && <button type="button" onClick={() => { setConfirmed(false); setDraft({ method: 'cash', amount: state.balanceDue, reference: '', operationKey: crypto.randomUUID() }) }}>Record payment</button>}
+      {!error && !loading && !state.reviewRequired && !state.closed && state.balanceDue > 0 && !draft && <button type="button" onClick={() => { setConfirmed(false); setDraft({ method: 'cash', amount: state.balanceDue, reference: '', operationKey: crypto.randomUUID() }) }}>Record payment</button>}
       {draft && <form onSubmit={submit}>
         <label>Payment method<select disabled={saving} value={draft.method} onChange={event => { setConfirmed(false); setDraft({ ...draft, method: event.target.value }) }}><option value="cash">Cash</option><option value="eft">EFT</option></select></label>
         <p>Amount received: <strong>{money(draft.amount)}</strong></p>

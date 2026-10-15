@@ -2,8 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { build } from 'esbuild'
 import { createRequire } from 'node:module'
-const hooks=`export function useState(initial){const h=globalThis.__receiptHooks,i=h.index++;if(!(i in h.values))h.values[i]=initial;return[h.values[i],v=>h.values[i]=typeof v==='function'?v(h.values[i]):v]} export function useEffect(){} export default {createElement(type,props,...children){return{type,props:{...props,children}}}}`
-const api=`export const getStaffPaymentState=async()=>({});export const recordStaffPayment=(payload)=>globalThis.__saveReceipt(payload)`
+const hooks=`export function useState(initial){const h=globalThis.__receiptHooks,i=h.index++;if(!(i in h.values))h.values[i]=initial;return[h.values[i],v=>h.values[i]=typeof v==='function'?v(h.values[i]):v]} export function useRef(value){return {current:value}} export function useEffect(effect){globalThis.__captureReceiptEffect?.(effect)} export default {createElement(type,props,...children){return{type,props:{...props,children}}}}`
+const api=`export const getStaffPaymentState=()=>globalThis.__loadReceipt();export const recordStaffPayment=(payload)=>globalThis.__saveReceipt(payload)`
 const b=await build({entryPoints:['src/admin/OrderPaymentState.jsx'],bundle:true,write:false,format:'cjs',platform:'node',plugins:[{name:'mock',setup(b){b.onResolve({filter:/^react$/},()=>({path:'react',namespace:'mock'}));b.onResolve({filter:/supabaseApi\.js$/},()=>({path:'api',namespace:'mock'}));b.onLoad({filter:/.*/,namespace:'mock'},a=>({contents:a.path==='react'?hooks:api,loader:'js'}))}}]})
 const m={exports:{}};new Function('module','exports','require',b.outputFiles[0].text)(m,m.exports,createRequire(import.meta.url));const Component=m.exports.default
 const nodes=n=>Array.isArray(n)?n.flatMap(nodes):n&&typeof n==='object'?[n,...nodes(n.props?.children)]:[]
@@ -34,4 +34,23 @@ test('EFT selection requires a bank reference and renewed receipt confirmation',
  tree=h.render();assert.match(txt(tree),/verified that the money arrived/)
  assert.equal(nodes(tree).find(n=>n.type==='input'&&n.props.maxLength===120).props.required,true)
  assert.equal(button(tree,'Confirm payment received').props.disabled,true)
+})
+
+test('payment refresh follows focus and polling, skips hidden pages and cleans up', async () => {
+ const h=setup(); const events=new Map(); let tick,cleanup,calls=0
+ const oldWindow=globalThis.window,oldDocument=globalThis.document
+ globalThis.window={setInterval(fn,delay){assert.equal(delay,15000);tick=fn;return 1},clearInterval(){tick=null},addEventListener(n,fn){events.set(n,fn)},removeEventListener(n){events.delete(n)}}
+ globalThis.document={hidden:false,addEventListener(n,fn){events.set(n,fn)},removeEventListener(n){events.delete(n)}}
+ globalThis.__captureReceiptEffect=effect=>{cleanup=effect()}
+ globalThis.__loadReceipt=async()=>{calls++;return {...state,balanceDue:calls===1?5:0,cafePaid:calls===1?0:5}}
+ const settle=()=>new Promise(resolve=>setImmediate(resolve))
+ try {
+  h.render();delete globalThis.__captureReceiptEffect;await settle()
+  assert.ok(button(h.render(),'Re-check payments'));assert.equal(calls,1)
+  events.get('focus')();await settle();assert.equal(calls,2);assert.equal(h.changed(),1)
+  assert.equal(button(h.render(),'Record payment'),undefined)
+  document.hidden=true;tick();await settle();assert.equal(calls,2)
+  document.hidden=false;events.get('visibilitychange')();await settle();assert.equal(calls,3)
+  cleanup();assert.equal(events.size,0);assert.equal(tick,null)
+ } finally {delete globalThis.__captureReceiptEffect;globalThis.window=oldWindow;globalThis.document=oldDocument}
 })

@@ -422,9 +422,9 @@ export default function AdminOppsHandoffPanel() {
                 </div>
               </div>
 
+              <OrderPaymentState key={selectedId} orderId={selectedId} onChanged={() => { loadQueue({ silent: true }).catch(() => {}) }}/>
               {workspace && <div className="order-workspace">
                 <OrderServiceSummary workspace={workspace}/>
-                <OrderPaymentState key={selectedId} orderId={selectedId} onChanged={() => { loadQueue({ silent: true }).catch(() => {}) }}/>
                 <div className="order-operator-action">
                   {acknowledgement ? <p className="order-acknowledged">Acknowledged by {acknowledgement.name} · {fullDateTime(acknowledgement.at)}</p> : !['completed', 'cancelled'].includes(selected.serviceStatus) && <button className="order-acknowledge" type="button" onClick={acknowledgeOrder} disabled={activityBusy === selectedId}>{activityBusy === selectedId ? 'Saving…' : 'I’ll handle this'}</button>}
                   {!acknowledgement && !['completed', 'cancelled'].includes(selected.serviceStatus) && <small>Let the team know you’re taking this order.</small>}
