@@ -413,7 +413,7 @@ export default function AdminOppsHandoffPanel() {
         <section className="handoff-preview">
           <button type="button" className="order-back" onClick={() => setDetailOpen(false)}>← All orders</button>
           {selected ? (
-            <>
+            <React.Fragment key={selected.serviceOrderId}>
               <div className="handoff-preview-top">
                 <div>
                   <span className="eyebrow">Selected order</span>
@@ -422,7 +422,7 @@ export default function AdminOppsHandoffPanel() {
                 </div>
               </div>
 
-              <OrderPaymentState key={selectedId} orderId={selectedId} onChanged={() => { loadQueue({ silent: true }).catch(() => {}) }}/>
+              <OrderPaymentState key={`payment:${selectedId}`} orderId={selectedId} onChanged={() => { loadQueue({ silent: true }).catch(() => {}) }}/>
               {workspace && <div className="order-workspace">
                 <OrderServiceSummary workspace={workspace}/>
                 <div className="order-operator-action">
@@ -461,7 +461,7 @@ export default function AdminOppsHandoffPanel() {
 
               {blockerItems.length > 0 && <MessageList title="Needs attention" icon="alertCircle" tone="bad" items={blockerItems} />}
               {warningItems.length > 0 && <details className="order-warning"><summary>{warningItems.length} staff note{warningItems.length === 1 ? '' : 's'} · review before handoff</summary><MessageList title="Staff notes" icon="alertCircle" tone="warn" items={warningItems} /></details>}
-              <details className="order-more" key={selected.serviceOrderId}><summary>Order details</summary>
+              <details className="order-more" key={`details:${selected.serviceOrderId}`}><summary>Order details</summary>
               <div className="handoff-detail-grid">
                 <DetailRow label="Order state" value={SERVICE_STATUS_LABELS[selected.serviceStatus] || selected.serviceStatus} />
                 <DetailRow label="Last checked" value={selected.lastPreviewedAt ? dateTime(selected.lastPreviewedAt) : previewingId === selected.serviceOrderId ? 'Checking now…' : 'Checking automatically…'} />
@@ -515,7 +515,7 @@ export default function AdminOppsHandoffPanel() {
                 </details>
               </div>
               </details>
-            </>
+            </React.Fragment>
           ) : <div className="handoff-empty large">{loadState === 'loading' ? 'Loading the order…' : notificationOrderId ? 'The notified order could not be found in this account.' : 'Select a Quick Solution order to review the OPPS handoff.'}</div>}
         </section>
       </div>
