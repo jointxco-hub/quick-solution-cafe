@@ -577,6 +577,10 @@ export async function getStaffPaymentState(orderId) {
   return rpc('qs_staff_payment_state', { p_order_id: orderId }, { accessToken: await getAdminAccessToken() })
 }
 
+export async function reconcileInvoiceReceipts(orderId) {
+  return rpc('qs_reconcile_invoice_receipts', { p_order_id: orderId }, { accessToken: await getAdminAccessToken() })
+}
+
 export async function recordStaffPayment({ orderId, method, amount, reference, operationKey }) {
   return rpc('qs_record_staff_payment', {
     p_order_id: orderId, p_method: method, p_amount: amount,

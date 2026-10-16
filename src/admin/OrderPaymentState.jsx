@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { getStaffPaymentState, recordStaffPayment } from '../lib/supabaseApi.js'
+import { getStaffPaymentState, recordStaffPayment, reconcileInvoiceReceipts } from '../lib/supabaseApi.js'
 
 const money = value => new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(Number(value || 0))
 export default function OrderPaymentState({ orderId, onChanged }) {
@@ -12,6 +12,16 @@ export default function OrderPaymentState({ orderId, onChanged }) {
   const [confirmed, setConfirmed] = useState(false)
   const latest = useRef({ onChanged, draft, saving })
   latest.current = { onChanged, draft, saving }
+  const canSyncInvoice = state?.issues?.length === 1 && state.issues[0] === 'invoice_projection_missing'
+  const syncInvoice = async () => {
+    if (saving || loading || !canSyncInvoice) return
+    setSaving(true); setError('')
+    try {
+      setState(await reconcileInvoiceReceipts(orderId))
+      onChanged?.()
+    } catch (failure) { setError(failure.message || 'Could not sync existing invoice receipts. Re-check and try again.') }
+    finally { setSaving(false) }
+  }
   const submit = async event => {
     event.preventDefault()
     if (saving || !confirmed || !draft) return
@@ -76,6 +86,7 @@ export default function OrderPaymentState({ orderId, onChanged }) {
     {error && <p role="alert">{error}</p>}
     {state && <>
       {state.reviewRequired ? <p className="payment-review" role="status">Payment review required. A reliable balance is unavailable until the linked records are reconciled.</p> : <p><strong>{money(state.balanceDue)}</strong> outstanding</p>}
+      {canSyncInvoice && <div><p>An existing receipt needs to be linked to the invoice. This will not record another payment.</p><button type="button" disabled={saving || loading} onClick={syncInvoice}>{saving ? 'Syncing…' : 'Sync existing invoice receipts'}</button></div>}
       <dl><dt>Received in Café</dt><dd>{money(state.cafePaid)}</dd>
         {state.oppsPaid !== null && <><dt>Recorded in OPPS</dt><dd>{money(state.oppsPaid)}</dd></>}
       </dl>

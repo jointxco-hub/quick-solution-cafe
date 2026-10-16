@@ -137,3 +137,47 @@ focused OPPS suite passed 63 tests, Café receipt UI passed 3 tests, and OPPS bu
 passed. Operator device acceptance of OPPS entry remains pending. No production
 financial records were changed. Linked-invoice settlement, corrections/reversals,
 partial payments and gateway concurrency remain release gates; PR24 stays draft.
+
+## Invoice receipt identity checkpoint, 16 October 2026
+
+The shared receipt remains the original financial record. `invoice_payments.qs_payment_id`
+identifies its invoice projection, with one invoice row per receipt and no second Finance
+income. Café/OPPS payment entry projects into one approved, matching ZAR invoice in the
+same transaction. Invoice Cash/EFT entry delegates to the same full-balance writer,
+retains invoice finance authorization plus tenant payment permission, and preserves the
+ordinary invoice implementation for all other sources. Existing proof linking is reused.
+The original receipt retains its server timestamp and actor; requested date/note are audit
+context. New historical entries are refused rather than silently backdated; existing
+receipt replays remain allowed on later dates.
+
+A payment recorded before invoice creation offers **Sync existing invoice receipts** in
+both order payment panels. This is an explicit, authorized, idempotent projection operation;
+it does not create money. It is offered only for a missing invoice projection with no
+other issues. Equal legacy Finance totals without a managed receipt identity, independent
+invoice receipts, multiple invoices, draft/void invoices, price/currency differences and
+inconsistent paid flags remain review-blocked. Receipt-bearing invoices cannot be detached,
+repriced or voided through ordinary edits, and invoice projections are immutable.
+
+Staging rollback checks passed for linked Cash, invoice-entry EFT, required EFT reference,
+full-balance enforcement, retry/changed-retry rejection, one original/Finance/invoice row,
+equal balances, receipt-before-invoice sync, currency/draft/multiple-invoice conflicts,
+independent invoice receipt rejection, nonmember denial, private-helper grants, and ordinary
+invoice partial-payment regression. All test receipt rows were rolled back. No production
+schema or financial records changed. Cash/EFT and automatic refresh mobile acceptance from
+15 October remain valid; invoice-linked device acceptance is still pending.
+
+Security review: private helpers are revoked from authenticated/anon/PUBLIC; the checked
+`qs_reconcile_invoice_receipts` endpoint intentionally runs SECURITY DEFINER with an empty
+search_path. Its [authenticated-definer advisor warning](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable)
+was reviewed with tenant access and execution-grant tests. Existing unrelated advisor findings
+were not changed by this slice.
+
+Still staging-only/draft: linked-invoice mobile and multi-session concurrency acceptance,
+gateway/counter writer integration, partial Café receipts, audited correction/reversal flows,
+and explicit legacy reconciliation remain release work. Customer accounts follow payment
+consistency; they are not part of this checkpoint.
+
+Current focused verification: Café 8 tests and build passed; OPPS 60 focused payment/proof
+and component tests plus build passed. The invoice-row edit and receipt-bearing invoice
+repricing guards were executed successfully in rollback tests. Direct receipt deletion and
+actual concurrent multi-session execution are not claimed by this checkpoint.

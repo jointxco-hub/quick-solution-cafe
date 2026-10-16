@@ -25,7 +25,7 @@ begin
  begin perform public.qs_opps_record_staff_payment(linked,'cash',paid,null,key); raise exception 'Mismatched price accepted'; exception when raise_exception then if sqlerrm<>'Payment records need reconciliation first' then raise; end if; end;
  update public.orders set total_amount=paid where id=linked;
  insert into public.opps_invoices(tenant_id,invoice_number,customer_name,invoice_date,source_order_id,total,status)
- values(tenant,'TEST-'||gen_random_uuid(),'Rollback payment guard',current_date,linked,paid,'approved');
+ values(tenant,'TEST-'||gen_random_uuid(),'Rollback payment guard',current_date,linked,paid+1,'approved');
  begin perform public.qs_opps_record_staff_payment(linked,'cash',paid,null,key); raise exception 'Linked invoice accepted'; exception when raise_exception then if sqlerrm<>'Payment records need reconciliation first' then raise; end if; end;
 end $$;
 rollback;

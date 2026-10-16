@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { build } from 'esbuild'
 import { createRequire } from 'node:module'
 const hooks=`export function useState(initial){const h=globalThis.__receiptHooks,i=h.index++;if(!(i in h.values))h.values[i]=initial;return[h.values[i],v=>h.values[i]=typeof v==='function'?v(h.values[i]):v]} export function useRef(value){return {current:value}} export function useEffect(effect){globalThis.__captureReceiptEffect?.(effect)} export default {createElement(type,props,...children){return{type,props:{...props,children}}}}`
-const api=`export const getStaffPaymentState=()=>globalThis.__loadReceipt();export const recordStaffPayment=(payload)=>globalThis.__saveReceipt(payload)`
+const api=`export const reconcileInvoiceReceipts=(orderId)=>globalThis.__syncInvoice(orderId);export const getStaffPaymentState=()=>globalThis.__loadReceipt();export const recordStaffPayment=(payload)=>globalThis.__saveReceipt(payload)`
 const b=await build({entryPoints:['src/admin/OrderPaymentState.jsx'],bundle:true,write:false,format:'cjs',platform:'node',plugins:[{name:'mock',setup(b){b.onResolve({filter:/^react$/},()=>({path:'react',namespace:'mock'}));b.onResolve({filter:/supabaseApi\.js$/},()=>({path:'api',namespace:'mock'}));b.onLoad({filter:/.*/,namespace:'mock'},a=>({contents:a.path==='react'?hooks:api,loader:'js'}))}}]})
 const m={exports:{}};new Function('module','exports','require',b.outputFiles[0].text)(m,m.exports,createRequire(import.meta.url));const Component=m.exports.default
 const nodes=n=>Array.isArray(n)?n.flatMap(nodes):n&&typeof n==='object'?[n,...nodes(n.props?.children)]:[]
@@ -82,5 +82,18 @@ test('a stalled payment check releases retry and ignores its late response', asy
   delete globalThis.__captureReceiptEffect
   globalThis.window=oldWindow;globalThis.document=oldDocument
   globalThis.setTimeout=oldTimeout;globalThis.clearTimeout=oldClearTimeout
+ }
+})
+
+test('missing invoice projection offers receipt sync without recording money', async () => {
+ const h=setup({reviewRequired:true,balanceDue:null,issues:['invoice_projection_missing']})
+ let calls=0
+ globalThis.__syncInvoice=async id=>{assert.equal(id,'order-test');calls++;return {...state,balanceDue:0,cafePaid:5,issues:[]}}
+ assert.equal(button(h.render(),'Record payment'),undefined)
+ await button(h.render(),'Sync existing invoice receipts').props.onClick()
+ assert.equal(calls,1);assert.equal(h.changed(),1)
+ assert.equal(button(h.render(),'Sync existing invoice receipts'),undefined)
+ for (const issues of [['invoice_reconciliation_required'],['invoice_projection_missing','order_total_mismatch']]) {
+  assert.equal(button(setup({reviewRequired:true,issues}).render(),'Sync existing invoice receipts'),undefined)
  }
 })
