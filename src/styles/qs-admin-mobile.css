@@ -183,3 +183,21 @@
 .admin-app .order-activity summary{padding:12px 0;cursor:pointer;font-size:14px;color:#58635b}
 .admin-app .order-activity ul{padding-left:20px;color:#697169;font-size:13px;line-height:1.7}
 .admin-app .order-filters button[aria-pressed="true"]{background:#e8f1ed;color:#235b49;border-color:#c6ded3}
+
+.admin-app .order-payment-state{margin:16px 0;padding:16px;border:1px solid #dedfd9;border-radius:12px;background:#fafbf8}
+.admin-app .order-payment-state h4{margin:0 0 12px}
+.admin-app .order-payment-state dl{display:grid;grid-template-columns:1fr auto;gap:8px;font-size:14px}
+.admin-app .order-payment-state dd{margin:0}
+.admin-app .order-payment-state .payment-review{padding:12px;border-radius:8px;background:#fff4e3;color:#80591c}
+.admin-app .order-payment-state button{min-height:44px;margin-top:12px}
+.admin-app .order-payment-state form{margin-top:16px;border-top:1px solid #dedfd9;padding-top:12px}
+.admin-app .order-payment-state form label{display:block;margin:10px 0;font-size:14px}
+.admin-app .order-payment-state form select,.admin-app .order-payment-state form input:not([type=checkbox]){display:block;width:100%;min-height:44px;margin-top:6px;border:1px solid #cfd3cc;border-radius:8px;background:white;padding:8px}
+.admin-app .order-payment-state form .receipt-confirm{display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.admin-app .order-payment-state form button[type=submit]{background:#1e6857;color:white}
+.admin-app .order-payment-state form button:disabled{background:#eeefed;color:#73766f}
+
+.admin-app .quick-job-actions{margin:16px 0;padding:16px;border:1px solid #c6ded3;border-radius:12px;background:#f4f8f5}
+.admin-app .quick-job-actions p{font-size:14px;line-height:1.5;color:#58635b;margin:8px 0}
+.admin-app .quick-job-actions button{margin:4px 8px 4px 0;min-height:44px}
+.admin-app .quick-job-actions button:disabled{background:#eeefed;color:#73766f;border-color:#d9dcd5;cursor:not-allowed;box-shadow:none;opacity:1}

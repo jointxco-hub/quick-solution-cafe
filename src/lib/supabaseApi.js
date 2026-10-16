@@ -572,3 +572,25 @@ export async function getStaffOrderFile(orderId, fileId, mode = 'open') {
   })
   return parseResponse(response, 'Could not open the file')
 }
+
+export async function getStaffPaymentState(orderId) {
+  return rpc('qs_staff_payment_state', { p_order_id: orderId }, { accessToken: await getAdminAccessToken() })
+}
+
+export async function reconcileInvoiceReceipts(orderId) {
+  return rpc('qs_reconcile_invoice_receipts', { p_order_id: orderId }, { accessToken: await getAdminAccessToken() })
+}
+
+export async function recordStaffPayment({ orderId, method, amount, reference, operationKey }) {
+  return rpc('qs_record_staff_payment', {
+    p_order_id: orderId, p_method: method, p_amount: amount,
+    p_reference: reference || null, p_operation_key: operationKey
+  }, { accessToken: await getAdminAccessToken() })
+}
+
+export async function getQuickJobState(orderId) {
+  return rpc('qs_staff_quick_job', { p_order_id: orderId }, { accessToken: await getAdminAccessToken() })
+}
+export async function updateQuickJob(orderId, action) {
+  return rpc('qs_staff_quick_job', { p_order_id: orderId, p_action: action }, { accessToken: await getAdminAccessToken() })
+}

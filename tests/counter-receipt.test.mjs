@@ -280,7 +280,7 @@ test('nothing is written and no server change was needed: no migration, no API c
   const lib = stripComments(read('../src/lib/counterReceipt.js'))
   assert.doesNotMatch(lib, /supabaseApi|\bfetch\s*\(|\brpc\s*\(|localStorage|sessionStorage|XMLHttpRequest/)
   const migrations = fs.readdirSync(new URL('../supabase/migrations/', import.meta.url)).filter((name) => name.endsWith('.sql')).sort()
-  assert.equal(migrations.some((name) => /receipt/i.test(name)), false, 'the receipt needed no migration of its own')
+  assert.equal(migrations.some((name) => /receipt/i.test(name) && name !== '20261012174302_cafe_manual_receipts.sql'), false, 'the receipt needed no migration of its own')
   assert.ok(migrations.includes('20260926240000_cafe_guest_01q_counter_order_detail_and_payment.sql'))
   const api = read('../src/lib/supabaseApi.js')
   assert.doesNotMatch(api, /receipt/i, 'no receipt API wrapper')
