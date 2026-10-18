@@ -36,8 +36,11 @@ export default function ProductConfigurator({
     setConfig((previous) => ({ ...previous, [id]: value }))
   }
 
+  const documentFileMissing = product.id === 'a4-print' && !(Array.isArray(file) ? file.length > 0 : Boolean(file))
+  const documentNotReady = product.id === 'a4-print' && (documentFileMissing || !config.documentPlanValid)
+
   const addCurrentItemToCart = () => {
-    if (itemAdded) return
+    if (itemAdded || documentNotReady) return
     onAddToCart?.({
       product,
       config,
@@ -56,7 +59,7 @@ export default function ProductConfigurator({
         <ConfiguratorProductContext product={product} config={config} mode={mode}/>
         <div className="config-intro">
           <div>
-            <span className="eyebrow">Full options</span>
+            <span className="eyebrow">Detailed options</span>
             <h2>{resolveProductDisplayName(product, mode)}</h2>
             <p className="section-copy">{product.plainDescription}</p>
           </div>
@@ -105,24 +108,15 @@ export default function ProductConfigurator({
         <button
           className={`primary-light ${itemAdded ? 'added' : ''}`}
           type="button"
-          disabled={itemAdded}
+          disabled={itemAdded || documentNotReady}
           onClick={addCurrentItemToCart}
         >
           {itemAdded ? 'Added to order' : 'Add to order'}
         </button>
         <p className="qs-shop-first-note">Add this item to your order. You will choose collection or delivery and enter your details once at checkout.</p>
-        <button
-          className="secondary-dark"
-          type="button"
-          disabled
-          title="Quote saving will be added in the next phase."
-        >
-          Save as quote · coming soon
-        </button>
         <a className="help-link" href={buildWhatsappUrl()} target="_blank" rel="noreferrer">
           <Icon name="message" size={17}/> Need help? WhatsApp us
         </a>
-        <small className="price-note">QS-02 prototype rates. Pricing rules are versioned and the calculation is snapshotted for each future order.</small>
       </aside>
     </div>
   )
