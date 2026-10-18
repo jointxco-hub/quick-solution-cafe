@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
 import ProductShareLinks from './ProductShareLinks.jsx'
+import ProductSupportInfo from './ProductSupportInfo.jsx'
 import { calculateProductPrice, formatMoney } from '../lib/pricing.js'
 import {
   resolveProductMedia,
@@ -293,13 +294,12 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </ul>
           )}
 
-          {/* QS-21.3: "Choices you will make" compacted from a full grid
-              of one block + a wrapped row of option chips PER FIELD, down
-              to one line per field ("Label — option, option, option").
-              Every option is still listed (truthful, nothing hidden) -
-              the configurator itself remains the place to actually
-              choose, per this pass's brief. */}
-
+          <div className="product-hub-right-support">
+            <ProductSupportInfo key={product.id} artworkHelp={resolveArtworkGuidance(product).help}/>
+            <div className="product-hub-share-compact">
+              <ProductShareLinks key={product.id} links={shareLinks} productName={resolveProductDisplayName(product, mode)} hasArtwork={Boolean(resolveArtworkGuidance(product).help)}/>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -451,10 +451,6 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </div>
           )}
 
-          {/* Share a product or a specific section. */}
-          <div className="product-hub-share-compact">
-            <ProductShareLinks key={product.id} links={shareLinks} productName={resolveProductDisplayName(product, mode)} hasArtwork={Boolean(resolveArtworkGuidance(product).help)}/>
-          </div>
         </aside>
       </div>
 
