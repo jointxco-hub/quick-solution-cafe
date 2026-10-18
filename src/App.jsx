@@ -1112,7 +1112,7 @@ export default function App() {
             <div className="qs10-config-intro">
               <div>
                 <span className="eyebrow">Ready to order? · {resolveProductDisplayName(selectedProduct, languageMode)}</span>
-                <h2>Your print options</h2>
+                <h2>{selectedProduct.id === 'a4-print' ? 'Your print options' : 'Your order options'}</h2>
               </div>
               <button type="button" className="qs16-view-product-link" onClick={scrollToProductHub}>
                 <Icon name="arrowUpRight" size={15}/> View product
