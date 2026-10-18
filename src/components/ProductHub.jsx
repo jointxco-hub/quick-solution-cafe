@@ -5,6 +5,7 @@ import ProductShareLinks from './ProductShareLinks.jsx'
 import { calculateProductPrice, formatMoney } from '../lib/pricing.js'
 import {
   resolveProductMedia,
+  resolveArtworkGuidance,
   resolveProductPageContent,
   resolveConfigPreviewFields,
   deriveRelatedProducts,
@@ -452,7 +453,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
 
           {/* Share a product or a specific section. */}
           <div className="product-hub-share-compact">
-            <ProductShareLinks key={product.id} links={shareLinks} productName={resolveProductDisplayName(product, mode)} hasArtwork={Boolean(product?.artworkHelp || product?.productPage?.artworkHelp)}/>
+            <ProductShareLinks key={product.id} links={shareLinks} productName={resolveProductDisplayName(product, mode)} hasArtwork={Boolean(resolveArtworkGuidance(product).help)}/>
           </div>
         </aside>
       </div>
