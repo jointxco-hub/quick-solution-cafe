@@ -8,7 +8,7 @@ import { buildQuickSolutionTrackingHref, saveQuickSolutionTrackingSession } from
 import { canStartPayfastRedirect, resolvePayfastInitOutcome } from '../lib/payfastInit.js'
 import { computeBasketPaymentEligibility, buildPayfastShortfallMessage, DEFAULT_PAYFAST_MINIMUM_AMOUNT } from '../lib/paymentEligibility.js'
 import { buildOrderHandoffMessage } from '../lib/whatsappOrderHandoff.js'
-import { buildWhatsappUrl } from '../lib/businessInfo.js'
+import { buildWhatsappUrl, resolveFulfilmentPointDisplayName } from '../lib/businessInfo.js'
 
 function copyToClipboard(text) {
   navigator.clipboard?.writeText?.(text).catch(() => {})
@@ -499,7 +499,7 @@ export default function OrderBasket({
                 <div className="qs-checkout-points">
                   {visiblePoints.map((point) => (
                     <button type="button" key={point.id} className={selectedPointId === point.id ? 'selected' : ''} onClick={() => setSelectedPointId(point.id)}>
-                      <span><strong>{point.name}</strong><small>{pointLabel(point) || (point.kind === 'cafe' ? 'Quick Solution café' : 'Quick Point')}</small></span>
+                      <span><strong>{resolveFulfilmentPointDisplayName(point)}</strong><small>{pointLabel(point) || (point.kind === 'cafe' ? 'Quick Solution café' : 'Quick Point')}</small></span>
                       <span className="radio-dot"/>
                     </button>
                   ))}
