@@ -260,16 +260,16 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
               // section below), and onClick={onGuided} directly would
               // pass the DOM click event as that argument instead.
               <button type="button" className="button dark" onClick={() => onGuided()}>
-                Start guided order <Icon name="arrowRight" size={17}/>
+                Start my order <Icon name="arrowRight" size={17}/>
               </button>
             )}
             {hasAdvanced && (
               <button type="button" className={`button ${hasGuided ? 'ghost' : 'dark'}`} onClick={() => onConfigure()}>
-                {hasGuided ? 'Full options' : 'Configure'} <Icon name="arrowUpRight" size={16}/>
+                {hasGuided ? 'Detailed options' : 'Configure'} <Icon name="arrowUpRight" size={16}/>
               </button>
             )}
             <a className="button ghost product-hub-whatsapp" href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer">
-              <Icon name="message" size={16}/> WhatsApp help
+              <Icon name="message" size={16}/> Ask on WhatsApp
             </a>
           </div>
 
@@ -281,7 +281,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             <li><Icon name="checkCircle" size={14}/> Secure checkout</li>
             <li><Icon name="store" size={14}/> Collect locally</li>
             <li><Icon name="truck" size={14}/> Courier or delivery</li>
-            <li><Icon name="document" size={14}/> Artwork checked</li>
+            <li><Icon name="document" size={14}/> We check your file</li>
           </ul>
 
           {/* QS-21.3: "Good to know" compacted from a bulleted, icon-per-
@@ -301,18 +301,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
               Every option is still listed (truthful, nothing hidden) -
               the configurator itself remains the place to actually
               choose, per this pass's brief. */}
-          {previewFields.length > 0 && (
-            <div className="product-hub-quickchoices">
-              <strong>You will choose:</strong>
-              <ul>
-                {previewFields.map((field) => (
-                  <li key={field.id}>
-                    <span>{field.label}</span> — {field.options.map((option) => option.label).join(' / ')}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+
         </div>
       </div>
 
@@ -488,7 +477,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
       {/* Mobile sticky Configure CTA — hidden on desktop via CSS (kept
           separate from .qs21-sticky-configure, which is desktop-only).
           QS-21.5 section 4 fix: this used to be a static, always-visible
-          div with zero state awareness, so "Start guided order" stayed
+          div with zero state awareness, so "Start my order" stayed
           pinned over content even while the customer was already
           actively inside the Guided/Full configurator. Now gated by the
           SAME configureInView App.jsx already computes for the desktop
@@ -501,7 +490,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
         <div className="product-hub-sticky-cta">
           {hasGuided ? (
             <button type="button" className="button dark" onClick={() => onGuided()}>
-              Start guided order {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowRight" size={17}/>
+              Start my order {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowRight" size={17}/>
             </button>
           ) : hasAdvanced ? (
             <button type="button" className="button dark" onClick={() => onConfigure()}>
@@ -509,7 +498,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </button>
           ) : (
             <a className="button dark" href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer">
-              <Icon name="message" size={16}/> WhatsApp help
+              <Icon name="message" size={16}/> Ask on WhatsApp
             </a>
           )}
         </div>
