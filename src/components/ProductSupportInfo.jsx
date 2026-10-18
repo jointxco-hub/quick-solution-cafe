@@ -49,7 +49,11 @@ export default function ProductSupportInfo({ artworkHelp }) {
           <ul className="qs21-support-delivery-list">
             {DELIVERY_INFO.map((item) => (
               <li key={item.id}>
-                <Icon name={item.icon} size={15}/>
+                {(item.id === 'paxi' || item.id === 'courier-guy') ? (
+                  <span className={`qs-delivery-wordmark qs-delivery-wordmark-${item.id}`} aria-hidden="true">
+                    {item.id === 'paxi' ? 'PAXI' : 'TCG'}
+                  </span>
+                ) : <Icon name={item.icon} size={15}/>}
                 <span><strong>{item.title}</strong><small>{item.helper}</small></span>
               </li>
             ))}
