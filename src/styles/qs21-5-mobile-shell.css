@@ -1074,3 +1074,18 @@ html.qs217-header-hidden .qs217-config-context {
 @media (max-width: 620px) {
   .product-hub-right-support .product-share-target { flex-basis: 100%; max-width: none; }
 }
+
+/* Quiet mint accent on the desktop sticky ordering action only. */
+.qs21-sticky-configure .qs21-sticky-configure-action {
+  background: #e8f5ef;
+  border: 1px solid #d4e9dd;
+  color: #246c55;
+  border-radius: 999px;
+  transition: background .16s ease, border-color .16s ease;
+}
+.qs21-sticky-configure:hover .qs21-sticky-configure-action,
+.qs21-sticky-configure:focus-visible .qs21-sticky-configure-action {
+  background: #d9eee2;
+  border-color: #b4dac6;
+}
+.qs21-sticky-configure:focus-visible { outline: 2px solid #2f9070; outline-offset: 3px; }
