@@ -3,7 +3,6 @@ import Icon from './components/Icon.jsx'
 import Header from './components/Header.jsx'
 import ProductCard from './components/ProductCard.jsx'
 import ProductHub from './components/ProductHub.jsx'
-import ProductSupportInfo from './components/ProductSupportInfo.jsx'
 import ProductConfigurator from './components/ProductConfigurator.jsx'
 import GuidedOrder from './components/GuidedOrder.jsx'
 import PaymentReturn from './components/PaymentReturn.jsx'
@@ -22,7 +21,7 @@ import { clearCart, loadCart, saveCart } from './lib/cartStore.js'
 import { guidedJourneys, heroOutcomes, offers as defaultOffers, products as defaultProducts } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
-import { resolveProductDisplayName, resolveProductPriceCue, resolveArtworkGuidance, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
+import { resolveProductDisplayName, resolveProductPriceCue, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
 import { formatMoney } from './lib/pricing.js'
 import { resolveProductPaymentEligibility } from './lib/paymentEligibility.js'
 import {
@@ -1163,11 +1162,6 @@ export default function App() {
               />
             )}
           </div>
-        </section>
-
-        <section className="shell section qs21-product-help-after-order" aria-label="Product information">
-          <h2>Product information</h2>
-          <ProductSupportInfo key={selectedProduct.id} artworkHelp={resolveArtworkGuidance(selectedProduct).help}/>
         </section>
 
         {relatedOffers.length > 0 && (
