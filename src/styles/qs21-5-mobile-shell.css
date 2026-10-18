@@ -1209,3 +1209,39 @@ html.qs217-header-hidden .qs217-config-context {
     bottom: 110px;
   }
 }
+
+/* Checkout: clear, thumb-friendly grouping without touching order logic. */
+.qs-basket-checkout .qs-checkout-section {
+  border-top: 1px solid #e7e9e3;
+  padding-top: 18px;
+  margin-top: 20px;
+}
+.qs-basket-checkout .qs-checkout-section-head .eyebrow {
+  color: #82728e;
+  font-size: 10px;
+  letter-spacing: .095em;
+}
+.qs-basket-checkout .checkout-field input:focus-visible,
+.qs-basket-checkout .checkout-field textarea:focus-visible {
+  outline: 2px solid #927bad;
+  outline-offset: 2px;
+}
+@media (max-width: 620px) {
+  .qs-basket-checkout .qs-checkout-choice-grid {
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+  .qs-basket-checkout .qs-checkout-choice-grid > button {
+    min-height: 68px;
+    text-align: left;
+    border-radius: 14px;
+  }
+  .qs-basket-checkout .checkout-two { grid-template-columns: 1fr; }
+  .qs-basket-checkout .checkout-field input,
+  .qs-basket-checkout .checkout-field textarea {
+    width: 100%;
+    min-height: 48px;
+    font-size: 16px;
+  }
+  .qs-basket-checkout .qs-place-order { width: 100%; min-height: 50px; }
+}
