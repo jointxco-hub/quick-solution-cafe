@@ -56,10 +56,16 @@ export const DELIVERY_INFO = [
     helper: 'Fee and address confirmed when you place your order.'
   },
   {
-    id: 'courier',
+    id: 'paxi',
     icon: 'signpost',
-    title: 'PAXI / courier, nationwide',
-    helper: 'Available on request - message us on WhatsApp to arrange and confirm cost.'
+    title: 'PAXI',
+    helper: 'Nationwide collection-point delivery on request. Message us to confirm the cost.'
+  },
+  {
+    id: 'courier-guy',
+    icon: 'truck',
+    title: 'The Courier Guy',
+    helper: 'Courier delivery on request. Message us to confirm availability and cost.'
   }
 ]
 

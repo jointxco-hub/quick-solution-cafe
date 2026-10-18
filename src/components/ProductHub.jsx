@@ -6,9 +6,9 @@ import ProductSupportInfo from './ProductSupportInfo.jsx'
 import { calculateProductPrice, formatMoney } from '../lib/pricing.js'
 import {
   resolveProductMedia,
+  resolveArtworkGuidance,
   resolveProductPageContent,
   resolveConfigPreviewFields,
-  resolveArtworkGuidance,
   deriveRelatedProducts,
   resolveProductPriceCue,
   resolveHubAvailability,
@@ -101,7 +101,6 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
   const media = useMemo(() => resolveProductMedia(product), [product])
   const content = useMemo(() => resolveProductPageContent(product), [product])
   const previewFields = useMemo(() => resolveConfigPreviewFields(product), [product])
-  const artwork = useMemo(() => resolveArtworkGuidance(product), [product])
   const related = useMemo(() => deriveRelatedProducts(product, catalog, 3), [product, catalog])
   const shareLinks = useMemo(() => buildShareLinks(product, {
     origin: typeof window !== 'undefined' ? window.location.origin : ''
@@ -196,7 +195,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
           before the customer can actually act. */}
       <div className="product-hub-pdp">
         {/* 1 — Media / gallery */}
-        <div ref={pdpMediaRef} className="product-hub-pdp-media">
+        <div ref={pdpMediaRef} className={`product-hub-pdp-media${product.id === 'flags' ? ' product-hub-gallery-tall' : ''}`}>
           <div
             className={`product-hub-media-frame${activeImage ? ' has-lightbox' : ''}`}
             role={activeImage ? 'button' : undefined}
@@ -224,7 +223,8 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             )}
           </div>
           {galleryImages.length > 1 && (
-            <div className="product-hub-thumbs" role="tablist" aria-label={`${product.name} photos`}>
+            <div className="product-hub-gallery-nav">
+              <div className="product-hub-thumbs" role="tablist" aria-label={`${product.name} photos`}>
               {galleryImages.map((src, index) => (
                 <button
                   key={src}
@@ -233,10 +233,17 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
                   aria-selected={index === activeGalleryIndex}
                   className={index === activeGalleryIndex ? 'active' : ''}
                   onClick={() => selectGalleryImage(index)}
+                  title={`View photo ${index + 1} of ${galleryImages.length}`}
                 >
                   <img src={src} alt="" loading="lazy"/>
                 </button>
               ))}
+              </div>
+              <div className="product-hub-gallery-controls" aria-label="Browse product photos">
+                <span>{activeGalleryIndex + 1} / {galleryImages.length}</span>
+                <button type="button" aria-label="Previous product photo" onClick={showPrevImage}><Icon name="arrowLeft" size={16}/></button>
+                <button type="button" aria-label="Next product photo" onClick={showNextImage}><Icon name="arrowRight" size={16}/></button>
+              </div>
             </div>
           )}
         </div>
@@ -260,16 +267,16 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
               // section below), and onClick={onGuided} directly would
               // pass the DOM click event as that argument instead.
               <button type="button" className="button dark" onClick={() => onGuided()}>
-                Start guided order <Icon name="arrowRight" size={17}/>
+                Start my order <Icon name="arrowRight" size={17}/>
               </button>
             )}
             {hasAdvanced && (
               <button type="button" className={`button ${hasGuided ? 'ghost' : 'dark'}`} onClick={() => onConfigure()}>
-                {hasGuided ? 'Full options' : 'Configure'} <Icon name="arrowUpRight" size={16}/>
+                {hasGuided ? 'Detailed options' : 'Choose options'} <Icon name="arrowUpRight" size={16}/>
               </button>
             )}
             <a className="button ghost product-hub-whatsapp" href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer">
-              <Icon name="message" size={16}/> WhatsApp help
+              <Icon name="message" size={16}/> Ask on WhatsApp
             </a>
           </div>
 
@@ -281,7 +288,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             <li><Icon name="checkCircle" size={14}/> Secure checkout</li>
             <li><Icon name="store" size={14}/> Collect locally</li>
             <li><Icon name="truck" size={14}/> Courier or delivery</li>
-            <li><Icon name="document" size={14}/> Artwork checked</li>
+            <li><Icon name="document" size={14}/> We check your file</li>
           </ul>
 
           {/* QS-21.3: "Good to know" compacted from a bulleted, icon-per-
@@ -295,24 +302,12 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </ul>
           )}
 
-          {/* QS-21.3: "Choices you will make" compacted from a full grid
-              of one block + a wrapped row of option chips PER FIELD, down
-              to one line per field ("Label — option, option, option").
-              Every option is still listed (truthful, nothing hidden) -
-              the configurator itself remains the place to actually
-              choose, per this pass's brief. */}
-          {previewFields.length > 0 && (
-            <div className="product-hub-quickchoices">
-              <strong>You will choose:</strong>
-              <ul>
-                {previewFields.map((field) => (
-                  <li key={field.id}>
-                    <span>{field.label}</span> — {field.options.map((option) => option.label).join(' / ')}
-                  </li>
-                ))}
-              </ul>
+          <div className="product-hub-right-support">
+            <ProductSupportInfo key={product.id} artworkHelp={resolveArtworkGuidance(product).help}/>
+            <div className="product-hub-share-compact">
+              <ProductShareLinks key={product.id} links={shareLinks} productName={resolveProductDisplayName(product, mode)} hasArtwork={Boolean(resolveArtworkGuidance(product).help)}/>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -403,20 +398,6 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
       )}
 
       <div className="product-hub-grid">
-        <div className="product-hub-main">
-          {/* 4 — Collection & delivery / Payment / Returns / Artwork.
-              QS-21.5 section 14: consolidates what used to be two
-              separate standalone blocks here (a plain "Artwork" block
-              and a "Collection or delivery" block duplicating the exact
-              same fulfilmentOptions list every OTHER product's
-              configurator step already shows) into one compact
-              accordion, plus genuinely new Payment/Returns content this
-              pass adds. Still reuses the same real fulfilmentOptions
-              facts (via DELIVERY_INFO, src/lib/businessInfo.js) - never
-              a second, conflicting data source. */}
-          <ProductSupportInfo artworkHelp={artwork.help}/>
-        </div>
-
         <aside className="product-hub-side">
           {/* 6 — Related products. QS-21.1: the row itself no longer
               navigates on click (was abrupt - straight to another
@@ -478,17 +459,13 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </div>
           )}
 
-          {/* Share a product or a specific section. */}
-          <div className="product-hub-share-compact">
-            <ProductShareLinks key={product.id} links={shareLinks} productName={resolveProductDisplayName(product, mode)} hasArtwork={Boolean(artwork.help)}/>
-          </div>
         </aside>
       </div>
 
       {/* Mobile sticky Configure CTA — hidden on desktop via CSS (kept
           separate from .qs21-sticky-configure, which is desktop-only).
           QS-21.5 section 4 fix: this used to be a static, always-visible
-          div with zero state awareness, so "Start guided order" stayed
+          div with zero state awareness, so "Start my order" stayed
           pinned over content even while the customer was already
           actively inside the Guided/Full configurator. Now gated by the
           SAME configureInView App.jsx already computes for the desktop
@@ -501,15 +478,15 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
         <div className="product-hub-sticky-cta">
           {hasGuided ? (
             <button type="button" className="button dark" onClick={() => onGuided()}>
-              Start guided order {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowRight" size={17}/>
+              Start my order {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowRight" size={17}/>
             </button>
           ) : hasAdvanced ? (
             <button type="button" className="button dark" onClick={() => onConfigure()}>
-              Configure {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowUpRight" size={16}/>
+              Choose options {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowUpRight" size={16}/>
             </button>
           ) : (
             <a className="button dark" href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer">
-              <Icon name="message" size={16}/> WhatsApp help
+              <Icon name="message" size={16}/> Ask on WhatsApp
             </a>
           )}
         </div>

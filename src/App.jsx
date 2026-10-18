@@ -1045,14 +1045,14 @@ export default function App() {
         {resolveStickyConfigureVisibility(page, configureInView) && (
           <button type="button" className="qs21-sticky-configure" onClick={scrollToConfigure}>
             <span className="qs21-sticky-configure-copy">
-              <small>Configure</small>
+              <small>Ready to order?</small>
               <strong>
                 {productDetailPriceCue == null
                   ? resolveProductDisplayName(selectedProduct, languageMode)
                   : productDetailPriceCue.quoteRequired ? 'Quote required' : `From ${formatMoney(productDetailPriceCue.total)}`}
               </strong>
             </span>
-            <span className="qs21-sticky-configure-action"><Icon name="arrowRight" size={15}/> Configure order</span>
+            <span className="qs21-sticky-configure-action"><Icon name="arrowRight" size={15}/> Choose options</span>
           </button>
         )}
         <section className="shell qs21-product-detail-nav">
@@ -1103,15 +1103,15 @@ export default function App() {
           <div className="shell">
             {/* QS-21.3 section 2/5: shortened - "Start with Guided mode
                 for the simplest route..." repeated what the mode-toggle's
-                own labels below already say ("Guided is recommended" /
-                "Full options gives precise control"). Product context
+                own labels below already say ("Step by step is recommended" /
+                "Detailed options give you more control"). Product context
                 (which product, a way back to it) is the only thing this
                 intro needs to convey that isn't shown anywhere else on
                 this page. */}
             <div className="qs10-config-intro">
               <div>
                 <span className="eyebrow">Ready to order? · {resolveProductDisplayName(selectedProduct, languageMode)}</span>
-                <h2>Configure your order.</h2>
+                <h2>{selectedProduct.id === 'a4-print' ? 'Your print options' : 'Your order options'}</h2>
               </div>
               <button type="button" className="qs16-view-product-link" onClick={scrollToProductHub}>
                 <Icon name="arrowUpRight" size={15}/> View product
@@ -1122,14 +1122,14 @@ export default function App() {
                 <div className="mode-choice">
                   <div className="mode-choice-copy">
                     <span>Order mode</span>
-                    <strong>{orderMode === 'guided' ? 'Guided is recommended' : 'Full options gives precise control'}</strong>
+                    <strong>{orderMode === 'guided' ? 'Step by step is recommended' : 'Detailed options give you more control'}</strong>
                   </div>
                   <div className="mode-toggle" aria-label="Ordering mode">
                     <button type="button" className={orderMode === 'guided' ? 'active' : ''} onClick={() => switchOrderMode('guided')}>
-                      <span>Guided</span><small>Recommended</small>
+                      <span>Step by step</span><small>Recommended</small>
                     </button>
                     <button type="button" className={`${orderMode === 'advanced' ? 'active' : ''} full-options-button`} onClick={() => switchOrderMode('advanced')}>
-                      <span>Full options</span><small>Exact specs</small>
+                      <span>Detailed options</span><small>More control</small>
                     </button>
                   </div>
                 </div>
