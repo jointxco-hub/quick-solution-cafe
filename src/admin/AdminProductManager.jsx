@@ -15,6 +15,7 @@ import {
   startAdminGoogleSignIn
 } from '../lib/supabaseApi.js'
 import { resolveProductPaymentEligibility } from '../lib/paymentEligibility.js'
+import { AreaSupplierEditor, QuoteRequestEditor, CataloguePhotoEditor } from './SupplierCatalogueControls.jsx'
 
 const modifierKeys = ['rate', 'fee', 'multiplier', 'total', 'unitFee']
 
@@ -739,6 +740,14 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
                       ))}
                     </div>
                   </div>
+
+                  {import.meta.env?.VITE_QS_SUPPLIER_CATALOGUE === 'true' && (
+                    <>
+                      <CataloguePhotoEditor product={product} onChange={replaceSelected}/>
+                      {product.id === 'contravision' && <AreaSupplierEditor product={product} onChange={replaceSelected}/>}
+                      {product.pricing?.strategy === 'ENQUIRY' && <QuoteRequestEditor product={product} onChange={replaceSelected}/>}
+                    </>
+                  )}
 
                   {product.pricing?.strategy === 'SUPPLIER_MARGIN' ? (
                     <SupplierMarginPricingEditor product={product} onChange={replaceSelected}/>
