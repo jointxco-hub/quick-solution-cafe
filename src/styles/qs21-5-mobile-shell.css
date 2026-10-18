@@ -1180,3 +1180,12 @@ html.qs217-header-hidden .qs217-config-context {
   .product-hub-facts-service .product-hub-trust-compact { row-gap: 8px; column-gap: 12px; }
   .product-hub-facts-product { margin-top: 14px; padding-top: 12px; }
 }
+
+/* Joint X dual-accent hierarchy: green for service, lavender for product facts. */
+.product-hub-facts-product .product-hub-facts-label { color: #82758f; }
+.product-hub-facts-product .product-hub-quickfacts li {
+  background: #f4f1f7;
+  border-color: #eee8f3;
+  color: #56505d;
+}
+.product-hub-facts-product .product-hub-quickfacts svg { color: #9883b2; }
