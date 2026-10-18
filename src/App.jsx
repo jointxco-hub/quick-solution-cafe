@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import React, { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import Icon from './components/Icon.jsx'
 import Header from './components/Header.jsx'
 import ProductCard from './components/ProductCard.jsx'
@@ -276,7 +276,7 @@ export default function App() {
     )
     observer.observe(node)
     return () => observer.disconnect()
-  }, [page, selectedId])
+  }, [page, selectedId, catalogLoading])
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return
@@ -310,17 +310,11 @@ export default function App() {
   const selectedJourney = guidedJourneys.find((journey) => journey.id === journeyId && journey.productId === selectedProduct?.id)
     || guidedJourneys.find((journey) => journey.productId === selectedProduct?.id)
 
-  useEffect(() => {
-    if (view !== 'storefront') return
+  useLayoutEffect(() => {
+    if (view !== 'storefront' || catalogLoading) return
     const section = window.location.hash.slice(1)
     if (!PRODUCT_LINK_SECTIONS.includes(section) && section !== 'quick-points' && section !== 'shop' && section !== 'top') return
-    let innerFrame
-    const frame = requestAnimationFrame(() => {
-      innerFrame = requestAnimationFrame(() => {
-        document.getElementById(section)?.scrollIntoView({ block: 'start' })
-      })
-    })
-    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(innerFrame) }
+    document.getElementById(section)?.scrollIntoView({ block: 'start', behavior: 'instant' })
   }, [view, page, selectedId, catalogLoading, locationVersion])
 
   const searchMatches = useMemo(() => {

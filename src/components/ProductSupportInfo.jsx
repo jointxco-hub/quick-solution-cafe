@@ -18,7 +18,7 @@ import { DELIVERY_INFO, RETURNS_POLICY_TEXT, WHATSAPP_DISPLAY, buildWhatsappUrl 
 const SECTIONS = ['delivery', 'payment', 'returns', 'artwork']
 
 export default function ProductSupportInfo({ artworkHelp }) {
-  const [openId, setOpenId] = useState('delivery')
+  const [openId, setOpenId] = useState(() => SECTIONS.includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'delivery')
 
   useEffect(() => {
     const restore = () => {
