@@ -1189,3 +1189,9 @@ html.qs217-header-hidden .qs217-config-context {
   color: #56505d;
 }
 .product-hub-facts-product .product-hub-quickfacts svg { color: #9883b2; }
+
+/* Navigation labels: consistent compact uppercase styling. */
+.desktop-nav button, .desktop-nav a, .qs21-bottom-nav-item small {
+  text-transform: uppercase;
+  letter-spacing: .065em;
+}

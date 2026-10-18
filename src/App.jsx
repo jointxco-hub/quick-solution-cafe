@@ -1149,6 +1149,8 @@ export default function App() {
                 initialFile={guidedInitialFile}
                 onAdvanced={() => setOrderMode('advanced')}
                 onAddToCart={addToCart}
+                onViewBasket={() => setCartOpen(true)}
+                onContinueShopping={continueShopping}
               />
             ) : (
               <ProductConfigurator
@@ -1215,7 +1217,7 @@ export default function App() {
           desktop, where there is no bottom nav. */}
       {cart.length > 0 && !cartOpen ? (
         <button className="qs-cart-floating" type="button" onClick={() => setCartOpen(true)}>
-          <span><strong>{cart.length} item{cart.length === 1 ? '' : 's'}</strong><small>View order</small></span>
+          <span><strong>{cart.length} item{cart.length === 1 ? '' : 's'}</strong><small>View basket</small></span>
           <Icon name="bag" size={18}/>
         </button>
       ) : null}
