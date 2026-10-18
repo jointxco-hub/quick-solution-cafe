@@ -186,5 +186,5 @@ actual concurrent multi-session execution are not claimed by this checkpoint.
 
 The current scoped release and test evidence are documented in
 [shared-payments-release-20261018.md](shared-payments-release-20261018.md).
-This supersedes earlier gateway/counter and concurrency gaps. Production remains
-unchanged because deployment access is unavailable.
+This supersedes earlier gateway/counter and concurrency gaps. Production is now live; the release document records the deployed commits,
+production checks and deferred scope.

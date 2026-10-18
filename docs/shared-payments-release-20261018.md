@@ -6,11 +6,16 @@ Café payment auto-refresh, and compatibility adapters for existing gateway/coun
 They exclude QuickJob collection changes and the unrelated OPPS pricing, RBAC,
 readiness and client-product changes from the larger staging branch.
 
-Production is unchanged. Deployment is blocked by the Vercel connector returning
-403 for team `joint-x`; no installed CLI fallback is available. Do not merge solely
-to trigger an unverified deployment. The production schema must be migrated before
-the new staff UIs are enabled, and production builds must use production configuration.
-Never promote the staging deployment, which targets the staging database.
+Production release completed on 18 October 2026. Both domains now run the shared
+payment UI against production Supabase slhcvyeuqsduaglddqdb. The earlier Vercel 403
+was caused by explicitly selecting team scope; authenticated default-account access
+works, including deployment writes.
+
+OPPS production had been deployed from CLI without Git metadata. Its archived
+application/configuration digests identify baseline 94f8ef7 (159 matches after
+Windows line-ending normalization, plus OrderDrawer content identity checked
+separately). The OPPS release preserves that already-live baseline. It does not
+regress production to older main 079c1b03 or add further unrelated staged features.
 
 ## Original and projected records
 
@@ -71,3 +76,34 @@ receipts, audited corrections/reversals and automatic legacy repair are excluded
    a real customer's order or trigger an actual gateway charge without authorization.
 6. Roll back frontend aliases if needed. Keep original receipt records and forward
    schema safeguards; do not delete financial rows or blindly reverse migrations.
+
+## Production outcome
+
+- Atomic database batch: 20261018133044_cafe_shared_payments_release. The nine
+  canonical migration versions were also registered in the same transaction.
+  The matching no-op release marker keeps future migration history aligned.
+- Café PR25 merged as cca817fad691be92322cc481d090afac1e84082c; production
+  deployment dpl_7H5yV8C2iBFcjrH9eNyPGz8vqMXi is READY with cafe.jointx.co.za assigned.
+- OPPS PR103 merged as c1958e1669dfa210611e7a5159c9f7a87ae28a4b; production
+  deployment dpl_6EEJzDWRUvmMbTW6dtyy2Rhk6W6h is READY with ops.jointx.co.za assigned.
+- Corrected OPPS live-baseline release passed 217 payment, invoice, proof,
+  readiness and money tests and its production build.
+- Both live HTML pages return HTTP 200. Café's served JS contains shared receipt
+  read/write/sync and production DB reference, with no staging DB reference.
+  OPPS main JS uses production DB reference; payment RPCs are in its lazy Orders
+  module, checked separately.
+- Production read-only reconciliation audit returned zero discrepancies.
+- Production rollback smoke checks passed: invoice gateway capture/replay,
+  counter Finance/handoff, metadata allowlist, retained capture on invoice
+  conflict, ordinary partial regression, invoice EFT/replay, existing-receipt
+  sync, nonmember and private-helper guards. Production has no scan catalogue
+  product, so the initial scan fixture failed before any write and was replaced
+  by the actual A4-print product. All synthetic order/payment tests rolled back;
+  original counts remained 14 service orders / one paid order. No customer
+  receipts were edited and no real gateway charge was initiated.
+- Anonymous staff read/write and authenticated access to internal invoice/gateway
+  helpers remain denied. Advisor delta is six intentional authenticated-definer
+  endpoints, reviewed for fixed search paths and tenant authorization; other
+  findings unchanged. See https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable .
+- Authenticated browser/device acceptance of this production release and browser
+  console/runtime telemetry are not claimed. Domain/backend/build checks passed.
