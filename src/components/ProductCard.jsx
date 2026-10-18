@@ -53,7 +53,7 @@ export default function ProductCard({ product, active = false, mode = 'simple', 
         </button>
         {onQuickConfigure && (
           <button type="button" className="product-card-configure" onClick={() => onQuickConfigure(product)}>
-            Configure
+            Choose options
           </button>
         )}
       </div>
