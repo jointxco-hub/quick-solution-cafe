@@ -1195,3 +1195,17 @@ html.qs217-header-hidden .qs217-config-context {
   text-transform: uppercase;
   letter-spacing: .065em;
 }
+
+/* Prevent the basket launcher covering the sticky ordering CTA on desktop.
+   Separate vertical slots; mobile retains the existing bottom-nav basket. */
+@media (min-width: 961px) {
+  body:has(.qs21-sticky-configure) .qs-cart-floating {
+    bottom: 108px;
+    right: 28px;
+  }
+}
+@media (min-width: 900px) and (max-width: 960px) {
+  body:has(.product-hub-sticky-cta) .qs-cart-floating {
+    bottom: 110px;
+  }
+}
