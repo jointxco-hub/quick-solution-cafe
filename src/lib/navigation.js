@@ -49,6 +49,15 @@ export function resolveAppRoute({ pathname = '/', hash = '' } = {}) {
   if (normalizedPathname === '/shop') {
     return { view: 'storefront', page: 'shop', pathname: normalizedPathname }
   }
+  const match = normalizedPathname.match(/^\/(products|configure)\/([^/]+)$/)
+  if (match) {
+    try {
+      const productId = decodeURIComponent(match[2])
+      if (!/^[a-zA-Z0-9_-]+$/.test(productId)) throw new Error('Invalid product')
+      return { view: 'storefront', page: 'product', productId, pathname: normalizedPathname,
+        section: match[1] === 'configure' ? 'configure' : hash.slice(1) }
+    } catch { /* Malformed URLs use the normal not-found screen. */ }
+  }
   return { view: 'not-found', page: null, pathname: normalizedPathname }
 }
 
@@ -201,8 +210,7 @@ export function resolveOfferContextCartTag(context, productId) {
 // (see its "history sync" effect and its popstate listener) - these are
 // only the pure DECISIONS: what the canonical state object looks like,
 // whether a given state change deserves a new back-stack entry, and how
-// to safely interpret an incoming popstate event. No React Router, no
-// URL/path changes - this only ever manipulates history.state.
+// to safely interpret an incoming popstate event. History state preserves shop filters; public URLs identify pages/products.
 export const DEFAULT_SHOP_FILTER = 'All'
 export const DEFAULT_SHOP_MODE = 'products'
 
@@ -292,3 +300,11 @@ export function resolveOfferContextAfterHistoryRestore(offerContext, restoredSta
   if (restoredState.selectedProductId !== offerContext.productId) return null
   return offerContext
 }
+
+// Public URLs contain navigation only; customer, payment and basket data stay out.
+export function buildStorefrontPath(state) {
+  if (state.page === 'product' && state.selectedProductId) return `/products/${encodeURIComponent(state.selectedProductId)}`
+  return state.page === 'shop' ? '/shop' : '/'
+}
+
+export const PRODUCT_LINK_SECTIONS = ['configure', 'delivery', 'payment', 'returns', 'artwork']

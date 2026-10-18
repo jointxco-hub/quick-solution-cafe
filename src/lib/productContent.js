@@ -544,26 +544,15 @@ export function resolveProductPresets(product) {
     .filter((preset) => validatePresetConfig(product, preset).valid)
 }
 
-// Share Kit link placeholders. Deliberately simple: this app has no
-// client-side router (confirmed — react-router-dom is not a dependency),
-// so productPageUrl/configureUrl are not yet real navigable routes; they
-// are copy-paste-ready placeholders that leave room for real routing
-// later without forcing that architecture decision now — kept here so
-// the URL-building shape exists for tests/future use even though
-// ProductHub itself no longer exposes them as working copy actions (see
-// the correction in ProductHub.jsx: those two Share Kit buttons are now
-// disabled/"coming soon" rather than copying a non-navigable URL). The
-// WhatsApp number defaults to the real business number (QS-21.5,
-// src/lib/businessInfo.js) - the one shared source every other WhatsApp
-// link in the app now also imports, rather than each file hardcoding
-// its own copy (which is exactly how this number drifted before).
+// Canonical product URLs are shared across the site and WhatsApp.
 export function buildShareLinks(product, { origin = '', whatsappNumber = WHATSAPP_NUMBER } = {}) {
   if (!product) return { productPageUrl: '', configureUrl: '', whatsappUrl: '' }
   const base = origin.replace(/\/$/, '')
-  const message = `Hi Quick Solution, I'm interested in ${product.name}.`
+  const productPageUrl = `${base}/products/${encodeURIComponent(product.id)}`
+  const message = `Hi Quick Solution, I'm interested in ${product.name}. ${productPageUrl}`
   return {
-    productPageUrl: `${base}/products/${product.id}`,
-    configureUrl: `${base}/configure/${product.id}`,
+    productPageUrl,
+    configureUrl: `${productPageUrl}#configure`,
     whatsappUrl: `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
   }
 }
