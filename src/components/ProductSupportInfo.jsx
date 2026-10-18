@@ -18,7 +18,7 @@ import { DELIVERY_INFO, RETURNS_POLICY_TEXT, WHATSAPP_DISPLAY, buildWhatsappUrl 
 const SECTIONS = ['delivery', 'payment', 'returns', 'artwork']
 
 export default function ProductSupportInfo({ artworkHelp }) {
-  const [openId, setOpenId] = useState(() => SECTIONS.includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'delivery')
+  const [openId, setOpenId] = useState(() => SECTIONS.includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : null)
 
   useEffect(() => {
     const restore = () => {
@@ -83,7 +83,7 @@ export default function ProductSupportInfo({ artworkHelp }) {
       {artworkHelp && (
         <div id="artwork" className={`qs21-support-row${openId === 'artwork' ? ' open' : ''}`}>
           <button type="button" className="qs21-support-toggle" aria-expanded={openId === 'artwork'} onClick={() => toggle('artwork')}>
-            <span><Icon name="upload" size={16}/> Artwork / production notes</span>
+            <span><Icon name="upload" size={16}/> Your file and print tips</span>
             <Icon name={openId === 'artwork' ? 'arrowUpRight' : 'arrowRight'} size={14}/>
           </button>
           <div className="qs21-support-panel">
