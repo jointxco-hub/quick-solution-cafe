@@ -240,6 +240,7 @@ export default function GuidedOrder({
 
   const result = useMemo(() => calculateProductPrice(product, config), [product, config])
   const isServiceRequest = product?.pricing?.strategy === 'ENQUIRY' || product?.serviceType === 'media'
+  const isPrintQuote = product?.pricing?.strategy === 'ENQUIRY' && product?.serviceType === 'print-signage'
   const shoppingSteps = isServiceRequest
     ? journey.steps
     : journey.steps.filter((item) => item.type !== 'fulfilment')
@@ -364,12 +365,12 @@ export default function GuidedOrder({
       return
     }
 
-    if (isServiceRequest && !config.preferredDate) {
+    if (isServiceRequest && !isPrintQuote && !config.preferredDate) {
       setSubmitError('Choose a preferred shoot date. We will confirm availability before the booking is final.')
       return
     }
 
-    if (isServiceRequest && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
+    if (isServiceRequest && !isPrintQuote && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
       setSubmitError('Add the area or address where the shoot should happen.')
       return
     }
@@ -398,10 +399,10 @@ export default function GuidedOrder({
             customerPhone: customerPhone.trim(),
             customerEmail: customerEmail.trim(),
             serviceLocation: {
-              type: config.shootLocation || 'cafe',
-              address: String(config.shootAddress || '').trim() || null,
-              preferredDate: config.preferredDate || null,
-              preferredTime: config.preferredTime || null
+              type: isPrintQuote ? 'quote_request' : (config.shootLocation || 'cafe'),
+              address: isPrintQuote ? null : (String(config.shootAddress || '').trim() || null),
+              preferredDate: isPrintQuote ? null : (config.preferredDate || null),
+              preferredTime: isPrintQuote ? null : (config.preferredTime || null)
             },
             customerNotes: customerNotes.trim(),
             idempotencyKey
@@ -540,10 +541,10 @@ export default function GuidedOrder({
         <div className="complete-mark"><Icon name="bag" size={28}/></div>
         <span className="eyebrow">{isServiceRequest ? 'Request received' : 'Order received'}</span>
         <h2>{orderNumber}</h2>
-        <p>{isServiceRequest ? (isPricedResponse ? 'We saved your booking request at the price shown below. Quick Solution will confirm your schedule and arrange payment separately — nothing is charged yet.' : 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.') : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
+        <p>{isServiceRequest ? (isPricedResponse ? 'We saved your booking request at the price shown below. Quick Solution will confirm your schedule and arrange payment separately — nothing is charged yet.' : (isPrintQuote ? 'Your specifications have been received. Quick Solution will review the artwork and confirm your quotation before requesting payment.' : 'We saved your shoot brief, preferred schedule and location. Quick Solution will review the crew and scope before confirming the quote and booking.')) : 'We saved the configuration and the exact pricing snapshot used for this order. Quick Solution can now review the job before production or payment.'}</p>
         <div className="complete-summary"><strong>{resolveProductDisplayName(product, mode)}</strong><span>{isServiceRequest && !isPricedResponse ? 'Quote after review' : formatMoney(total)}</span></div>
 
-        {isServiceRequest && config.shootLocation && (
+        {isServiceRequest && !isPrintQuote && config.shootLocation && (
           <div className="complete-fulfilment-card">
             <span className="complete-fulfilment-icon"><Icon name="camera" size={21}/></span>
             <div>
@@ -897,7 +898,7 @@ export default function GuidedOrder({
             </button>
           ) : isServiceRequest ? (
             <button className="button primary-green" type="button" disabled={submitState === 'submitting' || submitState === 'uploading'} onClick={submitOrder}>
-              {submitState === 'submitting' ? 'Sending request…' : 'Send media request'}
+              {submitState === 'submitting' ? 'Sending request…' : (isPrintQuote ? 'Request quotation' : 'Send media request')}
               {submitState !== 'submitting' && <Icon name="arrowRight" size={17}/>}
             </button>
           ) : (
@@ -922,13 +923,13 @@ export default function GuidedOrder({
       <aside className="guided-summary" aria-live="polite">
         <span className="eyebrow inverse">{isServiceRequest && !isPricedServiceRequest ? 'Request type' : 'Estimated total'}</span>
         <div className="guided-price">{!showEstimate ? 'Add your document' : isServiceRequest && !isPricedServiceRequest ? 'Quote' : formatMoney(estimatedOrderTotal)}</div>
-        <p>{!showEstimate ? 'Upload a file to see the estimated price.' : isServiceRequest && !isPricedServiceRequest ? 'We will confirm pricing after reviewing the crew, location and scope.' : result.summary}</p>
+        <p>{!showEstimate ? 'Upload a file to see the estimated price.' : isServiceRequest && !isPricedServiceRequest ? (isPrintQuote ? 'We will confirm the price after reviewing your specifications and artwork.' : 'We will confirm pricing after reviewing the crew, location and scope.') : result.summary}</p>
         {showEstimate && <div className="price-lines compact-lines">
           {result.lines.map((line, index) => (
             <div key={`${line.label}-${index}`}><span>{line.label}</span><strong>{line.text === 'standard' ? 'Included' : (line.text ?? formatMoney(line.value))}</strong></div>
           ))}
         </div>}
-        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? (isPricedServiceRequest ? 'This is the approved price for what you have chosen. Payment is not requested here — Quick Solution still confirms your booking before anything is charged.' : 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.') : 'Final price confirmed before payment.'}</span></div>
+        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? (isPricedServiceRequest ? 'This is the approved price for what you have chosen. Payment is not requested here — Quick Solution still confirms your booking before anything is charged.' : (isPrintQuote ? 'Your quotation request will be reviewed before payment is requested.' : 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.')) : 'Final price confirmed before payment.'}</span></div>
         <a className="help-link" href={buildWhatsappUrl()} target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
       </aside>
     </div>
