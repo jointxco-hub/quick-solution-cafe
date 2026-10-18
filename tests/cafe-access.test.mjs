@@ -84,7 +84,7 @@ test('exactly eleven counter RPCs exist (catalogue, single-item create, orders o
   // QS Payment Eligibility v1 (20260928170000) legitimately re-defines (create or replace,
   // not a new name) three of these same RPCs, so Counter POS can also find a storefront
   // "pay at counter" order by its explicit pending counter-intent row.
-  assert.deepEqual(users, ['20260926210000_cafe_guest_01l_counter_catalogue_rpc.sql', '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql', '20260926230000_cafe_guest_01p_counter_orders_today_rpc.sql', '20260926240000_cafe_guest_01q_counter_order_detail_and_payment.sql', '20260926250000_cafe_guest_01s_counter_cashup_today_rpc.sql', '20260926260000_cafe_guest_01t_unpaid_counter_orders_rpc.sql', '20260926270000_cafe_guest_01u_dated_counter_cashup.sql', '20260926280000_cafe_guest_01v_cancel_unpaid_counter_order.sql', '20260926290000_cafe_guest_01w_cancelled_counter_orders_rpc.sql', '20260927120000_qs_administration_capability_authorization.sql', '20260928170000_qs_payment_eligibility_v1.sql', '20261008082604_cafe_staff_push.sql', '20261010180324_cafe_order_operator_workspace.sql'])
+  assert.deepEqual(users, ['20260926210000_cafe_guest_01l_counter_catalogue_rpc.sql', '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql', '20260926230000_cafe_guest_01p_counter_orders_today_rpc.sql', '20260926240000_cafe_guest_01q_counter_order_detail_and_payment.sql', '20260926250000_cafe_guest_01s_counter_cashup_today_rpc.sql', '20260926260000_cafe_guest_01t_unpaid_counter_orders_rpc.sql', '20260926270000_cafe_guest_01u_dated_counter_cashup.sql', '20260926280000_cafe_guest_01v_cancel_unpaid_counter_order.sql', '20260926290000_cafe_guest_01w_cancelled_counter_orders_rpc.sql', '20260927120000_qs_administration_capability_authorization.sql', '20260928170000_qs_payment_eligibility_v1.sql', '20261008082604_cafe_staff_push.sql', '20261010180324_cafe_order_operator_workspace.sql', '20261012154123_cafe_payment_reconciliation_state.sql', '20261014210940_cafe_opps_shared_payment_entry.sql', '20261014211427_cafe_payment_permission_alignment.sql', '20261016060306_cafe_invoice_shared_receipts.sql', '20261018100512_cafe_gateway_counter_shared_receipts.sql', '20261018104437_cafe_gateway_receipt_review_visibility.sql'])
   assert.deepEqual(counterFunctions, [
     '20260926210000_cafe_guest_01l_counter_catalogue_rpc.sql: public.get_quick_solution_counter_catalog',
     '20260926220000_cafe_guest_01m_counter_create_order_rpc.sql: commerce._qs_product_counter_sellable',
@@ -107,7 +107,8 @@ test('exactly eleven counter RPCs exist (catalogue, single-item create, orders o
     '20260926290000_cafe_guest_01w_cancelled_counter_orders_rpc.sql: public.list_quick_solution_cancelled_counter_orders',
     '20260928170000_qs_payment_eligibility_v1.sql: public.list_quick_solution_counter_orders_today',
     '20260928170000_qs_payment_eligibility_v1.sql: public.list_quick_solution_unpaid_counter_orders',
-    '20260928170000_qs_payment_eligibility_v1.sql: public.record_quick_solution_counter_payment'
+    '20260928170000_qs_payment_eligibility_v1.sql: public.record_quick_solution_counter_payment',
+    '20261018100512_cafe_gateway_counter_shared_receipts.sql: public.record_quick_solution_counter_payment'
   ], 'no other counter RPC: no multi-item, refund, void or request creation yet (a receipt is read-only and needs none)')
   const walk = (dir, out = []) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
