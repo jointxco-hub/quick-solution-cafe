@@ -272,7 +272,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             )}
             {hasAdvanced && (
               <button type="button" className={`button ${hasGuided ? 'ghost' : 'dark'}`} onClick={() => onConfigure()}>
-                {hasGuided ? 'Detailed options' : 'Configure'} <Icon name="arrowUpRight" size={16}/>
+                {hasGuided ? 'Detailed options' : 'Choose options'} <Icon name="arrowUpRight" size={16}/>
               </button>
             )}
             <a className="button ghost product-hub-whatsapp" href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer">
@@ -482,7 +482,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </button>
           ) : hasAdvanced ? (
             <button type="button" className="button dark" onClick={() => onConfigure()}>
-              Configure {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowUpRight" size={16}/>
+              Choose options {priceCue && !priceCue.quoteRequired && <>· {formatMoney(priceCue.total)}</>} <Icon name="arrowUpRight" size={16}/>
             </button>
           ) : (
             <a className="button dark" href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer">
