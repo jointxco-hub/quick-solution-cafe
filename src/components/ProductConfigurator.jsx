@@ -95,7 +95,7 @@ export default function ProductConfigurator({
           {result.lines.map((line, index) => (
             <div key={`${line.label}-${index}`}>
               <span>{line.label}</span>
-              <strong>{line.text ?? formatMoney(line.value)}</strong>
+              <strong>{line.text === 'standard' ? 'Included' : (line.text ?? formatMoney(line.value))}</strong>
             </div>
           ))}
         </div>
