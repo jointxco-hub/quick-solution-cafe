@@ -1,9 +1,11 @@
 import React, { useState } from 'react'
+import Icon from './Icon.jsx'
 
-export default function ProductShareLinks({ links, hasArtwork = true }) {
+export default function ProductShareLinks({ links, productName, hasArtwork = true }) {
   const [section, setSection] = useState('')
   const [status, setStatus] = useState('')
   const url = links.productPageUrl + (section ? `#${section}` : '')
+  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(`${productName} — ${url}`)}`
   const copy = async () => {
     setStatus('Copying link…')
     try {
@@ -23,6 +25,9 @@ export default function ProductShareLinks({ links, hasArtwork = true }) {
       {hasArtwork && <option value="artwork">Artwork</option>}
     </select></label>
     <button type="button" className="button ghost" onClick={copy}>Copy link</button>
+    <a href={whatsappShareUrl} target="_blank" rel="noreferrer" className="product-hub-share-primary">
+      <Icon name="send" size={16}/> Share on WhatsApp
+    </a>
     <span role="status">{status}</span>
     {status === 'Select and copy the link below' && <input aria-label="Shareable link" readOnly value={url} onFocus={(event) => event.target.select()}/>}
   </div>

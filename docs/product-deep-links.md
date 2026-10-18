@@ -2,7 +2,7 @@
 
 Public canonical routes are `/products/<catalogue-id>` and `/shop`. Existing `/configure/<id>` links canonicalize to `/products/<id>#configure` without a reload. Product IDs remain the catalogue keys; changing a product name does not change its link.
 
-Supported product anchors: `#configure` (pricing and ordering), `#delivery`, `#payment`, `#returns`, and `#artwork` when artwork guidance exists. Supporting accordions open automatically for incoming links. The product sharing area offers a section selector and Copy link, with a selectable-link fallback if clipboard permission is unavailable. WhatsApp messages include the product URL. Links use the current origin, so staging links remain staging links.
+Supported product anchors: `#configure` (pricing and ordering), `#delivery`, `#payment`, `#returns`, and `#artwork` when artwork guidance exists. Supporting accordions open automatically for incoming links. The product sharing area offers a section selector and Copy link, with a selectable-link fallback if clipboard permission is unavailable. Share on WhatsApp opens the recipient chooser with the selected product/section URL. WhatsApp help continues to open the Café conversation. Links use the current origin, so staging links remain staging links.
 
 Public URLs contain navigation only. Basket/configuration, uploaded files, contact details and payment tokens are not encoded in shared links. Existing admin, counter, tracking and payment-return ownership is preserved. No database changes.
 
