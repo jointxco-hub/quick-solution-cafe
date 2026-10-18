@@ -253,8 +253,11 @@ export default function GuidedOrder({
     setConfig((previous) => ({ ...previous, ...patch }))
   }
 
+  const documentFileMissing = product.id === 'a4-print' && !(Array.isArray(file) ? file.length > 0 : Boolean(file))
+  const documentNotReady = product.id === 'a4-print' && (documentFileMissing || !config.documentPlanValid)
+
   const addCurrentItemToCart = () => {
-    if (itemAdded) return
+    if (itemAdded || documentNotReady) return
     onAddToCart?.({
       product,
       config,
@@ -280,7 +283,7 @@ export default function GuidedOrder({
   }
 
   const goNext = () => {
-    if (product.id === 'a4-print' && step.id === 'quantity' && !config.documentPlanValid) {
+    if (product.id === 'a4-print' && (documentFileMissing || (step.id === 'quantity' && !config.documentPlanValid))) {
       return
     }
     if (step.type === 'location' && config.shootLocation !== 'cafe' && String(config.shootAddress || '').trim().length < 3) {
@@ -654,7 +657,7 @@ export default function GuidedOrder({
       <div className="guided-main">
         <ConfiguratorProductContext product={product} config={config} mode={mode}/>
         <div className="guided-topline">
-          <button className="text-button" type="button" onClick={onAdvanced}>Switch to Full options</button>
+          <button className="text-button" type="button" onClick={onAdvanced}>Choose detailed options</button>
           <div className="guided-topline-meta">
             <span>{stepIndex + 1} of {shoppingSteps.length}</span>
             <strong className="guided-mobile-total">
@@ -884,7 +887,7 @@ export default function GuidedOrder({
             <button
               className="button primary-green"
               type="button"
-              disabled={product.id === 'a4-print' && step.id === 'quantity' && !config.documentPlanValid}
+              disabled={product.id === 'a4-print' && (documentFileMissing || (step.id === 'quantity' && !config.documentPlanValid))}
               onClick={goNext}
             >
               Continue <Icon name="arrowRight" size={17}/>
@@ -899,7 +902,7 @@ export default function GuidedOrder({
               <button
                 className={`button primary-green ${itemAdded ? 'added' : ''}`}
                 type="button"
-                disabled={itemAdded}
+                disabled={itemAdded || documentNotReady}
                 onClick={addCurrentItemToCart}
               >
                 {itemAdded ? 'Added to order' : 'Add to order'} <Icon name={itemAdded ? 'check' : 'bag'} size={17}/>
@@ -918,7 +921,7 @@ export default function GuidedOrder({
             <div key={`${line.label}-${index}`}><span>{line.label}</span><strong>{line.text ?? formatMoney(line.value)}</strong></div>
           ))}
         </div>
-        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? (isPricedServiceRequest ? 'This is the approved price for what you have chosen. Payment is not requested here — Quick Solution still confirms your booking before anything is charged.' : 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.') : 'The backend recalculates the price before saving the order, so the browser cannot invent its own total.'}</span></div>
+        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? (isPricedServiceRequest ? 'This is the approved price for what you have chosen. Payment is not requested here — Quick Solution still confirms your booking before anything is charged.' : 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.') : 'We'll confirm the final price before payment.'}</span></div>
         <a className="help-link" href={buildWhatsappUrl()} target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
       </aside>
     </div>
