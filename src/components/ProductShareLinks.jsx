@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 
-export default function ProductShareLinks({ links }) {
+export default function ProductShareLinks({ links, hasArtwork = true }) {
   const [section, setSection] = useState('')
   const [status, setStatus] = useState('')
   const url = links.productPageUrl + (section ? `#${section}` : '')
   const copy = async () => {
+    setStatus('Copying link…')
     try {
       await navigator.clipboard.writeText(url)
       setStatus('Link copied')
@@ -19,7 +20,7 @@ export default function ProductShareLinks({ links }) {
       <option value="delivery">Collection & delivery</option>
       <option value="payment">Payment</option>
       <option value="returns">Returns & order issues</option>
-      <option value="artwork">Artwork</option>
+      {hasArtwork && <option value="artwork">Artwork</option>}
     </select></label>
     <button type="button" className="button ghost" onClick={copy}>Copy link</button>
     <span role="status">{status}</span>

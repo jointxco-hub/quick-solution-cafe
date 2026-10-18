@@ -483,7 +483,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             <a href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer" className="product-hub-share-primary">
               <Icon name="send" size={16}/> Share on WhatsApp
             </a>
-            <ProductShareLinks key={product.id} links={shareLinks}/>
+            <ProductShareLinks key={product.id} links={shareLinks} hasArtwork={Boolean(artwork.help)}/>
           </div>
         </aside>
       </div>

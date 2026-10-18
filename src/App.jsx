@@ -746,7 +746,7 @@ export default function App() {
     )
   }
 
-  if (view === 'storefront' && page === 'product' && !selectedProduct && catalogLoading) {
+  if (view === 'storefront' && page === 'product' && catalogLoading) {
     return <main className="shell" role="status">Loading product…</main>
   }
 
