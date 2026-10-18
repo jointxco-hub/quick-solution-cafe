@@ -23,7 +23,7 @@ const DESTINATIONS = [
   { id: 'home', label: 'Home', icon: 'store' },
   { id: 'shop', label: 'Shop', icon: 'bag' },
   { id: 'quick-points', label: 'Quick Points', icon: 'pin' },
-  { id: 'order', label: 'Order', icon: 'checkCircle' }
+  { id: 'order', label: 'Basket', icon: 'bag' }
 ]
 
 export default function MobileBottomNav({ page, cartOpen, cartCount = 0, onGoHome, onGoShop, onGoQuickPoints, onOpenOrder }) {
