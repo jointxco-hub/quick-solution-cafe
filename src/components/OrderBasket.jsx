@@ -411,11 +411,11 @@ export default function OrderBasket({
 
   return (
     <div className="qs-cart-backdrop" role="presentation" onClick={onClose}>
-      <aside className={`qs-cart-sheet ${phase === 'basket' && items.length === 0 ? 'is-empty' : ''}`} role="dialog" aria-modal="true" aria-label="Your order" onClick={(event) => event.stopPropagation()}>
+      <aside className={`qs-cart-sheet ${phase === 'basket' && items.length === 0 ? 'is-empty' : ''}`} role="dialog" aria-modal="true" aria-label="Your basket and checkout" onClick={(event) => event.stopPropagation()}>
         <div className="qs-cart-head">
           <div>
-            <span className="eyebrow">{phase === 'basket' ? 'Your order' : 'Checkout'}</span>
-            <h2>{phase === 'basket' ? 'Build one order.' : 'Finish once.'}</h2>
+            <span className="eyebrow">{phase === 'basket' ? 'Your basket' : 'Checkout'}</span>
+            <h2>{phase === 'basket' ? 'Review your items' : 'Complete your order'}</h2>
           </div>
           <button type="button" className="qs-cart-close" onClick={onClose} aria-label="Close basket">×</button>
         </div>
@@ -464,14 +464,14 @@ export default function OrderBasket({
 
             {items.length > 0 && (
               <div className="qs-cart-total">
-                <span>Current basket</span>
+                <span>Estimated basket total</span>
                 <strong>{formatMoney(total)}</strong>
               </div>
             )}
 
             <div className="qs-cart-actions">
               <button className="button ghost" type="button" onClick={onContinueShopping}>{items.length === 0 ? 'Browse products' : 'Continue shopping'}</button>
-              <button className="button dark" type="button" disabled={items.length === 0} onClick={() => setPhase('checkout')}>Checkout</button>
+              <button className="button dark" type="button" disabled={items.length === 0} onClick={() => setPhase('checkout')}>Continue to checkout <Icon name="arrowRight" size={16}/></button>
             </div>
           </>
         ) : (
