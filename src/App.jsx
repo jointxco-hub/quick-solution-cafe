@@ -1045,14 +1045,14 @@ export default function App() {
         {resolveStickyConfigureVisibility(page, configureInView) && (
           <button type="button" className="qs21-sticky-configure" onClick={scrollToConfigure}>
             <span className="qs21-sticky-configure-copy">
-              <small>Configure</small>
+              <small>Ready to order?</small>
               <strong>
                 {productDetailPriceCue == null
                   ? resolveProductDisplayName(selectedProduct, languageMode)
                   : productDetailPriceCue.quoteRequired ? 'Quote required' : `From ${formatMoney(productDetailPriceCue.total)}`}
               </strong>
             </span>
-            <span className="qs21-sticky-configure-action"><Icon name="arrowRight" size={15}/> Configure order</span>
+            <span className="qs21-sticky-configure-action"><Icon name="arrowRight" size={15}/> Choose options</span>
           </button>
         )}
         <section className="shell qs21-product-detail-nav">
