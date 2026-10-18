@@ -37,7 +37,7 @@ export default function ProductConfigurator({
   }
 
   const documentFileMissing = product.id === 'a4-print' && !(Array.isArray(file) ? file.length > 0 : Boolean(file))
-  const documentNotReady = product.id === 'a4-print' && (documentFileMissing || !config.documentPlanValid)
+  const documentNotReady = documentFileMissing
 
   const addCurrentItemToCart = () => {
     if (itemAdded || documentNotReady) return
