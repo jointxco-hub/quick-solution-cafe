@@ -2,13 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
 import ProductShareLinks from './ProductShareLinks.jsx'
-import ProductSupportInfo from './ProductSupportInfo.jsx'
 import { calculateProductPrice, formatMoney } from '../lib/pricing.js'
 import {
   resolveProductMedia,
   resolveProductPageContent,
   resolveConfigPreviewFields,
-  resolveArtworkGuidance,
   deriveRelatedProducts,
   resolveProductPriceCue,
   resolveHubAvailability,
@@ -101,7 +99,6 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
   const media = useMemo(() => resolveProductMedia(product), [product])
   const content = useMemo(() => resolveProductPageContent(product), [product])
   const previewFields = useMemo(() => resolveConfigPreviewFields(product), [product])
-  const artwork = useMemo(() => resolveArtworkGuidance(product), [product])
   const related = useMemo(() => deriveRelatedProducts(product, catalog, 3), [product, catalog])
   const shareLinks = useMemo(() => buildShareLinks(product, {
     origin: typeof window !== 'undefined' ? window.location.origin : ''
@@ -392,20 +389,6 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
       )}
 
       <div className="product-hub-grid">
-        <div className="product-hub-main">
-          {/* 4 — Collection & delivery / Payment / Returns / Artwork.
-              QS-21.5 section 14: consolidates what used to be two
-              separate standalone blocks here (a plain "Artwork" block
-              and a "Collection or delivery" block duplicating the exact
-              same fulfilmentOptions list every OTHER product's
-              configurator step already shows) into one compact
-              accordion, plus genuinely new Payment/Returns content this
-              pass adds. Still reuses the same real fulfilmentOptions
-              facts (via DELIVERY_INFO, src/lib/businessInfo.js) - never
-              a second, conflicting data source. */}
-          <ProductSupportInfo artworkHelp={artwork.help}/>
-        </div>
-
         <aside className="product-hub-side">
           {/* 6 — Related products. QS-21.1: the row itself no longer
               navigates on click (was abrupt - straight to another
@@ -469,7 +452,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
 
           {/* Share a product or a specific section. */}
           <div className="product-hub-share-compact">
-            <ProductShareLinks key={product.id} links={shareLinks} productName={resolveProductDisplayName(product, mode)} hasArtwork={Boolean(artwork.help)}/>
+            <ProductShareLinks key={product.id} links={shareLinks} productName={resolveProductDisplayName(product, mode)} hasArtwork={Boolean(product?.artworkHelp || product?.productPage?.artworkHelp)}/>
           </div>
         </aside>
       </div>
