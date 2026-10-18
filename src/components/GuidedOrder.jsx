@@ -921,7 +921,7 @@ export default function GuidedOrder({
             <div key={`${line.label}-${index}`}><span>{line.label}</span><strong>{line.text ?? formatMoney(line.value)}</strong></div>
           ))}
         </div>
-        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? (isPricedServiceRequest ? 'This is the approved price for what you have chosen. Payment is not requested here — Quick Solution still confirms your booking before anything is charged.' : 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.') : 'We'll confirm the final price before payment.'}</span></div>
+        <div className="summary-confidence"><span className="brand-dot green"/><span>{isServiceRequest ? (isPricedServiceRequest ? 'This is the approved price for what you have chosen. Payment is not requested here — Quick Solution still confirms your booking before anything is charged.' : 'Your request is saved as a service brief. Pricing is confirmed only after Quick Solution reviews the scope.') : 'Final price confirmed before payment.'}</span></div>
         <a className="help-link" href={buildWhatsappUrl()} target="_blank" rel="noreferrer"><Icon name="message" size={17}/> Need help? WhatsApp us</a>
       </aside>
     </div>
