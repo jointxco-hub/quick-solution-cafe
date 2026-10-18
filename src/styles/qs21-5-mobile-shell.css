@@ -859,3 +859,52 @@ html.qs217-header-hidden .qs217-config-context {
 .product-hub-right-support .qs21-support-info { grid-template-columns: 1fr; }
 .product-hub-right-support .qs21-support-row { min-width: 0; }
 .product-hub-right-support .product-hub-share-compact { width: 100%; min-width: 0; }
+
+/* Phase 1 visual hierarchy: keep product actions foremost and make support secondary. */
+.product-hub-pdp { column-gap: clamp(28px, 4.5vw, 64px); }
+.product-hub-pdp-media { min-width: 0; }
+.product-hub-pdp-info { min-width: 0; }
+.product-hub-right-support { margin-top: 22px; gap: 18px; }
+.product-hub-right-support .qs21-support-info { gap: 7px; }
+.product-hub-right-support .qs21-support-row {
+  background: #fafaf8;
+  border-color: #e9e9e3;
+  border-radius: 12px;
+  box-shadow: none;
+  transition: background-color .16s ease, border-color .16s ease;
+}
+.product-hub-right-support .qs21-support-row.open {
+  background: #fff;
+  border-color: #d8dfd9;
+}
+.product-hub-right-support .qs21-support-toggle {
+  padding: 12px 14px;
+  color: #61645f;
+  font-size: 13px;
+  font-weight: 650;
+  min-height: 44px;
+}
+.product-hub-right-support .qs21-support-row.open .qs21-support-toggle {
+  color: #1b2420;
+  font-weight: 750;
+}
+.product-hub-right-support .qs21-support-toggle svg { opacity: .58; }
+.product-hub-right-support .qs21-support-row.open .qs21-support-toggle svg { opacity: 1; }
+.product-hub-right-support .qs21-support-panel { padding: 12px 14px 15px; }
+.product-hub-right-support .product-hub-share-compact {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #e8e8e2;
+}
+@media (max-width: 960px) {
+  .product-hub-pdp { gap: 20px; }
+  .product-hub-pdp-media { order: 0; }
+  .product-hub-pdp-info { order: 1; }
+  .product-hub-right-support { margin-top: 18px; gap: 14px; }
+}
+@media (max-width: 620px) {
+  .product-hub-pdp { gap: 16px; }
+  .product-hub-right-support { margin-top: 16px; }
+  .product-hub-right-support .qs21-support-toggle { padding: 13px 14px; font-size: 13.5px; }
+  .product-hub-right-support .product-hub-share-compact { margin-top: 0; }
+}
