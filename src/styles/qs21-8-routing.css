@@ -126,3 +126,9 @@
     flex-direction: column;
   }
 }
+
+.product-share-links { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.product-share-links label { display: grid; gap: .35rem; }
+.product-share-links select, .product-share-links input { max-width: 100%; padding: .65rem; font: inherit; }
+.product-share-links [role="status"] { font-size: .9rem; }
+#configure, #delivery, #payment, #returns, #artwork { scroll-margin-top: 100px; }

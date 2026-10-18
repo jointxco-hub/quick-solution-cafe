@@ -1,4 +1,4 @@
-﻿import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './components/Icon.jsx'
 import Header from './components/Header.jsx'
 import ProductCard from './components/ProductCard.jsx'
@@ -26,6 +26,8 @@ import { formatMoney } from './lib/pricing.js'
 import { resolveProductPaymentEligibility } from './lib/paymentEligibility.js'
 import {
   DEFAULT_PAGE,
+  buildStorefrontPath,
+  PRODUCT_LINK_SECTIONS,
   resolveAppRoute,
   resolveHeroOutcomeNavigation,
   resolveQuickConfigureEligibility,
@@ -68,8 +70,10 @@ export default function App() {
   const [catalog, setCatalog] = useState(() => loadCatalog(defaultProducts))
   const [fulfilmentPoints, setFulfilmentPoints] = useState([])
   const [qsPaymentConfig, setQsPaymentConfig] = useState(null)
+  const [catalogLoading, setCatalogLoading] = useState(() => isSupabaseConfigured())
+  const [locationVersion, setLocationVersion] = useState(0)
   const [catalogSource, setCatalogSource] = useState('local')
-  const [selectedId, setSelectedId] = useState('a4-print')
+  const [selectedId, setSelectedId] = useState(initialRoute.productId || 'a4-print')
   const [preset, setPreset] = useState({})
   const [guidedStartStep, setGuidedStartStep] = useState(null)
   const [guidedInitialFile, setGuidedInitialFile] = useState(null)
@@ -171,10 +175,10 @@ export default function App() {
   }, [categoryMenuOpen])
 
   useEffect(() => {
-    const onHash = () => setView(resolveAppRoute({
-      pathname: window.location.pathname,
-      hash: window.location.hash
-    }).view)
+    const onHash = () => {
+      setView(resolveAppRoute(window.location).view)
+      setLocationVersion((value) => value + 1)
+    }
     window.addEventListener('hashchange', onHash)
     return () => window.removeEventListener('hashchange', onHash)
   }, [])
@@ -191,18 +195,23 @@ export default function App() {
   // create zero history entries (brief sections 5/6) without any
   // special-casing here.
   useEffect(() => {
+    if (view !== 'storefront' || new URLSearchParams(window.location.search).has('qs_payment')) return
     const nextState = buildHistoryState(page, { selectedProductId: selectedId, shopFilter, shopMode })
+    const path = buildStorefrontPath(nextState)
+    const sameDestination = !lastHistoryStateRef.current || resolveHistoryAction(lastHistoryStateRef.current, nextState) !== 'push'
+    const hash = sameDestination ? (window.location.pathname.startsWith('/configure/') ? '#configure' : window.location.hash) : ''
+    const url = path + window.location.search + hash
     if (!historyMountedRef.current) {
       historyMountedRef.current = true
-      window.history.replaceState(nextState, '')
+      window.history.replaceState(nextState, '', url)
       lastHistoryStateRef.current = nextState
       return
     }
     const action = resolveHistoryAction(lastHistoryStateRef.current, nextState)
-    if (action === 'push') window.history.pushState(nextState, '')
-    else if (action === 'replace') window.history.replaceState(nextState, '')
+    if (action === 'push') window.history.pushState(nextState, '', url)
+    else if (action === 'replace') window.history.replaceState(nextState, '', url)
     lastHistoryStateRef.current = nextState
-  }, [page, selectedId, shopFilter, shopMode])
+  }, [view, page, selectedId, shopFilter, shopMode])
 
   // QS-21 final pass: the one popstate listener (brief section 4).
   // Restores page/selectedProductId/shopFilter/shopMode from the event,
@@ -220,11 +229,13 @@ export default function App() {
   // still Product Detail for that exact product.
   useEffect(() => {
     const onPopState = (event) => {
-      const resolved = resolvePopStateNavigation(event.state)
-      const productStillExists = resolved.page !== 'product' || catalog.some((product) => product.id === resolved.selectedProductId)
-      const finalState = productStillExists
-        ? resolved
-        : buildHistoryState('shop', { shopFilter: resolved.shopFilter, shopMode: resolved.shopMode })
+      const route = resolveAppRoute(window.location)
+      setView(route.view)
+      setLocationVersion((value) => value + 1)
+      if (route.view !== 'storefront') return
+      const saved = resolvePopStateNavigation(event.state)
+      const resolved = buildHistoryState(route.page, { ...saved, selectedProductId: route.productId })
+      const finalState = resolved
 
       window.history.replaceState(finalState, '')
       lastHistoryStateRef.current = finalState
@@ -236,6 +247,7 @@ export default function App() {
       setQuickConfigureProduct(null)
       setProductViewContext((current) => resolveOfferContextAfterHistoryRestore(current, finalState))
 
+      if (window.location.hash) return
       window.setTimeout(() => {
         if (finalState.page === 'shop') shopRef.current?.scrollIntoView({ block: 'start' })
         else window.scrollTo({ top: 0 })
@@ -243,7 +255,7 @@ export default function App() {
     }
     window.addEventListener('popstate', onPopState)
     return () => window.removeEventListener('popstate', onPopState)
-  }, [catalog])
+  }, [])
 
   // QS-21.1 section 4: drives the desktop sticky/floating Configure
   // affordance - true exactly while the real configurator section is
@@ -288,14 +300,28 @@ export default function App() {
         console.warn('Quick Solution catalog fallback:', error)
         if (!cancelled) setCatalogSource('local')
       })
+      .finally(() => { if (!cancelled) setCatalogLoading(false) })
 
     return () => { cancelled = true }
   }, [])
 
   const customerProducts = useMemo(() => catalog.filter((product) => product.active !== false && product.channels?.storefront !== false), [catalog])
-  const selectedProduct = catalog.find((product) => product.id === selectedId) || customerProducts[0] || catalog[0]
+  const selectedProduct = customerProducts.find((product) => product.id === selectedId) || (page !== 'product' ? customerProducts[0] : null)
   const selectedJourney = guidedJourneys.find((journey) => journey.id === journeyId && journey.productId === selectedProduct?.id)
     || guidedJourneys.find((journey) => journey.productId === selectedProduct?.id)
+
+  useEffect(() => {
+    if (view !== 'storefront') return
+    const section = window.location.hash.slice(1)
+    if (!PRODUCT_LINK_SECTIONS.includes(section) && section !== 'quick-points' && section !== 'shop' && section !== 'top') return
+    let innerFrame
+    const frame = requestAnimationFrame(() => {
+      innerFrame = requestAnimationFrame(() => {
+        document.getElementById(section)?.scrollIntoView({ block: 'start' })
+      })
+    })
+    return () => { cancelAnimationFrame(frame); cancelAnimationFrame(innerFrame) }
+  }, [view, page, selectedId, catalogLoading, locationVersion])
 
   const searchMatches = useMemo(() => {
     const term = query.trim().toLowerCase()
@@ -720,7 +746,11 @@ export default function App() {
     )
   }
 
-  if (view === 'not-found') {
+  if (view === 'storefront' && page === 'product' && !selectedProduct && catalogLoading) {
+    return <main className="shell" role="status">Loading product…</main>
+  }
+
+  if (view === 'not-found' || (view === 'storefront' && page === 'product' && !selectedProduct)) {
     return <NotFound/>
   }
 

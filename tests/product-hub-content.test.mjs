@@ -220,7 +220,7 @@ test('deriveRelatedProducts: no product or empty catalog yields an empty array, 
 test('buildShareLinks: builds deterministic product/configure URLs from the given origin and product id', () => {
   const links = buildShareLinks(vinylProduct, { origin: 'https://example.com/' })
   assert.equal(links.productPageUrl, 'https://example.com/products/vinyl-stickers')
-  assert.equal(links.configureUrl, 'https://example.com/configure/vinyl-stickers')
+  assert.equal(links.configureUrl, 'https://example.com/products/vinyl-stickers#configure')
 })
 
 test('buildShareLinks: WhatsApp link uses the real business number from src/lib/businessInfo.js (QS-21.5) - the same one every other WhatsApp link in this app now imports, not an invented one', () => {

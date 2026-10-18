@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Icon from './Icon.jsx'
 import PaymentTrust from './PaymentTrust.jsx'
 import { DELIVERY_INFO, RETURNS_POLICY_TEXT, WHATSAPP_DISPLAY, buildWhatsappUrl } from '../lib/businessInfo.js'
@@ -20,13 +20,27 @@ const SECTIONS = ['delivery', 'payment', 'returns', 'artwork']
 export default function ProductSupportInfo({ artworkHelp }) {
   const [openId, setOpenId] = useState('delivery')
 
+  useEffect(() => {
+    const restore = () => {
+      const section = window.location.hash.slice(1)
+      if (SECTIONS.includes(section)) setOpenId(section)
+    }
+    restore()
+    window.addEventListener('hashchange', restore)
+    window.addEventListener('popstate', restore)
+    return () => {
+      window.removeEventListener('hashchange', restore)
+      window.removeEventListener('popstate', restore)
+    }
+  }, [])
+
   const toggle = (id) => setOpenId((current) => (current === id ? null : id))
 
   const returnsWhatsapp = buildWhatsappUrl(encodeURIComponent('Hi Quick Solution, I have a question about returns or an order issue.'))
 
   return (
     <div className="qs21-support-info">
-      <div className={`qs21-support-row${openId === 'delivery' ? ' open' : ''}`}>
+      <div id="delivery" className={`qs21-support-row${openId === 'delivery' ? ' open' : ''}`}>
         <button type="button" className="qs21-support-toggle" aria-expanded={openId === 'delivery'} onClick={() => toggle('delivery')}>
           <span><Icon name="truck" size={16}/> Collection &amp; delivery</span>
           <Icon name={openId === 'delivery' ? 'arrowUpRight' : 'arrowRight'} size={14}/>
@@ -43,7 +57,7 @@ export default function ProductSupportInfo({ artworkHelp }) {
         </div>
       </div>
 
-      <div className={`qs21-support-row${openId === 'payment' ? ' open' : ''}`}>
+      <div id="payment" className={`qs21-support-row${openId === 'payment' ? ' open' : ''}`}>
         <button type="button" className="qs21-support-toggle" aria-expanded={openId === 'payment'} onClick={() => toggle('payment')}>
           <span><Icon name="checkCircle" size={16}/> Payment</span>
           <Icon name={openId === 'payment' ? 'arrowUpRight' : 'arrowRight'} size={14}/>
@@ -53,7 +67,7 @@ export default function ProductSupportInfo({ artworkHelp }) {
         </div>
       </div>
 
-      <div className={`qs21-support-row${openId === 'returns' ? ' open' : ''}`}>
+      <div id="returns" className={`qs21-support-row${openId === 'returns' ? ' open' : ''}`}>
         <button type="button" className="qs21-support-toggle" aria-expanded={openId === 'returns'} onClick={() => toggle('returns')}>
           <span><Icon name="alertCircle" size={16}/> Returns &amp; order issues</span>
           <Icon name={openId === 'returns' ? 'arrowUpRight' : 'arrowRight'} size={14}/>
@@ -67,7 +81,7 @@ export default function ProductSupportInfo({ artworkHelp }) {
       </div>
 
       {artworkHelp && (
-        <div className={`qs21-support-row${openId === 'artwork' ? ' open' : ''}`}>
+        <div id="artwork" className={`qs21-support-row${openId === 'artwork' ? ' open' : ''}`}>
           <button type="button" className="qs21-support-toggle" aria-expanded={openId === 'artwork'} onClick={() => toggle('artwork')}>
             <span><Icon name="upload" size={16}/> Artwork / production notes</span>
             <Icon name={openId === 'artwork' ? 'arrowUpRight' : 'arrowRight'} size={14}/>

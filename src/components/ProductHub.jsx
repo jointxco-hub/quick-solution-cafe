@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
+import ProductShareLinks from './ProductShareLinks.jsx'
 import ProductSupportInfo from './ProductSupportInfo.jsx'
 import { calculateProductPrice, formatMoney } from '../lib/pricing.js'
 import {
@@ -477,19 +478,12 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             </div>
           )}
 
-          {/* 7 — Share, collapsed to a slim utility row (QS-21.1 section
-              8 audit): QS-21 added real page/selectedProductId browser-
-              history STATE, but never a visible URL (path or query never
-              change - only history.state does), so a copied address bar
-              link still cannot restore a specific product. Deep links
-              are therefore still genuinely unavailable, not just
-              unbuilt - shareLinks.productPageUrl/configureUrl remain
-              unexposed. */}
+          {/* Share a product or a specific section. */}
           <div className="product-hub-share-compact">
             <a href={shareLinks.whatsappUrl} target="_blank" rel="noreferrer" className="product-hub-share-primary">
               <Icon name="send" size={16}/> Share on WhatsApp
             </a>
-            <span className="product-hub-share-status">Direct product links coming soon</span>
+            <ProductShareLinks key={product.id} links={shareLinks}/>
           </div>
         </aside>
       </div>
