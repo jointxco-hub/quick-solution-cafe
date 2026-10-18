@@ -1089,3 +1089,58 @@ html.qs217-header-hidden .qs217-config-context {
   border-color: #b4dac6;
 }
 .qs21-sticky-configure:focus-visible { outline: 2px solid #2f9070; outline-offset: 3px; }
+
+/* Guided variants: understated selectable product tiles and consistent fields. */
+.qs14-variant-builder .qs217-visual-axis-grid { gap: 12px; }
+.qs14-variant-builder .qs217-visual-option {
+  position: relative; overflow: hidden; border: 1px solid #e3e6e0;
+  border-radius: 16px; background: #fcfcfa; text-align: left;
+  box-shadow: none; transition: background .16s, border-color .16s, box-shadow .16s;
+}
+.qs14-variant-builder .qs217-visual-option:hover { background: #f6faf7; border-color: #bfd9ca; }
+.qs14-variant-builder .qs217-visual-option.selected {
+  background: #f4faf6; border-color: #54a88c;
+  box-shadow: 0 0 0 1px #54a88c;
+}
+.qs14-variant-builder .qs217-visual-option:focus-visible {
+  outline: 3px solid #5baf96; outline-offset: 3px;
+}
+.qs14-variant-builder .qs217-visual-option-media {
+  display: flex; align-items: center; justify-content: center;
+  background: #f7f7f4; overflow: hidden;
+}
+.qs14-variant-builder .qs217-visual-option-media img {
+  width: 100%; height: 100%; object-fit: contain;
+}
+.qs14-variant-builder .qs217-visual-option-copy {
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: 4px; padding: 12px 13px 14px;
+}
+.qs14-variant-builder .qs217-visual-option-copy strong { line-height: 1.3; }
+.qs14-variant-builder .qs217-visual-option-copy small { color: #737a73; line-height: 1.45; }
+.qs-flag-selected {
+  color: #247b60; background: #e3f4e9; font-size: 11px;
+  font-weight: 700; border-radius: 999px; padding: 3px 8px; margin-top: 2px;
+}
+.qs14-variant-builder .qs-variant-select-field > span {
+  display: block; margin-bottom: 7px; color: #414c44; font-weight: 700;
+}
+.qs14-variant-builder .qs-variant-select-field select {
+  min-height: 50px; width: 100%; border: 1px solid #dfe5dd;
+  border-radius: 13px; background-color: #fafbf8;
+  color: #29392f; padding: 11px 15px; font: inherit;
+}
+.qs14-variant-builder .qs-variant-select-field select:focus-visible {
+  outline: 2px solid #61ad91; outline-offset: 2px;
+}
+.qs-delivery-wordmark {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 37px; height: 26px; border-radius: 7px;
+  font-size: 10px; font-weight: 850; letter-spacing: .01em;
+}
+.qs-delivery-wordmark-paxi { background: #eaf6fb; color: #2275a9; }
+.qs-delivery-wordmark-courier-guy { background: #eef4fc; color: #3979ba; }
+@media (max-width: 620px) {
+  .qs14-variant-builder .qs217-visual-axis-grid { gap: 9px; }
+  .qs14-variant-builder .qs217-visual-option-copy { padding: 10px; }
+}
