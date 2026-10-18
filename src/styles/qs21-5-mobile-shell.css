@@ -307,9 +307,10 @@
   .qs21-support-info {
     grid-template-columns: 1fr 1fr;
   }
-  .qs21-support-toggle { cursor: default; }
+  .qs21-support-toggle { cursor: pointer; }
   .qs21-support-row .qs21-support-toggle { border-bottom: 1px solid var(--line); }
-  .qs21-support-panel { display: block !important; }
+  .qs21-support-panel { display: none; }
+  .qs21-support-row.open .qs21-support-panel { display: block; }
 }
 
 /* ── 2 — Mobile header: no overlap/squeeze at 360-430px ──────────── */
@@ -851,3 +852,10 @@ html.qs217-header-hidden .qs217-config-context {
 @media (max-width: 760px) {
   .qs-cart-toast.qs-cart-added-notice { left: 12px; right: 12px; max-width: none; }
 }
+
+/* Product support and sharing live in the right-side information column,
+   leaving the media column free for an expanding multi-image gallery. */
+.product-hub-right-support { display: grid; gap: 12px; min-width: 0; margin-top: 16px; }
+.product-hub-right-support .qs21-support-info { grid-template-columns: 1fr; }
+.product-hub-right-support .qs21-support-row { min-width: 0; }
+.product-hub-right-support .product-hub-share-compact { width: 100%; min-width: 0; }
