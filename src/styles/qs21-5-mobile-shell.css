@@ -1245,3 +1245,23 @@ html.qs217-header-hidden .qs217-config-context {
   }
   .qs-basket-checkout .qs-place-order { width: 100%; min-height: 50px; }
 }
+
+/* Mobile checkout: keep the final action after the contact fields, never over them. */
+@media (max-width: 899px) {
+  .qs-basket-checkout .qs-place-order {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    margin-top: 12px;
+    margin-bottom: 8px;
+    z-index: auto;
+  }
+  .qs-basket-checkout .qs-checkout-total {
+    position: static !important;
+    inset: auto !important;
+    margin-top: 14px;
+  }
+  .qs-cart-sheet .qs-basket-checkout {
+    padding-bottom: calc(18px + env(safe-area-inset-bottom));
+  }
+}
