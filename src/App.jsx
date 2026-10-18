@@ -3,6 +3,7 @@ import Icon from './components/Icon.jsx'
 import Header from './components/Header.jsx'
 import ProductCard from './components/ProductCard.jsx'
 import ProductHub from './components/ProductHub.jsx'
+import ProductSupportInfo from './components/ProductSupportInfo.jsx'
 import ProductConfigurator from './components/ProductConfigurator.jsx'
 import GuidedOrder from './components/GuidedOrder.jsx'
 import PaymentReturn from './components/PaymentReturn.jsx'
@@ -21,7 +22,7 @@ import { clearCart, loadCart, saveCart } from './lib/cartStore.js'
 import { guidedJourneys, heroOutcomes, offers as defaultOffers, products as defaultProducts } from './data/products.js'
 import { loadCatalog } from './lib/catalogStore.js'
 import { isSupabaseConfigured, loadQuickSolutionCatalog } from './lib/supabaseApi.js'
-import { resolveProductDisplayName, resolveProductPriceCue, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
+import { resolveProductDisplayName, resolveProductPriceCue, resolveArtworkGuidance, SHOP_CATEGORIES, filterProductsByShopCategory } from './lib/productContent.js'
 import { formatMoney } from './lib/pricing.js'
 import { resolveProductPaymentEligibility } from './lib/paymentEligibility.js'
 import {
@@ -1111,7 +1112,7 @@ export default function App() {
             <div className="qs10-config-intro">
               <div>
                 <span className="eyebrow">Ready to order? · {resolveProductDisplayName(selectedProduct, languageMode)}</span>
-                <h2>Choose how you want it.</h2>
+                <h2>Your print options</h2>
               </div>
               <button type="button" className="qs16-view-product-link" onClick={scrollToProductHub}>
                 <Icon name="arrowUpRight" size={15}/> View product
@@ -1122,7 +1123,7 @@ export default function App() {
                 <div className="mode-choice">
                   <div className="mode-choice-copy">
                     <span>Order mode</span>
-                    <strong>{orderMode === 'guided' ? 'Guided is recommended' : 'Full options gives precise control'}</strong>
+                    <strong>{orderMode === 'guided' ? 'Step by step is recommended' : 'Detailed options give you more control'}</strong>
                   </div>
                   <div className="mode-toggle" aria-label="Ordering mode">
                     <button type="button" className={orderMode === 'guided' ? 'active' : ''} onClick={() => switchOrderMode('guided')}>
@@ -1162,6 +1163,11 @@ export default function App() {
               />
             )}
           </div>
+        </section>
+
+        <section className="shell section qs21-product-help-after-order" aria-label="Product information">
+          <h2>Product information</h2>
+          <ProductSupportInfo key={selectedProduct.id} artworkHelp={resolveArtworkGuidance(selectedProduct).help}/>
         </section>
 
         {relatedOffers.length > 0 && (
