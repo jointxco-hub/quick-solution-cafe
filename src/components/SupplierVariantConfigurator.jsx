@@ -118,11 +118,13 @@ export default function SupplierVariantConfigurator({ product, config, mode = 's
                     key={option.id}
                     type="button"
                     className={`qs217-visual-option ${axisValue(config, axis.id) === option.id ? 'selected' : ''}`}
+                    aria-pressed={axisValue(config, axis.id) === option.id}
                     onClick={() => chooseAxis(axis.id, option.id)}
                   >
                     <span className="qs217-visual-option-media"><img src={visual.image} alt=""/></span>
                     <span className="qs217-visual-option-copy">
                       <strong>{visual.label}</strong>
+                      {axisValue(config, axis.id) === option.id && <span className="qs-flag-selected">Selected</span>}
                       {visual.helper ? <small>{visual.helper}</small> : null}
                     </span>
                   </button>
@@ -133,9 +135,9 @@ export default function SupplierVariantConfigurator({ product, config, mode = 's
         }
 
         return (
-          <label className="field" key={axis.id}>
+          <label className="field qs-variant-select-field" key={axis.id}>
             <span>{resolveDisplayLabel(axis, mode)}</span>
-            <select value={axisValue(config, axis.id)} onChange={(event) => chooseAxis(axis.id, event.target.value)}>
+            <select aria-label={`Choose ${axis.label.toLowerCase()}`} value={axisValue(config, axis.id)} onChange={(event) => chooseAxis(axis.id, event.target.value)}>
               <option value="" disabled>Choose {axis.label.toLowerCase()}</option>
               {options.map((option) => <option key={option.id} value={option.id}>{resolveDisplayLabel(option, mode)}</option>)}
             </select>
