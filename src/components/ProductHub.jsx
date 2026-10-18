@@ -284,22 +284,25 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
               the ONLY trust mention on Product Detail (the separate full
               4-card trust strip App.jsx used to render lower down the
               page was removed as duplication, per this pass's brief). */}
-          <ul className="product-hub-trust-compact">
-            <li><Icon name="checkCircle" size={14}/> Secure checkout</li>
-            <li><Icon name="store" size={14}/> Collect locally</li>
-            <li><Icon name="truck" size={14}/> Courier or delivery</li>
-            <li><Icon name="document" size={14}/> We check your file</li>
-          </ul>
-
-          {/* QS-21.3: "Good to know" compacted from a bulleted, icon-per-
-              row list into inline fact pills - same facts, a fraction of
-              the vertical space. */}
-          {content.highlights.length > 0 && (
-            <ul className="product-hub-quickfacts">
-              {content.highlights.map((highlight) => (
-                <li key={highlight.label}><Icon name="checkCircle" size={13}/> {highlight.label}</li>
-              ))}
+          <div className="product-hub-facts-group product-hub-facts-service" aria-label="Service information">
+            <span className="product-hub-facts-label">Ordering &amp; delivery</span>
+            <ul className="product-hub-trust-compact">
+              <li><Icon name="checkCircle" size={14}/> Secure checkout</li>
+              <li><Icon name="store" size={14}/> Collect locally</li>
+              <li><Icon name="truck" size={14}/> Courier or delivery</li>
+              <li><Icon name="document" size={14}/> We check your file</li>
             </ul>
+          </div>
+
+          {content.highlights.length > 0 && (
+            <div className="product-hub-facts-group product-hub-facts-product" aria-label="Product details">
+              <span className="product-hub-facts-label">Product details</span>
+              <ul className="product-hub-quickfacts">
+                {content.highlights.map((highlight) => (
+                  <li key={highlight.label}><Icon name="checkCircle" size={13}/> {highlight.label}</li>
+                ))}
+              </ul>
+            </div>
           )}
 
           <div className="product-hub-right-support">
