@@ -480,18 +480,18 @@ export default function OrderBasket({
 
             <section className="qs-checkout-section">
               <div className="qs-checkout-section-head">
-                <span className="eyebrow">1 · Get it your way</span>
+                <span className="eyebrow">STEP 1 OF 2 · COLLECTION & DELIVERY</span>
                 <h3>Collection or delivery?</h3>
               </div>
               <div className="qs-checkout-choice-grid">
                 <button type="button" className={fulfilment === 'cafe' ? 'selected' : ''} disabled={!cafePoints.length} onClick={() => setFulfilment('cafe')}>
-                  <Icon name="store" size={18}/><span><strong>Quick Solution Café</strong><small>Collect from a branch</small></span>
+                  <Icon name="store" size={18}/><span><strong>Quick Solution Café</strong><small>Pick up at the Café</small></span>
                 </button>
                 <button type="button" className={fulfilment === 'quick-point' ? 'selected' : ''} disabled={!quickPoints.length} onClick={() => setFulfilment('quick-point')}>
                   <Icon name="pin" size={18}/><span><strong>Quick Point</strong><small>{quickPoints.length ? 'Collect nearby' : 'Coming soon'}</small></span>
                 </button>
                 <button type="button" className={fulfilment === 'delivery' ? 'selected' : ''} onClick={() => setFulfilment('delivery')}>
-                  <Icon name="truck" size={18}/><span><strong>Delivery</strong><small>Price confirmed before payment</small></span>
+                  <Icon name="truck" size={18}/><span><strong>Delivery</strong><small>Delivery fee confirmed before payment</small></span>
                 </button>
               </div>
 
@@ -508,25 +508,25 @@ export default function OrderBasket({
 
               {fulfilment === 'delivery' ? (
                 <label className="checkout-field">
-                  <span>Delivery address</span>
-                  <textarea value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} placeholder="Street, area and landmark"/>
+                  <span>Delivery address <small>required for delivery</small></span>
+                  <textarea value={deliveryAddress} onChange={(event) => setDeliveryAddress(event.target.value)} placeholder="Street address, suburb and nearby landmark"/>
                 </label>
               ) : null}
             </section>
 
             <section className="qs-checkout-section">
               <div className="qs-checkout-section-head">
-                <span className="eyebrow">2 · Your details</span>
+                <span className="eyebrow">STEP 2 OF 2 · CONTACT DETAILS</span>
                 <h3>Who is this order for?</h3>
-                <p>Enter this once for the whole basket.</p>
+                <p>One set of contact details for everything in your basket.</p>
               </div>
               <label className="checkout-field">
-                <span>Name</span>
-                <input autoComplete="name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Your name"/>
+                <span>Full name <small>required</small></span>
+                <input autoComplete="name" value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Name for collection or delivery"/>
               </label>
               <div className="checkout-two">
                 <label className="checkout-field">
-                  <span>WhatsApp / phone</span>
+                  <span>WhatsApp / phone <small>or provide an email</small></span>
                   <input autoComplete="tel" inputMode="tel" value={customerPhone} onChange={(event) => setCustomerPhone(event.target.value)} placeholder="e.g. 075 123 4567"/>
                 </label>
                 <label className="checkout-field">
