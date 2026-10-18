@@ -1002,3 +1002,75 @@ html.qs217-header-hidden .qs217-config-context {
   .product-hub-gallery-nav .product-hub-thumbs > button { flex-basis: 76px; width: 76px; }
   .product-hub-gallery-controls button { width: 32px; height: 32px; }
 }
+
+/* Quiet, integrated product sharing toolbar. */
+.product-hub-right-support .product-share-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  column-gap: 9px;
+  row-gap: 9px;
+}
+.product-hub-right-support .product-share-target {
+  display: flex;
+  flex: 1 1 185px;
+  min-width: 0;
+  max-width: 270px;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+.product-hub-right-support .product-share-caption {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .02em;
+  color: #818781;
+}
+.product-hub-right-support .product-share-select-wrap { position: relative; display: block; }
+.product-hub-right-support .product-share-select-wrap select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 36px 9px 13px;
+  border: 1px solid #e2e5df;
+  border-radius: 12px;
+  background: #f8f9f6;
+  color: #3e4842;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.product-hub-right-support .product-share-select-wrap > svg {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #7c8980;
+}
+.product-hub-right-support .product-share-links .product-share-copy,
+.product-hub-right-support .product-share-links .product-hub-share-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 12px;
+  padding: 9px 13px;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.product-hub-right-support .product-share-status:empty { display: none; }
+.product-hub-right-support .product-share-status:not(:empty) {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: #287b69;
+}
+.product-hub-right-support .product-share-select-wrap select:focus-visible {
+  outline: 2px solid #148d75;
+  outline-offset: 2px;
+}
+@media (max-width: 620px) {
+  .product-hub-right-support .product-share-target { flex-basis: 100%; max-width: none; }
+}
