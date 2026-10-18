@@ -164,7 +164,9 @@ export default function GuidedOrder({
   fulfilmentPoints = [],
   initialStepId = null,
   initialFile = null,
-  onAddToCart
+  onAddToCart,
+  onViewBasket,
+  onContinueShopping
 }) {
   const [config, setConfig] = useState(() => hydrateVariantAxisConfig(product, getDefaultConfig(product, preset)))
   const [file, setFile] = useState(initialFile)
@@ -900,14 +902,18 @@ export default function GuidedOrder({
             </button>
           ) : (
             <div className="qs-cart-review-actions">
-              <button
-                className={`button primary-green ${itemAdded ? 'added' : ''}`}
-                type="button"
-                disabled={itemAdded || documentNotReady}
-                onClick={addCurrentItemToCart}
-              >
-                {itemAdded ? 'Added to order' : 'Add to order'} <Icon name={itemAdded ? 'check' : 'bag'} size={17}/>
-              </button>
+              {itemAdded ? (
+                <>
+                  <button className="button ghost" type="button" onClick={onContinueShopping}>Continue shopping</button>
+                  <button className="button primary-green" type="button" onClick={onViewBasket}>
+                    View basket <Icon name="arrowRight" size={17}/>
+                  </button>
+                </>
+              ) : (
+                <button className="button primary-green" type="button" disabled={documentNotReady} onClick={addCurrentItemToCart}>
+                  Add to basket <Icon name="bag" size={17}/>
+                </button>
+              )}
             </div>
           )}
         </div>
