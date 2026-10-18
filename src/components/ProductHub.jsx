@@ -195,7 +195,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
           before the customer can actually act. */}
       <div className="product-hub-pdp">
         {/* 1 — Media / gallery */}
-        <div ref={pdpMediaRef} className="product-hub-pdp-media">
+        <div ref={pdpMediaRef} className={`product-hub-pdp-media${product.id === 'flags' ? ' product-hub-gallery-tall' : ''}`}>
           <div
             className={`product-hub-media-frame${activeImage ? ' has-lightbox' : ''}`}
             role={activeImage ? 'button' : undefined}
@@ -223,7 +223,8 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
             )}
           </div>
           {galleryImages.length > 1 && (
-            <div className="product-hub-thumbs" role="tablist" aria-label={`${product.name} photos`}>
+            <div className="product-hub-gallery-nav">
+              <div className="product-hub-thumbs" role="tablist" aria-label={`${product.name} photos`}>
               {galleryImages.map((src, index) => (
                 <button
                   key={src}
@@ -232,10 +233,17 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
                   aria-selected={index === activeGalleryIndex}
                   className={index === activeGalleryIndex ? 'active' : ''}
                   onClick={() => selectGalleryImage(index)}
+                  title={`View photo ${index + 1} of ${galleryImages.length}`}
                 >
                   <img src={src} alt="" loading="lazy"/>
                 </button>
               ))}
+              </div>
+              <div className="product-hub-gallery-controls" aria-label="Browse product photos">
+                <span>{activeGalleryIndex + 1} / {galleryImages.length}</span>
+                <button type="button" aria-label="Previous product photo" onClick={showPrevImage}><Icon name="arrowLeft" size={16}/></button>
+                <button type="button" aria-label="Next product photo" onClick={showNextImage}><Icon name="arrowRight" size={16}/></button>
+              </div>
             </div>
           )}
         </div>
