@@ -7,13 +7,14 @@ export default function OurWorkPage() {
   const [projects, setProjects] = useState([])
   const [status, setStatus] = useState('loading')
   const [category, setCategory] = useState('')
+  const [retryCount, setRetryCount] = useState(0)
   useEffect(() => {
     let active = true
     loadPublishedPortfolio().then(items => {
       if (active) { setProjects(items); setStatus('ready') }
     }).catch(() => { if (active) setStatus('error') })
     return () => { active = false }
-  }, [])
+  }, [retryCount])
   const categories = useMemo(() => [...new Set(projects.flatMap(p => p.categorySlugs || []))].sort(), [projects])
   const visible = visiblePortfolioProjects(projects, { categorySlug: category || null })
   const project = route?.page === 'project' ? visiblePortfolioProjects(projects).find(p => p.slug === route.slug) : null
@@ -25,7 +26,7 @@ export default function OurWorkPage() {
       <p>{route?.page === 'project' && project ? project.summary : 'A closer look at the printing, branding and creative work we produce.'}</p>
     </header>
     {status === 'loading' && <p role="status">Loading our work…</p>}
-    {status === 'error' && <p role="alert">Our work is temporarily unavailable. Please try again later.</p>}
+    {status === 'error' && <div role="alert"><p>Our work is temporarily unavailable. Please try again later.</p><button className="button ghost" type="button" onClick={() => { setStatus('loading'); setRetryCount(count => count + 1) }}>Try again</button></div>}
     {status === 'ready' && route?.page === 'project' && !project && <p>This project is not available.</p>}
     {status === 'ready' && project && <>
       <p>{project.description}</p>
