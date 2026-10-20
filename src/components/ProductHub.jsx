@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
-import ProductShareLinks from './ProductShareLinks.jsx'\nimport ProductOurWork from './ProductOurWork.jsx'
+import ProductShareLinks from './ProductShareLinks.jsx'
+import ProductOurWork from './ProductOurWork.jsx'
 import ProductSupportInfo from './ProductSupportInfo.jsx'
 import { calculateProductPrice, formatMoney } from '../lib/pricing.js'
 import {
