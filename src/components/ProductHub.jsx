@@ -528,6 +528,7 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
           </div>
         </div>
       )}
-      <ProductOurWork productKey={product.id}/>\n    </section>
+      <ProductOurWork productKey={product.id}/>
+    </section>
   )
 }
