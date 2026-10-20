@@ -660,6 +660,8 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
               ? 'Review customer jobs, catch missing information and hand clean orders into OPPS without mixing them into X LAB.'
               : activeSection === 'quick-points'
                 ? 'Control the café and trusted collection points customers can use. Active locations flow straight into storefront ordering.'
+              : activeSection === 'our-work'
+                ? 'Create project stories, link products and publish approved photos to the customer gallery.'
                 : 'Update customer-facing product details and pricing. Existing orders keep the pricing snapshot they were created with.'}</p>
           </div>
           {activeSection === 'products' ? (
