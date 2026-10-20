@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import ProductScene from './ProductScene.jsx'
-import ProductShareLinks from './ProductShareLinks.jsx'
+import ProductShareLinks from './ProductShareLinks.jsx'\nimport ProductOurWork from './ProductOurWork.jsx'
 import ProductSupportInfo from './ProductSupportInfo.jsx'
 import { calculateProductPrice, formatMoney } from '../lib/pricing.js'
 import {
@@ -527,6 +527,6 @@ export default function ProductHub({ product, catalog = [], mode = 'simple', onC
           </div>
         </div>
       )}
-    </section>
+      <ProductOurWork productKey={product.id}/>\n    </section>
   )
 }
