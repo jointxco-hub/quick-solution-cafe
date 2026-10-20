@@ -3,7 +3,7 @@ import StaffMenu from '../components/StaffMenu.jsx'
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import AdminOppsHandoffPanel from './AdminOppsHandoffPanel.jsx'
-import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'
+import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'\nimport AdminPortfolioManager from './AdminPortfolioManager.jsx'
 import { cloneCatalog, exportCatalog } from '../lib/catalogStore.js'
 import {
   consumeOAuthRedirectResult,
@@ -643,7 +643,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
   return (
     <div className="admin-app">
       <header className="admin-header">
-        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · {activeSection === 'products' ? 'Products' : activeSection === 'quick-points' ? 'Quick Points' : 'Orders'}</small></span></a>
+        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · {activeSection === 'products' ? 'Products' : activeSection === 'quick-points' ? 'Quick Points' : activeSection === 'our-work' ? 'Our Work' : 'Orders'}</small></span></a>
         <div className="admin-header-actions">
           {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
           <StaffMenu app="admin" active={activeSection} onChange={setActiveSection} onSignOut={logout}/>
@@ -654,7 +654,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
         <section className={`admin-intro compact-admin-intro ${activeSection === 'orders' ? 'orders-intro' : ''}`}>
           <div>
             <span className="eyebrow">Quick Solution Admin · Location 001</span>
-            <h1>{activeSection === 'orders' ? 'Orders first.' : activeSection === 'quick-points' ? 'Local fulfilment, one source.' : 'Product & pricing control.'}</h1>
+            <h1>{activeSection === 'orders' ? 'Orders first.' : activeSection === 'quick-points' ? 'Local fulfilment, one source.' : activeSection === 'our-work' ? 'Showcase completed work.' : 'Product & pricing control.'}</h1>
             <p>{activeSection === 'orders'
               ? 'Review customer jobs, catch missing information and hand clean orders into OPPS without mixing them into X LAB.'
               : activeSection === 'quick-points'
@@ -672,7 +672,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
 
         {activeSection === 'orders' ? <AdminOppsHandoffPanel /> : null}
 
-        {activeSection === 'quick-points' ? <AdminQuickPointsPanel onPointsChange={onFulfilmentPointsChange} /> : null}
+        {activeSection === 'quick-points' ? <AdminQuickPointsPanel onPointsChange={onFulfilmentPointsChange} /> : null}\n        {activeSection === 'our-work' ? <AdminPortfolioManager products={draft}/> : null}
 
         {activeSection === 'products' ? (
           <>
