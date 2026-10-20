@@ -4,7 +4,8 @@ import '../styles/staff-app.css'
 const sections = [
   { id: 'counter', label: 'Counter', href: '/counter' },
   { id: 'orders', label: 'Orders', href: '/admin' },
-  { id: 'products', label: 'Products', href: '/admin?section=products' },\n  { id: 'our-work', label: 'Our Work', href: '/admin?section=our-work' },
+  { id: 'products', label: 'Products', href: '/admin?section=products' },
+  { id: 'our-work', label: 'Our Work', href: '/admin?section=our-work' },
   { id: 'quick-points', label: 'Quick Points', href: '/admin?section=quick-points' },
 ]
 
