@@ -60,6 +60,7 @@ export default function Footer({ onGoHome, onGoShop, onGoQuickPoints, onSendDocu
         <div className="qs21-footer-col">
           <h4>Quick links</h4>
           <ul className="qs21-footer-links">
+            <li><a href="/account">My orders</a></li>
             <li><button type="button" onClick={onGoHome}>Home</button></li>
             <li><button type="button" onClick={onGoShop}>Shop</button></li>
             <li><button type="button" onClick={onGoQuickPoints}>Quick Points</button></li>

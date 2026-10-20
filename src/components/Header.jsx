@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import { getAdminSession } from '../lib/supabaseApi.js'
+import '../styles/customer-account.css'
 
 // QS-18: mode/onModeChange add the subtle, always-available Simple|Pro
 // toggle (presentation-only - see src/lib/languageMode.js); onSendDocuments
@@ -90,6 +91,7 @@ export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickP
       </nav>
       <div className="qs18-header-actions">
         {hasStaffSession && <a className="qs18-send-docs qs-staff-nav-link" href="/admin">Admin</a>}
+        <a className="account-nav-link" href="/account">My orders</a>
         {onSendDocuments && (
           <button type="button" className="qs18-send-docs" onClick={onSendDocuments} aria-label="Send documents">
             <Icon name="document" size={16}/>

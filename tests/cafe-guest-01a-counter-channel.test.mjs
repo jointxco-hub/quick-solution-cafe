@@ -48,7 +48,7 @@ test('the counter-channel migration exists, is additive, and is owned by the Caf
   // (20260928170000) legitimately sort after all of CAFE-GUEST-01* too:
   // both build on RPCs/columns that only exist once the counter work (and
   // the primitive it depends on) is in place.
-  const earlier = migrationFiles.filter((name) => !/cafe_guest_01/.test(name) && name !== '20260927120000_qs_administration_capability_authorization.sql' && name !== '20260928170000_qs_payment_eligibility_v1.sql' && name !== '20261008082604_cafe_staff_push.sql' && name !== '20261010180324_cafe_order_operator_workspace.sql' && name !== '20261016060306_cafe_invoice_shared_receipts.sql' && name !== '20261014211427_cafe_payment_permission_alignment.sql' && name !== '20261016061504_cafe_invoice_legacy_identity_guard.sql' && name !== '20261016061254_cafe_invoice_receipt_context_guards.sql' && name !== '20261014210940_cafe_opps_shared_payment_entry.sql' && name !== '20261012154123_cafe_payment_reconciliation_state.sql' && name !== '20261012174302_cafe_manual_receipts.sql' && name !== '20261018100512_cafe_gateway_counter_shared_receipts.sql' && name !== '20261018104437_cafe_gateway_receipt_review_visibility.sql' && name !== '20261018133044_cafe_shared_payments_release.sql')
+  const earlier = migrationFiles.filter((name) => !/cafe_guest_01/.test(name) && name !== '20260927120000_qs_administration_capability_authorization.sql' && name !== '20260928170000_qs_payment_eligibility_v1.sql' && name !== '20261008082604_cafe_staff_push.sql' && name !== '20261010180324_cafe_order_operator_workspace.sql' && name !== '20261016060306_cafe_invoice_shared_receipts.sql' && name !== '20261014211427_cafe_payment_permission_alignment.sql' && name !== '20261016061504_cafe_invoice_legacy_identity_guard.sql' && name !== '20261016061254_cafe_invoice_receipt_context_guards.sql' && name !== '20261014210940_cafe_opps_shared_payment_entry.sql' && name !== '20261012154123_cafe_payment_reconciliation_state.sql' && name !== '20261012174302_cafe_manual_receipts.sql' && name !== '20261018100512_cafe_gateway_counter_shared_receipts.sql' && name !== '20261018104437_cafe_gateway_receipt_review_visibility.sql' && name !== '20261018133044_cafe_shared_payments_release.sql' && name !== '20261020074649_cafe_customer_accounts.sql')
   assert.ok(earlier.every((name) => name < NEW_MIGRATION), 'it must sort after every pre-CAFE-GUEST migration')
   assert.doesNotMatch(foundation.bare, /create\s+(or\s+replace\s+)?function/i, 'no RPC is created or replaced in this slice')
   assert.doesNotMatch(foundation.bare, /\b(create|drop)\s+(table|policy|trigger|index|type|domain|schema)\b/i)
@@ -223,7 +223,8 @@ test('handoff contract: channel is never a production/OPPS-handoff eligibility s
   // Every trigger on service_orders is a BEFORE UPDATE trigger (updated_at,
   // and the CAFE-GUEST-01C origin guard): no trigger can create a handoff (or
   // production work) from an insert, whatever its channel. The staff push
-  // trigger only queues generic notifications.
+  // trigger only queues generic notifications. Customer triggers only save ownership
+  // and protect existing secrets; the global handoff-write assertion below still applies.
   const triggers = []
   for (const migration of migrations) {
     for (const match of migration.code.matchAll(/create\s+trigger\s+(\w+)\s+(before|after)\s+([a-z_ ,]+?)\s+on\s+commerce\.service_orders/gi)) {
@@ -233,7 +234,9 @@ test('handoff contract: channel is never a production/OPPS-handoff eligibility s
   assert.deepEqual(triggers, [
     ['trg_qs_service_orders_updated_at', 'before', 'update'],
     ['trg_qs_guard_service_order_origin', 'before', 'update'],
-    ['qs_staff_order_push', 'after', 'insert']
+    ['qs_staff_order_push', 'after', 'insert'],
+    ['qs_link_new_customer_order', 'after', 'insert'],
+    ['qs_protect_customer_secrets', 'before', 'update']
   ])
 })
 
