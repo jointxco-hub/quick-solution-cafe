@@ -4,7 +4,7 @@ import '../styles/staff-app.css'
 const sections = [
   { id: 'counter', label: 'Counter', href: '/counter' },
   { id: 'orders', label: 'Orders', href: '/admin' },
-  { id: 'products', label: 'Products', href: '/admin?section=products' },
+  { id: 'products', label: 'Products', href: '/admin?section=products' },\n  { id: 'our-work', label: 'Our Work', href: '/admin?section=our-work' },
   { id: 'quick-points', label: 'Quick Points', href: '/admin?section=quick-points' },
 ]
 
@@ -12,7 +12,7 @@ export function initialStaffSection(search = typeof window === 'undefined' ? '' 
   const query = new URLSearchParams(search)
   if (query.has('order')) return 'orders'
   const section = query.get('section')
-  return ['products', 'quick-points'].includes(section) ? section : 'orders'
+  return ['products', 'quick-points', 'our-work'].includes(section) ? section : 'orders'
 }
 
 export default function StaffNavigation({ active, onChange, orderId = '' }) {
