@@ -51,7 +51,8 @@ import {
   buildWhatsappUrl
 } from './lib/businessInfo.js'
 import Footer from './components/Footer.jsx'
-import MobileBottomNav from './components/MobileBottomNav.jsx'\nimport OurWorkPage from './components/OurWorkPage.jsx'
+import MobileBottomNav from './components/MobileBottomNav.jsx'
+import OurWorkPage from './components/OurWorkPage.jsx'
 
 // CAFE-GUEST-01X: the staff Counter is its own chunk, fetched only when /counter is opened, so storefront and admin visitors never download it.
 const CounterPage = lazy(() => import('./counter/CounterPage.jsx'))
@@ -719,7 +720,11 @@ export default function App() {
     else openAdvanced(product)
   }
 
-  if (view === 'portfolio') {\n    return <OurWorkPage/>\n  }\n\n  if (view === 'track') {
+  if (view === 'portfolio') {
+    return <OurWorkPage/>
+  }
+
+  if (view === 'track') {
     return <TrackOrder/>
   }
 
