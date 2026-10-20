@@ -13,5 +13,18 @@ export async function loadPublishedPortfolio() {
   })
   if (!response.ok) throw new Error('Published portfolio is unavailable')
   const result = await response.json()
-  return Array.isArray(result) ? result : Array.isArray(result?.projects) ? result.projects : []
+  const projects = Array.isArray(result) ? result : Array.isArray(result?.projects) ? result.projects : []
+  return Promise.all(projects.map(async project => {
+    if (!project.media?.length) return project
+    try {
+      const response = await fetch(`${URL}/functions/v1/quick-solution-portfolio-media`, {
+        method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: project.id, tenant_slug: TENANT })
+      })
+      if (!response.ok) return project
+      const payload = await response.json()
+      const media = Array.isArray(payload.media) ? payload.media : []
+      return { ...project, media, coverUrl: media.find(item => item.url)?.url || null, coverAlt: media[0]?.altText || project.title }
+    } catch { return project }
+  }))
 }
