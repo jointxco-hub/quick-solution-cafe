@@ -27,7 +27,10 @@ export function normalizeAppPathname(pathname = '/') {
 export function resolveAppRoute({ pathname = '/', hash = '' } = {}) {
   const normalizedPathname = normalizeAppPathname(pathname)
 
-  if (normalizedPathname === '/our-work' || /^\/our-work\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedPathname)) {\n    return { view: 'portfolio', page: null, pathname: normalizedPathname }\n  }\n  if (normalizedPathname === '/admin') {
+  if (normalizedPathname === '/our-work' || /^\/our-work\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalizedPathname)) {
+    return { view: 'portfolio', page: null, pathname: normalizedPathname }
+  }
+  if (normalizedPathname === '/admin') {
     return { view: 'admin', page: null, pathname: normalizedPathname }
   }
   // CAFE-GUEST-01N: the staff Counter. Resolving the path grants nothing - the screen asks the server
