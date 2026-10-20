@@ -24,7 +24,18 @@ async function rpc(name, body) {
 }
 export async function getAdminPortfolio() {
   const result = await rpc('admin_get_quick_solution_portfolio', { p_tenant_slug: TENANT })
-  return Array.isArray(result) ? result : result?.projects || []
+  const projects = Array.isArray(result) ? result : result?.projects || []
+  return Promise.all(projects.map(async project => {
+    if (!project.media?.length) return project
+    try {
+      const response = await fetch(`${URL}/functions/v1/quick-solution-portfolio-media`, {
+        method: 'POST', headers: headers(), body: JSON.stringify({ project_id: project.id, tenant_slug: TENANT })
+      })
+      if (!response.ok) return project
+      const payload = await response.json()
+      return { ...project, media: Array.isArray(payload.media) ? payload.media : project.media }
+    } catch { return project }
+  }))
 }
 export async function saveAdminPortfolioProject(project) {
   return rpc('admin_save_quick_solution_portfolio_project', { p_tenant_slug: TENANT, p_project: project })
