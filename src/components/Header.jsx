@@ -86,7 +86,7 @@ export default function Header({ onSendDocuments, onGoHome, onGoShop, onGoQuickP
         {onGoQuickPoints
           ? <button type="button" onClick={onGoQuickPoints}><Icon name="pin" size={16}/> Quick Points</button>
           : <a href={`${homePrefix}#quick-points`}><Icon name="pin" size={16}/> Quick Points</a>}
-        <a href="/track"><Icon name="search" size={15}/> Track order</a>
+        <a href="/our-work">Our Work</a>\n        <a href="/track"><Icon name="search" size={15}/> Track order</a>
       </nav>
       <div className="qs18-header-actions">
         {hasStaffSession && <a className="qs18-send-docs qs-staff-nav-link" href="/admin">Admin</a>}
