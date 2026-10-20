@@ -3,7 +3,8 @@ import StaffMenu from '../components/StaffMenu.jsx'
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import AdminOppsHandoffPanel from './AdminOppsHandoffPanel.jsx'
-import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'\nimport AdminPortfolioManager from './AdminPortfolioManager.jsx'
+import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'
+import AdminPortfolioManager from './AdminPortfolioManager.jsx'
 import { cloneCatalog, exportCatalog } from '../lib/catalogStore.js'
 import {
   consumeOAuthRedirectResult,
@@ -672,7 +673,8 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
 
         {activeSection === 'orders' ? <AdminOppsHandoffPanel /> : null}
 
-        {activeSection === 'quick-points' ? <AdminQuickPointsPanel onPointsChange={onFulfilmentPointsChange} /> : null}\n        {activeSection === 'our-work' ? <AdminPortfolioManager products={draft}/> : null}
+        {activeSection === 'quick-points' ? <AdminQuickPointsPanel onPointsChange={onFulfilmentPointsChange} /> : null}
+        {activeSection === 'our-work' ? <AdminPortfolioManager products={draft}/> : null}
 
         {activeSection === 'products' ? (
           <>
