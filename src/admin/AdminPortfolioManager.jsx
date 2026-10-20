@@ -43,7 +43,12 @@ export default function AdminPortfolioManager({ products = [] }) {
       setDraft(saved)
       setNotice('Project saved. Publication is controlled by its status.')
       await reload()
-    } catch (err) { setError(err.message || 'Could not save project') }
+    } catch (err) {
+      const message = err.message || 'Could not save project'
+      setError(/duplicate key|23505|unique constraint/i.test(message)
+        ? `The URL “${draft.slug}” is already used by another project. Select the existing project above to edit it, or choose a different URL slug.`
+        : message)
+    }
     finally { setBusy(false) }
   }
   const upload = async (event) => {
@@ -109,7 +114,10 @@ export default function AdminPortfolioManager({ products = [] }) {
     <div className="admin-section-block">
       <h3>Project photographs</h3>
       <p>Only upload work you have permission to showcase. Save the project first.</p>
-      <input aria-label="Upload project photographs" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={!draft.id || busy} onChange={upload}/>
+      <label className="admin-field"><span>Add project photos (JPEG, PNG or WebP, up to 10 MB each)</span>
+        <input aria-label="Upload project photographs" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={!draft.id || busy} onChange={upload}/>
+      </label>
+      {!draft.id && <p role="status">Save your draft first to enable photo uploads.</p>}
       <div className="qs10-proof-grid">{(draft.media || []).map((item, i) => <figure key={item.id || i}>
         {item.url && <img src={item.url} alt={item.altText || draft.title} style={{ maxWidth: '100%', height: 'auto' }}/>}
         <figcaption>{item.altText || 'Project photo'}</figcaption>
