@@ -26,6 +26,9 @@ export function normalizeAppPathname(pathname = '/') {
 
 export function resolveAppRoute({ pathname = '/', hash = '' } = {}) {
   const normalizedPathname = normalizeAppPathname(pathname)
+  if (normalizedPathname === '/account') {
+    return { view: 'account', page: null, pathname: normalizedPathname }
+  }
 
   if (normalizedPathname === '/admin') {
     return { view: 'admin', page: null, pathname: normalizedPathname }

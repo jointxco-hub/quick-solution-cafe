@@ -55,6 +55,7 @@ import MobileBottomNav from './components/MobileBottomNav.jsx'
 
 // CAFE-GUEST-01X: the staff Counter is its own chunk, fetched only when /counter is opened, so storefront and admin visitors never download it.
 const CounterPage = lazy(() => import('./counter/CounterPage.jsx'))
+const CustomerAccount = lazy(() => import('./components/CustomerAccount.jsx'))
 
 function scrollToConfigurator(node, behavior = 'smooth') {
   if (!node) return
@@ -721,6 +722,9 @@ export default function App() {
 
   if (view === 'track') {
     return <TrackOrder/>
+  }
+  if (view === 'account') {
+    return <Suspense fallback={<p role="status">Loading My orders…</p>}><CustomerAccount/></Suspense>
   }
 
   const paymentMode = new URLSearchParams(window.location.search).get('qs_payment')

@@ -1,3 +1,4 @@
+import { customerClient } from '../lib/customerApi.js'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
@@ -90,6 +91,14 @@ export default function OrderBasket({
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
+  const [accountEmail, setAccountEmail] = useState('')
+  useEffect(() => {
+    let active = true
+    customerClient().checkoutContext().then(context => {
+      if (active && context.email) { setAccountEmail(context.email); setCustomerEmail(context.email) }
+    }).catch(() => {})
+    return () => { active = false }
+  }, [])
   const [customerNotes, setCustomerNotes] = useState('')
   const [submitState, setSubmitState] = useState('idle')
   const [submitError, setSubmitError] = useState('')
@@ -191,7 +200,7 @@ export default function OrderBasket({
         })),
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
-        customerEmail: customerEmail.trim(),
+        customerEmail: (accountEmail || customerEmail).trim(),
         fulfilmentType: fulfilment === 'quick-point' ? 'quick_point' : fulfilment,
         fulfilmentPointId: fulfilment === 'delivery' ? null : selectedPointId,
         deliveryAddress: fulfilment === 'delivery' ? { address_line: deliveryAddress.trim() } : null,
@@ -531,7 +540,7 @@ export default function OrderBasket({
                 </label>
                 <label className="checkout-field">
                   <span>Email <small>optional if phone is given</small></span>
-                  <input autoComplete="email" inputMode="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="name@example.com"/>
+                  <input autoComplete="email" inputMode="email" value={accountEmail || customerEmail} readOnly={Boolean(accountEmail)} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="name@example.com"/>{accountEmail && <small>Saved to My orders for {accountEmail}. <a href="/account">Manage sign-in</a></small>}
                 </label>
               </div>
               <label className="checkout-field">

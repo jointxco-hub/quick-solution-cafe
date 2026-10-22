@@ -1,5 +1,6 @@
 import { buildPricingDefinition } from './pricingDefinition.js'
 import { parseOAuthRedirectHash } from './oauthRedirect.js'
+import { customerClient } from './customerApi.js'
 
 const SUPABASE_URL = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
 const SUPABASE_KEY = String(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '')
@@ -197,6 +198,7 @@ export async function createQuickSolutionCartOrder({
   customerNotes,
   idempotencyKey
 }) {
+  const customer = await customerClient().checkoutContext()
   return rpc('create_quick_solution_cart_order', {
     p_tenant_slug: TENANT_SLUG,
     p_items: (items || []).map((item) => ({
@@ -212,7 +214,7 @@ export async function createQuickSolutionCartOrder({
     p_delivery_address: deliveryAddress || null,
     p_customer_notes: customerNotes || null,
     p_idempotency_key: idempotencyKey
-  })
+  }, { accessToken: customer.accessToken })
 }
 
 export async function createQuickSolutionOrder({
@@ -227,6 +229,7 @@ export async function createQuickSolutionOrder({
   customerNotes,
   idempotencyKey
 }) {
+  const customer = await customerClient().checkoutContext()
   return rpc('create_quick_solution_order', {
     p_tenant_slug: TENANT_SLUG,
     p_product_key: productKey,
@@ -239,7 +242,7 @@ export async function createQuickSolutionOrder({
     p_delivery_address: deliveryAddress || null,
     p_customer_notes: customerNotes || null,
     p_idempotency_key: idempotencyKey
-  })
+  }, { accessToken: customer.accessToken })
 }
 
 export async function createQuickSolutionServiceRequest({
@@ -252,6 +255,7 @@ export async function createQuickSolutionServiceRequest({
   customerNotes,
   idempotencyKey
 }) {
+  const customer = await customerClient().checkoutContext()
   return rpc('create_quick_solution_service_request', {
     p_tenant_slug: TENANT_SLUG,
     p_product_key: productKey,
@@ -262,7 +266,7 @@ export async function createQuickSolutionServiceRequest({
     p_service_location: serviceLocation || null,
     p_customer_notes: customerNotes || null,
     p_idempotency_key: idempotencyKey
-  })
+  }, { accessToken: customer.accessToken })
 }
 
 export async function uploadQuickSolutionFile({ orderId, orderItemId, uploadToken, file }) {

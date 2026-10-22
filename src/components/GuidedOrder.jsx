@@ -1,3 +1,4 @@
+import { customerClient } from '../lib/customerApi.js'
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import PaymentRedirectLoader from './PaymentRedirectLoader.jsx'
@@ -184,6 +185,14 @@ export default function GuidedOrder({
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerEmail, setCustomerEmail] = useState('')
+  const [accountEmail, setAccountEmail] = useState('')
+  useEffect(() => {
+    let active = true
+    customerClient().checkoutContext().then(context => {
+      if (active && context.email) { setAccountEmail(context.email); setCustomerEmail(context.email) }
+    }).catch(() => {})
+    return () => { active = false }
+  }, [])
   const [customerNotes, setCustomerNotes] = useState('')
   const [idempotencyKey, setIdempotencyKey] = useState(makeIdempotencyKey)
   const [submitState, setSubmitState] = useState('idle')
@@ -396,7 +405,7 @@ export default function GuidedOrder({
             configuration: requestConfiguration,
             customerName: customerName.trim(),
             customerPhone: customerPhone.trim(),
-            customerEmail: customerEmail.trim(),
+            customerEmail: (accountEmail || customerEmail).trim(),
             serviceLocation: {
               type: config.shootLocation || 'cafe',
               address: String(config.shootAddress || '').trim() || null,
@@ -411,7 +420,7 @@ export default function GuidedOrder({
             configuration: requestConfiguration,
             customerName: customerName.trim(),
             customerPhone: customerPhone.trim(),
-            customerEmail: customerEmail.trim(),
+            customerEmail: (accountEmail || customerEmail).trim(),
             fulfilmentType: backendFulfilment,
             fulfilmentPointId: fulfilment === 'delivery'
               ? null
@@ -862,7 +871,7 @@ export default function GuidedOrder({
                     </label>
                     <label className="checkout-field">
                       <span>Email <small>optional if phone is given</small></span>
-                      <input autoComplete="email" inputMode="email" value={customerEmail} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="name@example.com"/>
+                      <input autoComplete="email" inputMode="email" value={accountEmail || customerEmail} readOnly={Boolean(accountEmail)} onChange={(event) => setCustomerEmail(event.target.value)} placeholder="name@example.com"/>{accountEmail && <small>Saved to My orders for {accountEmail}. <a href="/account">Manage sign-in</a></small>}
                     </label>
                   </div>
                   <label className="checkout-field">
