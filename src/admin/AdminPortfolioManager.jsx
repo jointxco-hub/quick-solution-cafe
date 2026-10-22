@@ -59,23 +59,67 @@ export default function AdminPortfolioManager({ products = [] }) {
     setDirty(true)
     setNotice('')
   }
-  const save = async (event) => {
-    event.preventDefault()
-    setError('')
-    setNotice('')
-    if (!draft.title.trim()) { setSection('details'); setError('Add a project title before saving.'); return }
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.slug)) {
-      setSection('details'); setError('The URL must contain lowercase letters, numbers and hyphens.'); return
+  const validDraft = current => {
+    if (!current.title.trim()) {
+      setSection('details')
+      setError('Add a project title before continuing.')
+      return false
     }
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(current.slug)) {
+      setSection('details')
+      setError('Enter a valid shareable URL using lowercase letters, numbers and hyphens.')
+      return false
+    }
+    return true
+  }
+  const persist = async (nextDraft, successMessage = '') => {
+    if (!validDraft(nextDraft)) return null
     setBusy(true)
+    setError('')
     try {
-      const saved = await saveAdminPortfolioProject(draft)
+      const saved = await saveAdminPortfolioProject(nextDraft)
       const rows = await reload()
-      setDraft(rows.find(item => item.id === saved.id) || saved)
+      const fresh = rows.find(item => item.id === saved.id) || saved
+      setDraft(fresh)
       setDirty(false)
-      setNotice(saved.status === 'published' ? 'Project published successfully. It is now visible in Our Work.' : 'Draft saved successfully. Your changes are stored.')
-    } catch (err) { setError(displayError(err.message || 'Could not save project', draft.slug)) }
-    finally { setBusy(false) }
+      if (successMessage) setNotice(successMessage)
+      return fresh
+    } catch (err) {
+      setError(displayError(err.message || 'Could not save project', nextDraft.slug))
+      return null
+    } finally { setBusy(false) }
+  }
+  const goTo = async next => {
+    if (busy || next === section) return
+    setError('')
+    if (next === 'photos' && (!draft.id || dirty) && draft.status === 'draft') {
+      const saved = await persist(draft, 'Private draft saved automatically. You can now add photos.')
+      if (!saved) return
+    }
+    setSection(next)
+  }
+  const nextStep = () => {
+    const index = steps.findIndex(([key]) => key === section)
+    if (section === 'details' && !validDraft(draft)) return
+    goTo(steps[Math.min(index + 1, steps.length - 1)][0])
+  }
+  const previousStep = () => {
+    const index = steps.findIndex(([key]) => key === section)
+    goTo(steps[Math.max(0, index - 1)][0])
+  }
+  const makePrivateForPhotos = async () => {
+    if (!draft.id || busy) return
+    if (!window.confirm('Unpublish this project so you can add photos? It will disappear from public pages until you publish it again.')) return
+    const saved = await persist({ ...draft, status: 'draft' }, 'Project is now private. Photo uploads are enabled.')
+    if (saved) setSection('photos')
+  }
+  const save = async event => {
+    event.preventDefault()
+    if (section !== 'publish') { nextStep(); return }
+    setNotice('')
+    await persist(draft, draft.status === 'published'
+      ? 'Project published successfully and visible in Our Work.'
+      : 'Project saved privately. It is no longer public.')
   }
   const upload = async event => {
     const files = Array.from(event.target.files || [])
@@ -141,7 +185,7 @@ export default function AdminPortfolioManager({ products = [] }) {
 
     <nav className="portfolio-steps" aria-label="Edit project section">
       {steps.map(([key, title], index) => <button key={key} type="button" aria-current={section === key ? 'step' : undefined}
-        className={section === key ? 'active' : ''} onClick={() => setSection(key)}>
+        className={section === key ? 'active' : ''} onClick={() => goTo(key)}>
         <span className="portfolio-step-number">{index + 1}</span>{title}
         {key === 'photos' && draft.media?.length > 0 ? <small>{draft.media.length}</small> : null}
       </button>)}
@@ -184,9 +228,9 @@ export default function AdminPortfolioManager({ products = [] }) {
 
       {section === 'photos' && <div className="portfolio-panel">
         <div className="portfolio-panel-heading"><h3>Project photos</h3><p>{draft.media?.length || 0} uploaded · Only use photos approved for showcasing.</p></div>
-        {!draft.id && <div className="portfolio-hint">Save this project as a draft first. Photo uploads will unlock automatically.</div>}
-        {draft.status === 'published' && <div className="portfolio-hint">Change to Draft in the Publish tab and save before uploading more photos.</div>}
-        <label className={draft.id && draft.status === 'draft' && !busy ? 'portfolio-upload' : 'portfolio-upload disabled'}>
+        {!draft.id && <div className="portfolio-hint">Enter the project details first, then return to Photos. A private draft will be saved automatically.</div>}
+        {draft.status === 'published' && <div className="portfolio-hint portfolio-photo-unlock"><span>This project is public. To add photos, make it private temporarily.</span><button type="button" className="portfolio-action" disabled={busy} onClick={makePrivateForPhotos}>Make private to edit photos</button></div>}
+        <label className={draft.id && draft.status === 'draft' && !busy && !dirty ? 'portfolio-upload' : 'portfolio-upload disabled'}>
           <span aria-hidden="true">↑</span><strong>{busy ? 'Please wait…' : 'Choose photos to upload'}</strong>
           <small>JPEG, PNG or WebP · max 10 MB each</small>
           <input aria-label="Upload project photographs" type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={!draft.id || draft.status !== 'draft' || busy || dirty} onChange={upload}/>
@@ -220,11 +264,16 @@ export default function AdminPortfolioManager({ products = [] }) {
     </form>
 
     <div className="portfolio-sticky-actions">
-      <div className="portfolio-save-status"><strong>{busy ? 'Working…' : dirty ? '● Unsaved changes' : draft.id ? '✓ All changes saved' : 'New project'}</strong>
-        <small>{status}</small></div>
-      <button type="submit" form="portfolio-project-form" className="portfolio-primary" disabled={busy}>
-        {busy ? 'Please wait…' : draft.status === 'published' && dirty ? 'Save & publish' : 'Save project'}
-      </button>
+      <div className="portfolio-save-status">
+        <strong>{busy ? 'Working…' : dirty ? '● Changes in progress' : draft.id ? '✓ Draft up to date' : 'New project'}</strong>
+        <small>Step {steps.findIndex(([key]) => key === section) + 1} of 4 · {status}</small>
+      </div>
+      <div className="portfolio-flow-buttons">
+        {section !== 'details' && <button type="button" className="portfolio-back-button" disabled={busy} onClick={previousStep}>← Back</button>}
+        {section !== 'publish'
+          ? <button type="button" className="portfolio-primary" disabled={busy} onClick={nextStep}>{busy ? 'Saving…' : section === 'links' ? 'Continue to photos →' : section === 'photos' ? 'Review & publish →' : 'Continue →'}</button>
+          : <button type="submit" form="portfolio-project-form" className="portfolio-primary" disabled={busy}>{busy ? 'Saving…' : draft.status === 'published' ? 'Save & publish' : 'Save as private draft'}</button>}
+      </div>
     </div>
   </section>
 }
