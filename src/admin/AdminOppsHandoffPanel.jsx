@@ -17,6 +17,11 @@ import {
   sendQuickSolutionOrderToOpps
 } from '../lib/supabaseApi.js'
 
+const QUOTE_PRODUCT_KEYS = new Set(['flyers', 'posters', 'pull-up-banners', 'car-magnets', 'rigid-signage'])
+function isCatalogueQuote(workspace) {
+  return Boolean(workspace?.items?.some((item) => QUOTE_PRODUCT_KEYS.has(item.productKey)))
+}
+
 const HANDOFF_LABELS = {
   not_previewed: 'Checking',
   ready: 'Ready for OPPS',
@@ -191,6 +196,7 @@ export default function AdminOppsHandoffPanel() {
   }), [queue, todayKey])
 
   const selected = queue.find((item) => item.serviceOrderId === selectedId) || null
+  const quoteRequest = isCatalogueQuote(workspaces[selectedId])
   const workspace = workspaces[selectedId]
   const acknowledgement = workspace?.activity?.find(entry => entry.event === 'acknowledged')
   const preview = selected ? previewCache[selected.serviceOrderId] : null
@@ -343,7 +349,7 @@ export default function AdminOppsHandoffPanel() {
   }
 
   const fileCount = workspace?.files?.length ?? proposedFiles.length
-  const canSend = selected && selected.handoffStatus !== 'sent' && blockerItems.length === 0 && Boolean(preview)
+  const canSend = selected && !quoteRequest && selected.handoffStatus !== 'sent' && blockerItems.length === 0 && Boolean(preview)
 
   return (
     <section className={`handoff-section ${detailOpen ? 'order-detail-open' : 'order-list-open'}`}>
@@ -388,6 +394,7 @@ export default function AdminOppsHandoffPanel() {
                   <StatusPill label={SERVICE_STATUS_LABELS[item.serviceStatus] || item.serviceStatus || 'Submitted'} tone={['cancelled'].includes(item.serviceStatus) ? 'bad' : item.serviceStatus === 'completed' ? 'good' : 'neutral'} />
                 </div>
                 <OrderServiceSummary compact workspace={workspaces[item.serviceOrderId]}/>
+                {isCatalogueQuote(workspaces[item.serviceOrderId]) && <StatusPill label="Quotation request" tone="warn"/>}
                 <div className="handoff-card-meta">
                   <span>{money(item.totalAmount)}</span>
                   <span title={fullDateTime(item.submittedAt)}>{dateTime(item.submittedAt)}</span>
@@ -415,13 +422,14 @@ export default function AdminOppsHandoffPanel() {
             <React.Fragment key={selected.serviceOrderId}>
               <div className="handoff-preview-top">
                 <div>
-                  <span className="eyebrow">Selected order</span>
+                  <span className="eyebrow">{quoteRequest ? 'Quotation request · awaiting pricing' : 'Selected order'}</span>
                   <h3>{selected.orderNumber}</h3>
                   <p>{selected.customerName} · {money(selected.totalAmount)} · submitted {dateTime(selected.submittedAt)}</p>
                 </div>
               </div>
 
-              <OrderPaymentState key={`payment:${selectedId}`} orderId={selectedId} onChanged={() => { loadQueue({ silent: true }).catch(() => {}) }}/>
+              {!quoteRequest && <OrderPaymentState key={`payment:${selectedId}`} orderId={selectedId} onChanged={() => { loadQueue({ silent: true }).catch(() => {}) }}/>} 
+              {quoteRequest && <div className="message-card warn"><strong>Prepare quotation</strong><p>This customer has requested pricing. Review the specifications and uploaded artwork, then prepare the quote in OPPS. Do not use the standard order handoff: it creates an order, not a quotation. No payment should be collected until the quotation is confirmed.</p><button type="button" className="button ghost" onClick={() => window.open(buildOppsAppUrl(), '_blank', 'noopener,noreferrer')}>Open OPPS to prepare quote</button></div>}
               {workspace && <div className="order-workspace">
                 <OrderServiceSummary workspace={workspace}/>
                 <div className="order-operator-action">
@@ -447,7 +455,7 @@ export default function AdminOppsHandoffPanel() {
                   <button type="button" className="qs-track-copy-button" onClick={copyCustomerTrackingLink} disabled={issuingTrackingId === selected.serviceOrderId}><Icon name="copy" size={16}/> {issuingTrackingId === selected.serviceOrderId ? 'Creating…' : 'Copy tracking link'}</button>
                   <button type="button" onClick={() => refreshPreview(selected.serviceOrderId)} disabled={previewingId === selected.serviceOrderId || selected.handoffStatus === 'sent'}><Icon name="refresh" size={16}/> {previewingId === selected.serviceOrderId ? 'Checking…' : selected.handoffStatus === 'sent' ? 'Checks saved' : 'Re-check order'}</button>
                   <button type="button" className="button dark" onClick={sendSelected} disabled={sendingId === selected.serviceOrderId || !canSend}>
-                    <Icon name="send" size={16}/> {selected.handoffStatus === 'sent' ? 'Sent to OPPS' : sendingId === selected.serviceOrderId ? 'Sending…' : blockerItems.length ? 'Fix issues first' : 'Send to OPPS'}
+                    <Icon name="send" size={16}/> {selected.handoffStatus === 'sent' ? 'Sent to OPPS' : sendingId === selected.serviceOrderId ? 'Sending…' : quoteRequest ? 'Prepare quote instead' : blockerItems.length ? 'Fix issues first' : 'Send to OPPS'}
                   </button>
                 </div>
 
