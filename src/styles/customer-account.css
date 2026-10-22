@@ -4,3 +4,8 @@
 .customer-account .account-heading h1{flex:1 1 auto;white-space:nowrap;margin:20px 0;line-height:1.15}
 .customer-account .account-heading .button{flex:0 0 auto;margin:0}
 .customer-account .account-card form .button{justify-self:start;margin-top:0}
+.account-recovery-help{border-top:1px solid #deded8;margin-top:24px;padding-top:20px}
+.account-recovery-help h3{margin:0;font-size:18px;line-height:1.3}
+.account-recovery-help p{margin:8px 0 16px}
+.customer-account .account-recovery-help .button{display:inline-flex;justify-content:center;white-space:normal;text-align:center;background:#236952;color:#fff;box-sizing:border-box}
+.account-recovery-help .account-email{font-size:13px;margin:12px 0 0}

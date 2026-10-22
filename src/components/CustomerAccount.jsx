@@ -153,7 +153,14 @@ export default function CustomerAccount() {
         <div className="account-orders">{orders.map(order => <button type="button" key={order.id} className="account-order account-card" onClick={() => openOrder(order.id)} disabled={busy}><strong>{order.orderNumber}</strong><span>{order.itemName}</span><span>{date(order.submittedAt)} · {order.status.replaceAll('_', ' ')}</span><span>{money(order.totalAmount)} · {order.paymentStatus === 'paid' ? 'Paid' : 'Payment pending'}</span><span>View order →</span></button>)}</div>
         {(offset > 0 || hasMore) && <div className="account-pages"><button type="button" disabled={offset === 0 || state === 'loading'} onClick={() => load(Math.max(0, offset - 20))}>Previous</button><button type="button" disabled={!hasMore || state === 'loading'} onClick={() => load(offset + 20)}>Next</button></div>}
         {recent.filter(item => !orders.some(order => order.id === item.orderId)).length > 0 && <section className="account-card"><h2>Guest orders on this device</h2><p>Save an order placed using this email. Other guest orders can still be tracked using their original links.</p>{recent.filter(item => !orders.some(order => order.id === item.orderId)).map(item => <p key={item.orderId}>{item.orderNumber} <button type="button" disabled={busy} onClick={() => linkOrder(item)}>Save to my account</button></p>)}</section>}
-        <section className="account-card"><h2>Save a previous guest order</h2><p>Use the secure tracking link and sign in with the email used for that order. For phone-only orders or an expired link, contact the Café.</p><form onSubmit={saveGuestLink}><label>Secure tracking link<input type="url" required value={guestLink} onChange={event => setGuestLink(event.target.value)} disabled={busy} placeholder="Paste your order tracking link"/></label><button className="button primary-light" disabled={busy}>Save to My orders</button></form></section>
+        <section className="account-card"><h2>Save a previous guest order</h2><p>Use the secure tracking link and sign in with the email used for that order. For phone-only orders or an expired link, contact the Café.</p><form onSubmit={saveGuestLink}><label>Secure tracking link<input type="url" required value={guestLink} onChange={event => setGuestLink(event.target.value)} disabled={busy} placeholder="Paste your order tracking link"/></label><button className="button primary-light" disabled={busy}>Save to My orders</button></form>
+          <div className="account-recovery-help">
+            <h3>Lost your order link?</h3>
+            <p>Ask us to help find your order.</p>
+            <a className="button dark" target="_blank" rel="noopener noreferrer" href={buildWhatsappUrl(encodeURIComponent(`Hi Quick Solution Café, I’ve lost my order link. Please help me find it.\n\nMy name: \nEmail or phone used for the order: ${email}\nApproximate order date: `))}>Request order link on WhatsApp</a>
+            <p className="account-email">Opens WhatsApp with a message ready for you to complete and send.</p>
+          </div>
+        </section>
       </>}
     </>}
     {state === 'loading' && <p role="status">Loading your orders…</p>}
