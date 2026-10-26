@@ -3,6 +3,7 @@ import StaffMenu from '../components/StaffMenu.jsx'
 import React, { useEffect, useMemo, useState } from 'react'
 import Icon from '../components/Icon.jsx'
 import AdminOppsHandoffPanel from './AdminOppsHandoffPanel.jsx'
+import AdminOppsWorkQueuePanel from './AdminOppsWorkQueuePanel.jsx'
 import AdminQuickPointsPanel from './AdminQuickPointsPanel.jsx'
 import { cloneCatalog, exportCatalog } from '../lib/catalogStore.js'
 import {
@@ -643,7 +644,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
   return (
     <div className="admin-app">
       <header className="admin-header">
-        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · {activeSection === 'products' ? 'Products' : activeSection === 'quick-points' ? 'Quick Points' : 'Orders'}</small></span></a>
+        <a className="brand" href="/admin" aria-label="Quick Solution Admin home"><img className="brand-mark-image" src="/jointx-mark.png" alt=""/><span><strong>Quick Solution</strong><small>Café · {activeSection === 'products' ? 'Products' : activeSection === 'quick-points' ? 'Quick Points' : activeSection === 'opps-work' ? 'From OPPS' : 'Orders'}</small></span></a>
         <div className="admin-header-actions">
           {activeSection === 'products' ? <button className="button dark" type="button" onClick={save} disabled={!hasChanges || saveState === 'saving'}>{saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? 'Saved' : 'Save catalogue'}</button> : null}
           <StaffMenu app="admin" active={activeSection} onChange={setActiveSection} onSignOut={logout}/>
@@ -654,9 +655,11 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
         <section className={`admin-intro compact-admin-intro ${activeSection === 'orders' ? 'orders-intro' : ''}`}>
           <div>
             <span className="eyebrow">Quick Solution Admin · Location 001</span>
-            <h1>{activeSection === 'orders' ? 'Orders first.' : activeSection === 'quick-points' ? 'Local fulfilment, one source.' : 'Product & pricing control.'}</h1>
+            <h1>{activeSection === 'orders' ? 'Orders first.' : activeSection === 'quick-points' ? 'Local fulfilment, one source.' : activeSection === 'opps-work' ? 'Work from OPPS.' : 'Product & pricing control.'}</h1>
             <p>{activeSection === 'orders'
               ? 'Review customer jobs, catch missing information and hand clean orders into OPPS without mixing them into X LAB.'
+              : activeSection === 'opps-work'
+                ? 'Review OPPS invoices and orders assigned to this Café without creating duplicate sales.'
               : activeSection === 'quick-points'
                 ? 'Control the café and trusted collection points customers can use. Active locations flow straight into storefront ordering.'
                 : 'Update customer-facing product details and pricing. Existing orders keep the pricing snapshot they were created with.'}</p>
@@ -671,6 +674,7 @@ export default function AdminProductManager({ initialProducts, onCatalogChange, 
 
 
         {activeSection === 'orders' ? <AdminOppsHandoffPanel /> : null}
+        {activeSection === 'opps-work' ? <AdminOppsWorkQueuePanel /> : null}
 
         {activeSection === 'quick-points' ? <AdminQuickPointsPanel onPointsChange={onFulfilmentPointsChange} /> : null}
 
