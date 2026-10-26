@@ -6,7 +6,7 @@ import { formatMoney } from './pricing.js'
 const TYPES = new Set(['invoice', 'order'])
 export function describeOppsCafeWorkItem(item) {
   if (!item || !TYPES.has(item.sourceType) || typeof item.sourceId !== 'string' || !item.sourceId) return null
-  const balance = Number(item.balanceDue)
+  const balance = item.balanceDue == null || item.balanceDue === '' ? NaN : Number(item.balanceDue)
   const hasBalance = Number.isFinite(balance) && balance > 0
   const isPaid = item.paymentStatus === 'paid' || (Number.isFinite(balance) && balance <= 0)
   return {
