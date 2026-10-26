@@ -14,6 +14,10 @@ export async function fetchOppsCafeWorkQueue({ signal } = {}) {
   if (import.meta.env.VITE_OPPS_CAFE_QUEUE_ENABLED !== 'true') {
     throw new Error('OPPS work queue is not enabled on this environment.')
   }
+  // A preview flag alone is insufficient: never query the live backend from this staging feature.
+  if (baseUrl !== 'https://tijiamrfnxrbitafiflj.supabase.co') {
+    throw new Error('OPPS work queue requires the isolated XOS staging backend.')
+  }
   const response = await fetch(baseUrl + '/rest/v1/rpc/list_cafe_opps_work_queue', {
     method: 'POST',
     headers: {
