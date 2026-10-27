@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { fetchOppsCafeWorkQueue } from '../lib/oppsCafeWorkQueueApi.js'
+import { fetchOppsCafeWorkQueue, sendOppsWorkToCafe } from '../lib/oppsCafeWorkQueueApi.js'
 import { describeOppsCafeWorkItem } from '../lib/oppsCafeWorkQueue.js'
 
 const PAGE_SIZE = 10
@@ -12,6 +12,8 @@ export default function AdminOppsWorkQueuePanel() {
   const [payment, setPayment] = useState('all')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
   const [selectedKey, setSelectedKey] = useState(null)
+  const [confirmedReady, setConfirmedReady] = useState(false)
+  const [handoffState, setHandoffState] = useState({ status: 'idle', message: '' })
 
   const refresh = async () => {
     setState({ status: 'loading', items: [] })
@@ -39,6 +41,20 @@ export default function AdminOppsWorkQueuePanel() {
   const invoices = state.items.filter(item => item.sourceType === 'invoice').length
   const orders = state.items.filter(item => item.sourceType === 'order').length
   const selected = state.items.find(item => item.key === selectedKey)
+  const isTestRecord = selected && /test|staging|race|overlap|do not fulfill|do not fulfil/i.test([selected.number, selected.customer].join(' '))
+  const alreadySent = selected && selected.handoffStatus !== 'not_sent'
+  const sendSelected = async () => {
+    if (!selected || !confirmedReady || isTestRecord || alreadySent) return
+    setHandoffState({ status: 'sending', message: '' })
+    try {
+      const response = await sendOppsWorkToCafe({ sourceType: selected.sourceType, sourceId: selected.sourceId })
+      setHandoffState({ status: 'success', message: response.alreadyExists ? 'This job was already handed over. No duplicate created.' : 'Fulfillment request received. No new sale or payment was created.' })
+      setConfirmedReady(false)
+      await refresh()
+    } catch (error) {
+      setHandoffState({ status: 'error', message: error.message || 'Could not send job.' })
+    }
+  }
 
   return <section aria-label="OPPS work queue" className="admin-section-block">
     <div className="admin-section-title">
@@ -77,7 +93,7 @@ export default function AdminOppsWorkQueuePanel() {
       <div style={{ display: 'grid', gap: 8 }}>
         {filtered.slice(0, visibleCount).map(item => <button key={item.key} type="button" className="message-card neutral"
           aria-label={'View ' + item.sourceType + ' ' + item.number}
-          onClick={() => setSelectedKey(item.key)}
+          onClick={() => { setSelectedKey(item.key); setConfirmedReady(false); setHandoffState({ status: 'idle', message: '' }) }}
           style={{ padding: '12px 14px', width: '100%', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit', border: selectedKey === item.key ? '1px solid #222' : '1px solid #eceae5' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
             <strong style={{ overflowWrap: 'anywhere' }}>{item.number}</strong>
@@ -91,12 +107,21 @@ export default function AdminOppsWorkQueuePanel() {
       {selected && <div role="region" aria-label="Selected OPPS record" style={{ position: 'sticky', bottom: 12, background: '#fff', boxShadow: '0 8px 36px #0002', border: '1px solid #ddd', borderRadius: 16, padding: 18, marginTop: 16, zIndex: 3 }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'start', justifyContent: 'space-between' }}>
           <div><span className="eyebrow">{selected.sourceType} · Review</span><h3 style={{ overflowWrap: 'anywhere', margin: '5px 0' }}>{selected.number}</h3></div>
-          <button type="button" onClick={() => setSelectedKey(null)} aria-label="Close record details">Close ×</button>
+          <button type="button" onClick={() => { setSelectedKey(null); setConfirmedReady(false) }} aria-label="Close record details">Close ×</button>
         </div>
         <p><strong>{selected.customer}</strong> · {selected.status}</p>
         <p>Total {selected.total} · {selected.paymentLabel} · Balance {selected.balance}</p>
-        <p style={{ fontSize: 13, opacity: .75 }}>This record is view-only. Confirm client artwork, quantity, production instructions and payment in OPPS before requesting fulfillment. No counter sale is created here.</p>
-        <button type="button" disabled title="Available after staging handoff and duplicate checks pass">Send to Café Counter · Coming soon</button>
+        <p style={{ fontSize: 13, opacity: .75 }}>Confirm client artwork, quantity, production instructions and payment in OPPS before requesting fulfillment. Sending creates only a fulfillment ticket, not a counter sale or payment.</p>
+        {alreadySent ? <p role="status">Counter handoff: {selected.handoffStatus}</p> : null}
+        {isTestRecord ? <p role="status">Test record: counter handoff blocked.</p> : null}
+        {!alreadySent && !isTestRecord && <label style={{ display: 'flex', alignItems: 'start', gap: 8, marginBottom: 12 }}>
+          <input type="checkbox" checked={confirmedReady} onChange={event => setConfirmedReady(event.target.checked)} />
+          <span>I checked the job details in OPPS and confirm it is ready for Café fulfillment.</span>
+        </label>}
+        <button type="button" onClick={sendSelected} disabled={!confirmedReady || isTestRecord || alreadySent || handoffState.status === 'sending'}>
+          {handoffState.status === 'sending' ? 'Sending…' : alreadySent ? 'Already sent' : 'Send to Café Counter'}
+        </button>
+        {handoffState.message && <p role={handoffState.status === 'error' ? 'alert' : 'status'}>{handoffState.message}</p>}
       </div>}
       {filtered.length === 0 && <p>No records match these filters.</p>}
       {visibleCount < filtered.length && <button type="button" onClick={() => setVisibleCount(count => count + PAGE_SIZE)}
