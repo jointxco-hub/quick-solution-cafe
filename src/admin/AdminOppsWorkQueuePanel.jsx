@@ -61,7 +61,7 @@ export default function AdminOppsWorkQueuePanel() {
       <div><span className="eyebrow">From OPPS · Staging</span><h3>Orders & invoices</h3></div>
       <button type="button" onClick={refresh} disabled={state.status === 'loading'}>Refresh</button>
     </div>
-    <p style={{ marginBlock: '8px 16px' }}>Read-only OPPS records. Sending jobs to the counter and taking payments are not enabled yet.</p>
+    <p style={{ marginBlock: '8px 16px' }}>Review existing OPPS jobs and send approved work to Café Counter. Payments stay in OPPS; no duplicate sale is created.</p>
     {state.status === 'loading' && <p role="status">Loading OPPS work…</p>}
     {state.status === 'error' && <p role="alert">{state.message}</p>}
     {state.status === 'empty' && <p>No OPPS invoices or orders found for this Café.</p>}
@@ -104,10 +104,10 @@ export default function AdminOppsWorkQueuePanel() {
             {item.balance !== '—' ? ' · Balance ' + item.balance : ''}</p>
         </button>)}
       </div>
-      {selected && <div role="region" aria-label="Selected OPPS record" style={{ position: 'sticky', bottom: 12, background: '#fff', boxShadow: '0 8px 36px #0002', border: '1px solid #ddd', borderRadius: 16, padding: 18, marginTop: 16, zIndex: 3 }}>
+      {selected && <div role="region" aria-label="Selected OPPS record" style={{ position: 'relative', background: '#fff', boxShadow: '0 8px 36px #0001', border: '1px solid #ddd', borderRadius: 16, padding: 18, marginTop: 16, zIndex: 3 }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'start', justifyContent: 'space-between' }}>
           <div><span className="eyebrow">{selected.sourceType} · Review</span><h3 style={{ overflowWrap: 'anywhere', margin: '5px 0' }}>{selected.number}</h3></div>
-          <button type="button" onClick={() => { setSelectedKey(null); setConfirmedReady(false) }} aria-label="Close record details">Close ×</button>
+          <button type="button" onClick={() => { setSelectedKey(null); setConfirmedReady(false) }} aria-label="Close record details" style={{ borderRadius: 9, padding: '8px 12px', border: '1px solid #ddd', background: '#fafaf8', cursor: 'pointer' }}>Close ×</button>
         </div>
         <p><strong>{selected.customer}</strong> · {selected.status}</p>
         <p>Total {selected.total} · {selected.paymentLabel} · Balance {selected.balance}</p>
@@ -118,7 +118,7 @@ export default function AdminOppsWorkQueuePanel() {
           <input type="checkbox" checked={confirmedReady} onChange={event => setConfirmedReady(event.target.checked)} />
           <span>I checked the job details in OPPS and confirm it is ready for Café fulfillment.</span>
         </label>}
-        <button type="button" onClick={sendSelected} disabled={!confirmedReady || isTestRecord || alreadySent || handoffState.status === 'sending'}>
+        <button type="button" onClick={sendSelected} disabled={!confirmedReady || isTestRecord || alreadySent || handoffState.status === 'sending'} style={{ borderRadius: 10, padding: '11px 17px', border: 0, background: '#202020', color: '#fff', fontWeight: 650, cursor: 'pointer', opacity: (!confirmedReady || isTestRecord || alreadySent || handoffState.status === 'sending') ? .45 : 1 }}>
           {handoffState.status === 'sending' ? 'Sending…' : alreadySent ? 'Already sent' : 'Send to Café Counter'}
         </button>
         {handoffState.message && <p role={handoffState.status === 'error' ? 'alert' : 'status'}>{handoffState.message}</p>}
