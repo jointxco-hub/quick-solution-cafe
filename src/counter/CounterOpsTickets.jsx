@@ -28,6 +28,8 @@ export default function CounterOpsTickets() {
   const [state, setState] = useState({ loading: true, items: [], error: '' })
   const [busyId, setBusyId] = useState('')
   const [message, setMessage] = useState('')
+  const [selected, setSelected] = useState(null)
+  const [detail, setDetail] = useState({ status: 'idle' })
 
   const refresh = async () => {
     setState(previous => ({ ...previous, loading: true, error: '' }))
@@ -40,6 +42,16 @@ export default function CounterOpsTickets() {
     }
   }
   useEffect(() => { refresh() }, [])
+
+  const showDetail = async ticket => {
+    if (selected === ticket.id) { setSelected(null); setDetail({ status: 'idle' }); return }
+    setSelected(ticket.id)
+    setDetail({ status: 'loading' })
+    try {
+      const result = await callTicketRpc('get_cafe_opps_handoff_detail', { p_handoff_id: ticket.id })
+      setDetail({ status: 'ready', item: result })
+    } catch (error) { setDetail({ status: 'error', message: error.message || 'Details unavailable.' }) }
+  }
 
   const advance = async ticket => {
     const next = NEXT[ticket.status]
@@ -67,11 +79,30 @@ export default function CounterOpsTickets() {
     {!state.loading && !state.error && !state.items.length && <p>No OPPS handoffs received yet.</p>}
     <div style={{ display: 'grid', gap: 10 }}>
       {state.items.map(ticket => <article key={ticket.id} style={{ border: '1px solid #e6e6e2', padding: 14, borderRadius: 12 }}>
-        <strong style={{ overflowWrap: 'anywhere' }}>{ticket.number}</strong>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <strong style={{ overflowWrap: 'anywhere' }}>{ticket.number}</strong>
+          <button type="button" onClick={() => showDetail(ticket)} aria-expanded={selected === ticket.id} style={{ borderRadius: 9, border: '1px solid #ddd', background: '#fafaf8', padding: '8px 12px', cursor: 'pointer' }}>{selected === ticket.id ? 'Close' : 'Job details'}</button>
+        </div>
         <p style={{ margin: '6px 0' }}>{ticket.customer || 'Customer'} · {ticket.sourceType}</p>
         <p style={{ margin: '6px 0' }}>Fulfillment: <strong>{ticket.status.replace('_', ' ')}</strong></p>
         {ticket.existingCafeSale && ticket.status !== 'cancelled' && <p role="alert" style={{ padding: 10, background: '#fff4e7', borderRadius: 8 }}>Already linked to a Café sale. Use the original Café order for fulfillment; this ticket is blocked.</p>}
         {ticket.reconciliationReason && <p role="status" style={{ background: '#f2f1ed', padding: 10, borderRadius: 8 }}>Reconciled: {ticket.reconciliationReason}</p>}
+        {selected === ticket.id && <div style={{ borderTop: '1px solid #e5e5e1', marginTop: 12, paddingTop: 12 }}>
+          {detail.status === 'loading' && <p role="status">Loading job details…</p>}
+          {detail.status === 'error' && <p role="alert">{detail.message}</p>}
+          {detail.status === 'ready' && <>
+            <h3 style={{ margin: '4px 0 10px' }}>Production details</h3>
+            {Object.entries(detail.item.notes || {}).filter(([, value]) => Boolean(value)).map(([name, value]) => <p key={name} style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}><strong>{name.replace(/([A-Z])/g, ' $1')}:</strong> {String(value)}</p>)}
+            {(detail.item.items || []).map((line, index) => <div key={index} style={{ padding: 10, background: '#f7f7f4', borderRadius: 10, marginBottom: 8 }}>
+              <strong>{line.quantity} × {line.name || 'Item'}</strong>
+              {line.description && <p>{line.description}</p>}
+              {line.specifications && <pre style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{JSON.stringify(line.specifications, null, 2)}</pre>}
+            </div>)}
+            <strong>Linked OPPS files ({(detail.item.files || []).length})</strong>
+            {(detail.item.files || []).length ? <ul>{detail.item.files.map(file => <li key={file.id}>{file.name || 'Unnamed file'} · {file.type || 'File'}</li>)}</ul> : <p>No linked OPPS files found for this job.</p>}
+            <p style={{ fontSize: 13, opacity: .75 }}>File downloads are disabled until staff-scoped signed URL access is verified. Open the original OPPS job to inspect artwork before production.</p>
+          </>}
+        </div>}
         {NEXT[ticket.status] && !ticket.existingCafeSale && <button type="button" disabled={busyId===ticket.id} style={{ background: '#142d28', color: '#fff', border: 0, borderRadius: 10, padding: '10px 15px', fontWeight: 650, cursor: 'pointer' }}
           onClick={() => advance(ticket)}>{busyId===ticket.id ? 'Updating…' : LABEL[ticket.status]}</button>}
       </article>)}
