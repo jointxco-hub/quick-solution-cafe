@@ -11,6 +11,7 @@ export default function AdminOppsWorkQueuePanel() {
   const [type, setType] = useState('all')
   const [payment, setPayment] = useState('all')
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const [selectedKey, setSelectedKey] = useState(null)
 
   const refresh = async () => {
     setState({ status: 'loading', items: [] })
@@ -37,6 +38,7 @@ export default function AdminOppsWorkQueuePanel() {
   const updatePayment = value => { setPayment(value); setVisibleCount(PAGE_SIZE) }
   const invoices = state.items.filter(item => item.sourceType === 'invoice').length
   const orders = state.items.filter(item => item.sourceType === 'order').length
+  const selected = state.items.find(item => item.key === selectedKey)
 
   return <section aria-label="OPPS work queue" className="admin-section-block">
     <div className="admin-section-title">
@@ -73,8 +75,10 @@ export default function AdminOppsWorkQueuePanel() {
       </div>
       <p role="status" style={{ marginBottom: 10 }}>{filtered.length} matching {filtered.length === 1 ? 'record' : 'records'}</p>
       <div style={{ display: 'grid', gap: 8 }}>
-        {filtered.slice(0, visibleCount).map(item => <article key={item.key} className="message-card neutral"
-          style={{ padding: '12px 14px' }}>
+        {filtered.slice(0, visibleCount).map(item => <button key={item.key} type="button" className="message-card neutral"
+          aria-label={'View ' + item.sourceType + ' ' + item.number}
+          onClick={() => setSelectedKey(item.key)}
+          style={{ padding: '12px 14px', width: '100%', textAlign: 'left', cursor: 'pointer', font: 'inherit', color: 'inherit', border: selectedKey === item.key ? '1px solid #222' : '1px solid #eceae5' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
             <strong style={{ overflowWrap: 'anywhere' }}>{item.number}</strong>
             <span className="schema-tag">{item.sourceType}</span>
@@ -82,8 +86,18 @@ export default function AdminOppsWorkQueuePanel() {
           <p style={{ margin: '5px 0' }}>{item.customer} · {item.status}</p>
           <p style={{ margin: 0 }}><strong>{item.total}</strong> · {item.paymentLabel}
             {item.balance !== '—' ? ' · Balance ' + item.balance : ''}</p>
-        </article>)}
+        </button>)}
       </div>
+      {selected && <div role="region" aria-label="Selected OPPS record" style={{ position: 'sticky', bottom: 12, background: '#fff', boxShadow: '0 8px 36px #0002', border: '1px solid #ddd', borderRadius: 16, padding: 18, marginTop: 16, zIndex: 3 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'start', justifyContent: 'space-between' }}>
+          <div><span className="eyebrow">{selected.sourceType} · Review</span><h3 style={{ overflowWrap: 'anywhere', margin: '5px 0' }}>{selected.number}</h3></div>
+          <button type="button" onClick={() => setSelectedKey(null)} aria-label="Close record details">Close ×</button>
+        </div>
+        <p><strong>{selected.customer}</strong> · {selected.status}</p>
+        <p>Total {selected.total} · {selected.paymentLabel} · Balance {selected.balance}</p>
+        <p style={{ fontSize: 13, opacity: .75 }}>This record is view-only. Confirm client artwork, quantity, production instructions and payment in OPPS before requesting fulfillment. No counter sale is created here.</p>
+        <button type="button" disabled title="Available after staging handoff and duplicate checks pass">Send to Café Counter · Coming soon</button>
+      </div>}
       {filtered.length === 0 && <p>No records match these filters.</p>}
       {visibleCount < filtered.length && <button type="button" onClick={() => setVisibleCount(count => count + PAGE_SIZE)}
         style={{ marginTop: 14 }}>Show 10 more</button>}
