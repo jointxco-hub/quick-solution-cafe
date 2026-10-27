@@ -70,7 +70,8 @@ export default function CounterOpsTickets() {
         <strong style={{ overflowWrap: 'anywhere' }}>{ticket.number}</strong>
         <p style={{ margin: '6px 0' }}>{ticket.customer || 'Customer'} · {ticket.sourceType}</p>
         <p style={{ margin: '6px 0' }}>Fulfillment: <strong>{ticket.status.replace('_', ' ')}</strong></p>
-        {ticket.existingCafeSale && <p role="alert" style={{ padding: 10, background: '#fff4e7', borderRadius: 8 }}>Already linked to a Café sale. Use the original Café order for fulfillment; this ticket is blocked.</p>}
+        {ticket.existingCafeSale && ticket.status !== 'cancelled' && <p role="alert" style={{ padding: 10, background: '#fff4e7', borderRadius: 8 }}>Already linked to a Café sale. Use the original Café order for fulfillment; this ticket is blocked.</p>}
+        {ticket.reconciliationReason && <p role="status" style={{ background: '#f2f1ed', padding: 10, borderRadius: 8 }}>Reconciled: {ticket.reconciliationReason}</p>}
         {NEXT[ticket.status] && !ticket.existingCafeSale && <button type="button" disabled={busyId===ticket.id} style={{ background: '#142d28', color: '#fff', border: 0, borderRadius: 10, padding: '10px 15px', fontWeight: 650, cursor: 'pointer' }}
           onClick={() => advance(ticket)}>{busyId===ticket.id ? 'Updating…' : LABEL[ticket.status]}</button>}
       </article>)}
