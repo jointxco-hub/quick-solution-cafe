@@ -43,8 +43,8 @@ export default function CounterOpsTickets() {
 
   const advance = async ticket => {
     const next = NEXT[ticket.status]
-    if (!next) return
-    if (!window.confirm('Change ' + ticket.number + ' to ' + next.replace('_', ' ') + '?')) return
+    if (!next || ticket.existingCafeSale) return
+    if (!window.confirm('Move ' + ticket.number + ' to ' + next.replace('_', ' ') + '? This changes fulfillment only.')) return
     setBusyId(ticket.id)
     setMessage('')
     try {
@@ -58,7 +58,7 @@ export default function CounterOpsTickets() {
   return <section aria-label="From OPPS fulfillment tickets" style={{ background: '#fff', borderRadius: 16, padding: 16 }}>
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
       <div><small>FROM OPPS · STAGING</small><h2>Fulfillment tickets</h2></div>
-      <button type="button" onClick={refresh} disabled={state.loading}>Refresh</button>
+      <button type="button" onClick={refresh} disabled={state.loading} style={{ borderRadius: 10, padding: '9px 13px', border: '1px solid #ddd', background: '#fafafa', cursor: 'pointer' }}>Refresh</button>
     </div>
     <p>These are existing OPPS jobs. They are not new counter sales and do not enter cash-up.</p>
     {state.loading && <p role="status">Loading tickets…</p>}
@@ -70,7 +70,8 @@ export default function CounterOpsTickets() {
         <strong style={{ overflowWrap: 'anywhere' }}>{ticket.number}</strong>
         <p style={{ margin: '6px 0' }}>{ticket.customer || 'Customer'} · {ticket.sourceType}</p>
         <p style={{ margin: '6px 0' }}>Fulfillment: <strong>{ticket.status.replace('_', ' ')}</strong></p>
-        {NEXT[ticket.status] && <button type="button" disabled={busyId===ticket.id}
+        {ticket.existingCafeSale && <p role="alert" style={{ padding: 10, background: '#fff4e7', borderRadius: 8 }}>Already linked to a Café sale. Use the original Café order for fulfillment; this ticket is blocked.</p>}
+        {NEXT[ticket.status] && !ticket.existingCafeSale && <button type="button" disabled={busyId===ticket.id} style={{ background: '#142d28', color: '#fff', border: 0, borderRadius: 10, padding: '10px 15px', fontWeight: 650, cursor: 'pointer' }}
           onClick={() => advance(ticket)}>{busyId===ticket.id ? 'Updating…' : LABEL[ticket.status]}</button>}
       </article>)}
     </div>
