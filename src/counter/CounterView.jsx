@@ -1,4 +1,5 @@
 import StaffPopover from '../components/StaffPopover.jsx'
+import CounterOpsTickets from './CounterOpsTickets.jsx'
 import StaffMenu from '../components/StaffMenu.jsx'
 import React, { useState } from 'react'
 import Icon from '../components/Icon.jsx'
@@ -410,6 +411,7 @@ function ViewTabs({ view, onView, saleWaiting, showCancelled }) {
         New sale{saleWaiting ? <i className="qsc-dot" title="A sale is waiting on an unconfirmed result"/> : null}
       </button>
       <button type="button" className={view === 'orders' ? 'active' : ''} aria-current={view === 'orders' ? 'page' : undefined} onClick={() => onView?.('orders')}>Today’s orders</button>
+      {import.meta.env.VITE_OPPS_CAFE_QUEUE_ENABLED === 'true' && <button type="button" className={view === 'opps' ? 'active' : ''} aria-current={view === 'opps' ? 'page' : undefined} onClick={() => onView?.('opps')}>From OPPS</button>}
       <StaffPopover className="qsc-more-views">
         <summary>{({ unpaid: 'Unpaid', cashup: 'Cash-up', cancelled: 'Cancelled' })[view] || 'More'} <span aria-hidden="true">⌄</span></summary>
         <div onClick={(event) => { if (event.target.closest('button')) event.currentTarget.parentElement.open = false }}>
@@ -1103,6 +1105,8 @@ export default function CounterView({
           <UnpaidPanel unpaid={unpaid} entries={entries} onRefresh={onRefreshUnpaid} onOpenOrder={onOpenOrder} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
         ) : view === 'cashup' ? (
           <CashupPanel cashup={cashup} entries={entries} onRefresh={onRefreshCashup} onSelectDate={onSelectCashupDate} onOpenOrder={(orderId) => onOpenOrder?.(orderId, 'cashup')} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
+        ) : view === 'opps' ? (
+          <CounterOpsTickets />
         ) : view === 'orders' ? (
           <OrdersPanel orders={orders} entries={entries} saleWaiting={saleWaiting} onRefresh={onRefreshOrders} onOpenOrder={onOpenOrder} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
         ) : saleBody}
