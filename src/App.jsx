@@ -9,7 +9,7 @@ import PaymentReturn from './components/PaymentReturn.jsx'
 import TrackOrder from './components/TrackOrder.jsx'
 import ProofGallery from './components/ProofGallery.jsx'
 import ComingSoonRail from './components/ComingSoonRail.jsx'
-import WorkedWithStrip from './components/WorkedWithStrip.jsx'
+import FeaturedWork from './components/FeaturedWork.jsx'
 import HelpCta from './components/HelpCta.jsx'
 import NotFound from './components/NotFound.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
@@ -829,7 +829,7 @@ export default function App() {
           </div>
         </section>
 
-        <WorkedWithStrip/>
+        <FeaturedWork site="qs"/>
 
         <ProofGallery onExploreCollection={goToQuickPoints}/>
 
