@@ -73,3 +73,5 @@ import './styles/qs-admin-mobile.css'
 import './styles/qs22-featured-work.css'
 
 import './styles/qs23-home-ux.css'
+
+import './styles/qs23-home-process.css'
