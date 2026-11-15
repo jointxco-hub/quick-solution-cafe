@@ -44,7 +44,7 @@ test('Business branding opens existing Signs & Advertising products', async ({ p
   await page.goto('/')
   await page.getByRole('button', { name: /Business branding/i }).click()
   await expect(page).toHaveURL(/\/shop(?:[?#]|$)/)
-  await expect(page.getByText('Signs & Advertising', { exact: true }).first()).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.history.state?.shopFilter)).toBe('Signs & Advertising')
 })
 
 test('Print documents card reuses document order entry', async ({ page }) => {
