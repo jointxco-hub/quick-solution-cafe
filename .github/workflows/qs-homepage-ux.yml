@@ -6,9 +6,11 @@ on:
       - 'src/App.jsx'
       - 'src/components/HomeServiceCategories.jsx'
       - 'src/components/FeaturedWork.jsx'
+      - 'src/components/HomeHowItWorks.jsx'
       - 'src/data/workProjects.js'
       - 'src/styles/qs22-featured-work.css'
       - 'src/styles/qs23-home-ux.css'
+      - 'src/styles/qs23-home-process.css'
       - 'tests/**'
       - 'package*.json'
       - '.github/workflows/qs-homepage-ux.yml'
@@ -29,6 +31,6 @@ jobs:
       - name: Existing storefront tests
         run: npm test
       - name: Shared work project tests
-        run: node --test tests/shared-work-projects.test.mjs
+        run: node --test tests/shared-work-projects.test.mjs tests/qs23-home-ux.test.mjs
       - name: Production build
         run: npm run build
