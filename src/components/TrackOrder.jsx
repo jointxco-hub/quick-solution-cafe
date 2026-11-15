@@ -252,7 +252,7 @@ export default function TrackOrder() {
               </div>
 
               {!isCancelled && (
-                <div className="qs-track-progress">
+                <div className="qs-track-progress" style={{ '--tracking-step-count': Math.max(timeline.length, 1) }}>
                   <div className="qs-track-progress-line">
                     <span style={{ width: `${timeline.length > 1 ? (currentIndex / (timeline.length - 1)) * 100 : 0}%` }}/>
                   </div>
