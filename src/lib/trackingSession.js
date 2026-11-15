@@ -35,3 +35,25 @@ export function buildQuickSolutionTrackingHref(orderNumber, trackingToken) {
   })
   return `/track?${params.toString()}`
 }
+
+
+// Same-browser checkout fallback. Only reads this storefront's existing
+// first-party tracking session; never creates a token or skips backend checks.
+export function findQuickSolutionTrackingSessionByOrderNumber(orderNumber) {
+  const target = String(orderNumber || '').trim().toUpperCase()
+  const store = storage()
+  if (!target || !store) return null
+  try {
+    for (let i = 0; i < store.length; i += 1) {
+      const key = store.key(i)
+      if (!key?.startsWith(PREFIX)) continue
+      let value = null
+      try { value = JSON.parse(store.getItem(key) || 'null') } catch { continue }
+      if (!value?.trackingToken || String(value.orderNumber || '').trim().toUpperCase() !== target) continue
+      const expiration = Date.parse(String(value.trackingTokenExpiresAt || ''))
+      if (Number.isFinite(expiration) && expiration <= Date.now()) continue
+      return value
+    }
+  } catch { return null }
+  return null
+}
