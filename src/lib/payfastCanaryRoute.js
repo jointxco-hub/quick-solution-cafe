@@ -2,7 +2,7 @@
 // sandbox-only PayFast canary. The public Café host and any non-staging
 // Supabase project always use the standard checkout endpoint.
 export const STANDARD_PAYMENT_FUNCTION = 'quick-solution-payfast'
-export const STAGING_PAYMENT_FUNCTION = 'quick-solution-payfast-opps106-test'
+export const STAGING_PAYMENT_FUNCTION = 'quick-solution-payfast-browser-opps106-test'
 
 export function resolveQuickSolutionPaymentFunction(hostname, supabaseUrl) {
   const host = String(hostname || '').toLowerCase()
