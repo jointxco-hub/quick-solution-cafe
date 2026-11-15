@@ -2,9 +2,9 @@ import React from 'react'
 import Icon from './Icon.jsx'
 
 const services = [
-  { id: 'print', icon: 'document', title: 'Print & copy', detail: 'Documents, photos & lamination', action: 'documents' },
+  { id: 'print', icon: 'document', title: 'Print documents', detail: 'CVs, forms & A4 documents', action: 'documents' },
   { id: 'apparel', icon: 'shirt', title: 'Clothing & merch', detail: 'T-shirts, hoodies & caps', filter: 'Apparel' },
-  { id: 'branding', icon: 'store', title: 'Business branding', detail: 'Stickers, signs & more', filter: 'Business' },
+  { id: 'branding', icon: 'store', title: 'Business essentials', detail: 'Business cards & stationery', filter: 'Business' },
   { id: 'events', icon: 'flag', title: 'Events & displays', detail: 'Banners, flags & displays', filter: 'Events' }
 ]
 
