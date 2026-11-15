@@ -10,6 +10,7 @@ import TrackOrder from './components/TrackOrder.jsx'
 import ProofGallery from './components/ProofGallery.jsx'
 import ComingSoonRail from './components/ComingSoonRail.jsx'
 import FeaturedWork from './components/FeaturedWork.jsx'
+import HomeServiceCategories from './components/HomeServiceCategories.jsx'
 import HelpCta from './components/HelpCta.jsx'
 import NotFound from './components/NotFound.jsx'
 import AdminProductManager from './admin/AdminProductManager.jsx'
@@ -768,66 +769,24 @@ export default function App() {
             openGuided/openAdvanced/openProductDetail/goShop above. */}
         {page === 'home' && (
         <>
-        <section className="hero shell qs18-hero">
+        <section className="hero shell qs18-hero qs23-hero">
           <div className="hero-copy">
-            {/* QS-21.5: "Location 001" was the internal tenant/location
-                label - never customer-facing. Kite Cres, Riverside View
-                is the real, displayable location name (see
-                src/lib/businessInfo.js, the single source for this and
-                the other real business details this pass adds). */}
-            <span className="eyebrow">Joint X Quick Solution Café · {LOCATION_DISPLAY_NAME}</span>
-            <span className="eyebrow qs21-home-location">
-              <Icon name="pin" size={13}/>
-              <span>Quick Solution {'\u00b7'} {LOCATION_DISPLAY_NAME}</span>
-            </span>
-            <h1>Printing, branding<br/>&amp; <em>everyday solutions.</em></h1>
-
-            <form className="search-wrap" onSubmit={submitSearch}>
-              <div className="search-box">
-                <Icon name="search" size={20}/>
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  aria-label="Tell Quick Solution what you need"
-                  placeholder="Try “banner”, “CV”, “stickers”..."
-                />
-                <button type="submit">Guide me</button>
-              </div>
-              {searchMatches.length > 0 && (
-                <div className="search-results">
-                  {searchMatches.map((product) => (
-                    <button type="button" key={product.id} onClick={() => product.channels?.guided !== false && product.guidedJourneyId ? openGuided(product, product.guidedJourneyId) : openAdvanced(product)}>
-                      <span><strong>{resolveProductDisplayName(product, languageMode)}</strong><small>{product.category} · guided start</small></span>
-                      <Icon name="arrowRight" size={17}/>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </form>
-
-            <div className="trust-row"><span className="brand-dot green"></span><span>No account needed for quick orders</span><span className="divider"></span><span>Clear pricing</span><span className="divider"></span><span>Human help when needed</span></div>
-          </div>
-
-          <div className="qs18-outcome-panel" aria-label="What do you need done today?">
-            <h2>What do you need done today?</h2>
-            {/* QS-19: horizontal swipe rail on mobile, vertical list on
-                desktop - pure CSS (qs19-home-polish.css), same DOM/data
-                either way. qs18-outcome-arrow wraps the chevron in a
-                circular badge for stronger tap affordance. */}
-            <div className="qs18-outcome-grid">
-              {heroOutcomes.map((outcome) => (
-                <button type="button" key={outcome.id} className="qs18-outcome-card" onClick={() => selectHeroOutcome(outcome)}>
-                  <span className="qs18-outcome-icon"><Icon name={outcome.icon} size={20}/></span>
-                  <span className="qs18-outcome-copy">
-                    <strong>{outcome.label}</strong>
-                    <small>{outcome.helper}</small>
-                  </span>
-                  <span className="qs18-outcome-arrow"><Icon name="arrowRight" size={15}/></span>
-                </button>
-              ))}
+            <span className="eyebrow qs21-home-location"><Icon name="pin" size={13}/> Quick Solution · {LOCATION_DISPLAY_NAME}</span>
+            <h1>Your ideas.<br/><em>Made real.</em></h1>
+            <p className="qs23-hero-subtitle">Printing, clothing, stickers and business branding made simple. Order online, collect locally or choose delivery.</p>
+            <div className="qs23-hero-actions">
+              <button type="button" className="qs23-cta qs23-cta-primary" onClick={goShop}>Explore services <Icon name="arrowRight" size={17}/></button>
+              <button type="button" className="qs23-cta qs23-cta-secondary" onClick={openDocumentPrinting}>Upload &amp; print <Icon name="upload" size={17}/></button>
             </div>
+            <div className="trust-row"><span className="brand-dot green"></span><span>No account needed for quick orders</span><span className="divider"></span><span>Human help available</span></div>
           </div>
         </section>
+
+        <HomeServiceCategories onDocuments={openDocumentPrinting} onCategory={(filter) => {
+          setShopFilter(filter)
+          setShopMode('products')
+          goShop()
+        }}/>
 
         <FeaturedWork site="qs"/>
 
