@@ -1,44 +1,30 @@
-# Shared Joint X project library — publishing contract
+# Cross-site Our Work integration — existing infrastructure first
 
-This release seeds a frontend-only project catalogue and a QS featured-work gallery. It does **not** create a new Supabase table, public API, or shared live CMS.
+## Audit conclusion (15 November 2026)
 
-## Ownership and reuse
+X LAB already has an **Admin > Our Work** editor in `jointxco-hub/x-lab/src/pages/admin/AdminOurWork.jsx`. The canonical project data used by the X1 admin is `xlab_our_work` (see `src/pages/admin/AdminX1Site.jsx`), which selects active records where `show_on_x1 = true`. X LAB already exposes `show_on_xlab` and `show_on_x1`, `x1_featured`, `x1_sort_order`, `x1_summary`, `x1_process`, `x1_results`, and `x1_addons`. It has cover image upload/compression, image galleries, video upload or URLs, video thumbnails, and project publishing controls. Its Lookbook and page-template sections already render case studies.
 
-A Joint X project is created **once**, then selectively published to the consumer sites.
+**Do not implement the previously proposed separate projects, project_media, project_channels, or project_appearances CMS tables unless a concrete gap cannot be addressed safely by extending the existing schema.** Avoid duplicate admin interfaces or migrating/re-uploading existing project media.
 
-- **Joint X / X LAB**: deeper production case studies, business branding, capabilities, bulk/custom work
-- **X1**: examples that demonstrate samples, merch, garment decoration and the X1 purchase journey
-- **Quick Solution**: friendly, locally relevant proof of printing, merchandise, branding and events, with fast shop/upload CTAs
+## Recommended minimal change
 
-Each site should have its own heading, short description, CTA and display order, while media, job facts and project ID are shared. This avoids duplicate edits and conflicting dates or claims.
+1. Confirm the deployed `xlab_our_work` schema and RLS/public read policies in staging. The GitHub code establishes intended usage, not confirmed production database contents.
+2. Extend the existing `xlab_our_work` row with opt-in Quick Solution visibility (`show_on_qs`, default false) and only genuinely needed QS overrides (`qs_featured`, `qs_sort_order`, `qs_summary`, and optionally `qs_cta_target`). Prefer an existing flexible JSON field if that is already the supported pattern, rather than proliferating columns.
+3. Add a small **Quick Solution** publishing subsection to X LAB Admin > Our Work alongside X LAB and X1. Do not create a second project editor.
+4. QS consumes a **public, published-only** read interface returning approved projects/media. It must never use credentials with write privileges. Respect the existing tenant/brand authorization model; do not relax RLS to make the integration work.
+5. Preserve original media dimensions and allow per-site thumbnail/focal-point overrides. Existing gallery arrays and video thumbnail paths may suffice; verify before changing storage.
+6. Maintain truthful credits/relationships and publication permissions for Uber Eats, Netflix, Cue Corner/Miss SA, Brandon Dhludhlu and Leta Mbulu.
 
-## Planned backend
+## QS draft status
 
-When ready, create a shared, staff-managed public portfolio in Supabase with appropriate tenant/brand ownership, not tables in each website:
+This PR contains a **temporary static seed** in `src/data/workProjects.js` and a responsive QS display component. It does not persist projects or upload media and **must not become another source of truth**. During integration, replace it with an adapter for approved `xlab_our_work` public records, with safe placeholders only when records/media have not been approved. Remove the static duplicate records once the shared feed is verified.
 
-- `projects`: id, slug, title, client_name, production_credit, job_scope, year, project_type, verification_status, publication_status
-- `project_media`: id, project_id, storage_path, mime_type, width, height, focal_point, poster_path, alt, sort_order, usage_rights
-- `project_channels`: project_id, channel (qs/xlab/x1), featured, sort_order, localized_headline, localized_summary, CTA/linked product
-- `project_appearances`: project_id, event_name, date, link/evidence, relationship_label
-- `project_permissions`: clearance to publish media, mention brand/client names, use logos, include testimonial
+## Validation before merge
 
-Expose only publication-approved fields and public media via a narrow public read endpoint/RLS policy. Keep internal notes, costs, clients' contact details and unreleased content private. Media upload and approvals belong to authenticated staff admin. Add a reusable cache layer per site.
-
-## Media guidance
-
-Keep original files and derive responsive thumbnails: portrait 9:16 or 3:4, square 1:1, landscape 16:9, plus miscellaneous sizes. Use `object-fit: cover` on curated card previews with focal point metadata; use `object-fit: contain` in the future full-media viewer to avoid cutting off artwork. Video: poster, `preload=none`, user-initiated playback in initial implementation; add intersection-based muted preview only after performance tests. Avoid third-party video auto-load on mobile.
-
-## Publication checklist
-
-1. Confirm exact scope, source, date and who commissioned/paid for the project.
-2. Confirm permission to use logos, original videos, event footage and the client's name.
-3. Distinguish `work commissioned by X` from `work for a client which appeared at event Y`.
-4. Add accessibility alt text/captions and aspect ratio metadata.
-5. Approve per-site placement and link to the relevant service/product.
-6. Preview staging mobile/desktop; publish only after review.
-
-## QS current implementation
-
-`src/data/workProjects.js` is temporary shared-data *shape*, **not** a shared deployed source. It deliberately exposes only three named featured projects with generic placeholder graphics, and stages two other project references without publishing them. Replace the seed with the shared API when developed, keeping IDs stable.
-
-Check the staged claims and media permissions before production deployment.
+- Confirm X LAB admin still edits one canonical record for X LAB/X1/QS.
+- Verify X1 case-study filters and fallback remain unchanged.
+- Check QS only shows `show_on_qs` and active/approved projects.
+- Test RLS as anon, authenticated customer and staff.
+- Confirm portrait/square/landscape video/image behavior and mobile performance.
+- Run QS tests/build; X LAB regression tests for Our Work, page templates and X1.
+- Do not alter production until staging passes.
