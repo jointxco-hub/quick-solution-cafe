@@ -7,8 +7,8 @@ const stagingApi = 'https://tijiamrfnxrbitafiflj.supabase.co'
 const productionApi = 'https://slhcvyeuqsduaglddqdb.supabase.co'
 
 test('isolated staging hostname and staging backend select hardened canary',()=>{
-  assert.equal(route('quick-solution-cafe-staging-k4gtl55sb-joint-x.vercel.app',stagingApi),'quick-solution-payfast-opps106-test')
-  assert.equal(route('quick-solution-cafe-staging.vercel.app',stagingApi),'quick-solution-payfast-opps106-test')
+  assert.equal(route('quick-solution-cafe-staging-k4gtl55sb-joint-x.vercel.app',stagingApi),'quick-solution-payfast-browser-opps106-test')
+  assert.equal(route('quick-solution-cafe-staging.vercel.app',stagingApi),'quick-solution-payfast-browser-opps106-test')
 })
 
 test('public Café, wrong backend and unrelated previews cannot select test canary',()=>{
