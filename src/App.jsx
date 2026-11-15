@@ -7,7 +7,7 @@ import ProductConfigurator from './components/ProductConfigurator.jsx'
 import GuidedOrder from './components/GuidedOrder.jsx'
 import PaymentReturn from './components/PaymentReturn.jsx'
 import TrackOrder from './components/TrackOrder.jsx'
-import ProofGallery from './components/ProofGallery.jsx'
+import HomeHowItWorks from './components/HomeHowItWorks.jsx'
 import ComingSoonRail from './components/ComingSoonRail.jsx'
 import FeaturedWork from './components/FeaturedWork.jsx'
 import HomeServiceCategories from './components/HomeServiceCategories.jsx'
@@ -790,7 +790,7 @@ export default function App() {
 
         <FeaturedWork site="qs"/>
 
-        <ProofGallery onExploreCollection={goToQuickPoints}/>
+        <HomeHowItWorks/>
 
         {/* QS-21 section 8: Quick Points restored to Home as a compact
             credibility/utility band (not the old full-page section) -
