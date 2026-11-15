@@ -1,3 +1,4 @@
+import { resolveQuickSolutionPaymentFunction } from './payfastCanaryRoute.js'
 import { buildPricingDefinition } from './pricingDefinition.js'
 import { parseOAuthRedirectHash } from './oauthRedirect.js'
 import { customerClient } from './customerApi.js'
@@ -510,7 +511,8 @@ export async function unlinkEasyLocateBusiness(fulfilmentPointId) {
 async function quickSolutionPaymentRequest(body) {
   if (!isSupabaseConfigured()) throw new Error('Supabase is not configured.')
 
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/quick-solution-payfast`, {
+  const paymentFunction = resolveQuickSolutionPaymentFunction(window.location.hostname, SUPABASE_URL)
+  const response = await fetch(`${SUPABASE_URL}/functions/v1/${paymentFunction}`, {
     method: 'POST',
     headers: apiHeaders(null),
     body: JSON.stringify(body || {})
