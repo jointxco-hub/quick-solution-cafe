@@ -69,3 +69,5 @@ import './styles/qs21-5-mobile-shell.css'
 import './styles/qs21-8-routing.css'
 
 import './styles/qs-admin-mobile.css'
+
+import './styles/qs22-featured-work.css'
