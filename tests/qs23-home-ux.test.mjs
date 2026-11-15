@@ -19,9 +19,9 @@ test('home hero offers precisely two primary choices wired to existing flows', (
 test('four service choices use existing catalogue buckets and real routes', () => {
   assert.equal((categories.match(/id: '/g) || []).length, 4)
   assert.match(categories, /filter: 'Apparel'/)
-  assert.match(categories, /filter: 'Business'/)
+  assert.match(categories, /filter: 'Signs & Advertising'/)
   assert.match(categories, /filter: 'Events'/)
-  for (const filter of ['Apparel', 'Business', 'Events']) {
+  for (const filter of ['Apparel', 'Signs & Advertising', 'Events']) {
     assert.ok(SHOP_CATEGORIES.includes(filter), `Missing category ${filter}`)
     assert.ok(filterProductsByShopCategory(products, filter).length > 0, `Empty category ${filter}`)
   }
