@@ -31,6 +31,8 @@ jobs:
       - name: Existing storefront tests
         run: npm test
       - name: Shared work project tests
+        if: success() || failure()
         run: node --test tests/shared-work-projects.test.mjs tests/qs23-home-ux.test.mjs
       - name: Production build
+        if: success() || failure()
         run: npm run build
