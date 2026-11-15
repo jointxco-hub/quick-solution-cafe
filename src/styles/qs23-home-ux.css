@@ -1,5 +1,5 @@
 /* QS-23: calm, outcome-first homepage; presentation-only. */
-.qs23-hero { display: block !important; padding-top: clamp(46px, 8vw, 100px); padding-bottom: clamp(35px, 6vw, 80px); }
+.qs23-hero { display: block !important; min-height: 0; padding-top: clamp(46px, 8vw, 100px); padding-bottom: clamp(35px, 6vw, 80px); }
 .qs23-hero .hero-copy { max-width: 900px; min-width: 0; }
 .qs23-hero .hero-copy h1 { max-width: 880px; font-size: clamp(48px, 7.1vw, 98px); line-height: .99; letter-spacing: -.065em; margin: 14px 0 18px; }
 .qs23-hero-subtitle { max-width: 580px; color: #5f625c; font-size: clamp(16px, 1.5vw, 20px); line-height: 1.5; margin: 0 0 28px; }
