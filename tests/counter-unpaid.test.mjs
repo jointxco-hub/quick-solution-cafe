@@ -200,7 +200,9 @@ test('manual refresh reads the server again; while it runs the button is disable
   const refreshing = unpaidScreen({ ...first, refreshing: true })
   assert.match(refreshing, /<button[^>]*disabled=""[^>]*>Refreshing…<\/button>/)
   assert.match(refreshing, /QS-260923-OLD3/)
-  assert.doesNotMatch(stripComments(read('../src/counter/CounterPage.jsx')), /setInterval|setTimeout|visibilitychange/, 'no polling')
+  const page = stripComments(read('../src/counter/CounterPage.jsx'))
+  const unpaidSection = page.slice(page.indexOf('const loadUnpaid ='),page.indexOf('const loadCancelled =') > page.indexOf('const loadUnpaid =') ? page.indexOf('const loadCancelled =') : page.indexOf('const showView ='))
+  assert.doesNotMatch(unpaidSection + stripComments(read('../src/lib/counterUnpaid.js')), /setInterval|setTimeout|visibilitychange/, 'Unpaid list does not poll; QR status has its own isolated monitor')
 })
 
 // ── read-only ───────────────────────────────────────────────────────────
