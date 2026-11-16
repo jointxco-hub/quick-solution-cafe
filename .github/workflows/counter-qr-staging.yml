@@ -1,0 +1,26 @@
+name: Café Counter QR staging safety
+
+on:
+  push:
+    branches:
+      - feature/opps106-sandbox-browser-check
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  counter-qr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Use available Node and verify environment
+        run: |
+          node --version
+          npm --version
+      - name: Install pinned dependencies
+        run: npm ci
+      - name: Full Counter tests including QR and existing payment guards
+        run: npm test
+      - name: Vite production build (feature branch only)
+        run: npm run build
