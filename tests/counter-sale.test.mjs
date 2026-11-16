@@ -66,7 +66,7 @@ function fakeCreate({ total = 35, fail = null } = {}) {
     calls.push(JSON.parse(JSON.stringify(payload)))
     if (fail) throw fail
     return {
-      ok: true, replayed: false, orderId: 'order-uuid', orderNumber: 'QS-2026-0001', status: 'submitted', paymentStatus: 'unpaid', channel: 'counter',
+      ok: true, replayed: false, orderId: '00000000-0000-4000-8000-000000000001', orderNumber: 'QS-2026-0001', status: 'submitted', paymentStatus: 'unpaid', channel: 'counter',
       createdAt: '2026-09-26T10:00:00Z', customerName: payload.customerName || 'Walk-in', customerEmail: payload.customerEmail, customerPhone: payload.customerPhone,
       productKey: payload.productKey, productName: byId.get(payload.productKey).name, configuration: payload.configuration,
       lineTotal: total, subtotal: total, fulfilmentFee: 0, totalAmount: total
@@ -418,7 +418,7 @@ test('submitting state disables the actions and says so', () => {
   assert.doesNotMatch(panel, /<button(?![^>]*disabled)[^>]*>Create unpaid order/)
 })
 
-test('success state shows the server order, the server total and unpaid, offers Start new sale and nothing else', async () => {
+test('success state shows paid options immediately without showing internal ID', async () => {
   const done = await submit(confirm('a3-lamination', { name: 'Anele', phone: '0821234567' }), fakeCreate({ total: 61 }).create)
   const panel = saleSection(saleScreen(done))
   assert.match(panel, /Order created/)
@@ -430,9 +430,9 @@ test('success state shows the server order, the server total and unpaid, offers 
   assert.match(panel, /Final total \(from the server\)/)
   assert.match(panel, new RegExp(formatMoney(61).replace(/\s/g, '\\s')))
   assert.match(panel, /No payment has been taken/)
-  assert.deepEqual(buttonsOf(panel), ['Start new sale'])
-  assert.doesNotMatch(panel, /receipt|pay now|handoff|production|print/i)
-  assert.doesNotMatch(panel, /key-0000|order-uuid/, 'neither the key nor the internal id is shown')
+  assert.deepEqual(buttonsOf(panel), ['Cash, card or scan-to-pay QR →','Leave unpaid · Start new sale'])
+  assert.doesNotMatch(panel, /receipt|handoff|production|print/i)
+  assert.doesNotMatch(panel, /key-0000|00000000-0000-4000-8000-000000000001/, 'neither the key nor the internal id is shown')
 })
 
 test('a replayed answer says it is the original order', async () => {
