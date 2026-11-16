@@ -19,6 +19,7 @@ import { describeCounterUnpaid } from '../lib/counterUnpaid.js'
 import { describeCounterCancelled, isCancelledListAvailable } from '../lib/counterCancelled.js'
 import { CANCEL_PHASES, COUNTER_CANCEL_REASON_MAX, describeCancelOffer, initialCancel } from '../lib/counterCancel.js'
 import CounterQr from './CounterQr.jsx'
+import CounterQrBoundary from './CounterQrBoundary.jsx'
 import { COUNTER_PAYMENT_METHODS, PAYMENT_PHASES, counterPaymentMethodLabel, describeCounterOrderDetail, initialPayment } from '../lib/counterPayment.js'
 import { COUNTER_UNKNOWN_RESULT_MESSAGE, EMPTY_COUNTER_CUSTOMER, SALE_PHASES, initialSale, isSaleLocked, validateCounterCustomer } from '../lib/counterSale.js'
 
@@ -672,7 +673,7 @@ function OrderDetailPanel({ qrPayment, qrStaging, onStartQr, onNewSale, detail, 
                 {qrPayment?.phase === 'issuing' && <p role="status">Preparing the QR from the server…</p>}
                 {qrPayment?.phase === 'blocked' && <p role="status">{qrPayment.message} Cash or card remains available.</p>}
                 {qrPayment?.phase === 'error' && <p role="alert">{qrPayment.message} Do not retry this order's payment until the original attempt is checked.</p>}
-                {qrPayment?.phase === 'ready' && <CounterQr request={qrPayment}/>}
+                {qrPayment?.phase === 'ready' && <CounterQrBoundary key={order.orderId} orderId={order.orderId}><CounterQr request={qrPayment}/></CounterQrBoundary>}
               </div>}
             {qrPayment?.phase === 'paid' && <p className="qsc-paid-note" role="status">QR payment confirmed by the Café server.</p>}
 
