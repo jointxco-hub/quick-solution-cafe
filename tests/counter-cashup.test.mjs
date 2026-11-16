@@ -219,7 +219,7 @@ test('there is no close-till, float, expected/counted cash, adjustment, refund, 
 test('no new write: one extra read call, the same two writes as before, and a STABLE server function', () => {
   const page = read('../src/counter/CounterPage.jsx')
   const imported = page.match(/import \{([^}]*)\} from '\.\.\/lib\/supabaseApi\.js'/)[1].split(',').map((name) => name.trim()).filter(Boolean)
-  assert.deepEqual(imported, ['cancelQuickSolutionCounterOrder', 'createQuickSolutionCounterOrder', 'getAdminSession', 'loadQuickSolutionCancelledCounterOrders', 'loadQuickSolutionCounterCashup', 'loadQuickSolutionCounterCashupToday', 'loadQuickSolutionCounterCatalog', 'loadQuickSolutionCounterOrder', 'loadQuickSolutionCounterOrderCancelCheck', 'loadQuickSolutionCounterOrdersToday', 'loadQuickSolutionUnpaidCounterOrders', 'recordQuickSolutionCounterPayment', 'signInAdmin', 'signOutAdmin'])
+  assert.deepEqual(imported, ['cancelQuickSolutionCounterOrder', 'createQuickSolutionCounterOrder', 'getAdminSession', 'loadQuickSolutionCancelledCounterOrders', 'loadQuickSolutionCounterCashup', 'loadQuickSolutionCounterCashupToday', 'loadQuickSolutionCounterCatalog', 'loadQuickSolutionCounterOrder', 'loadQuickSolutionCounterOrderCancelCheck', 'loadQuickSolutionCounterOrdersToday', 'loadQuickSolutionUnpaidCounterOrders', 'recordQuickSolutionCounterPayment', 'issueQuickSolutionCounterSandboxQr', 'isCounterQrStaging', 'signInAdmin', 'signOutAdmin'])
   assert.doesNotMatch(stripComments(read('../src/lib/counterCashup.js')), /supabaseApi|\bfetch\s*\(|\brpc\s*\(/)
   const sql = stripComments(read('../supabase/migrations/20260926250000_cafe_guest_01s_counter_cashup_today_rpc.sql').replace(/--[^\n]*/g, ''))
   assert.match(sql, /language plpgsql\s*\nstable\s*\nsecurity definer/)
