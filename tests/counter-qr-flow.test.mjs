@@ -12,7 +12,9 @@ const sale = file('src/lib/counterSale.js')
 test('created counter sale retains server-issued order UUID, not a copied order number',()=>{
   assert.match(sale,/orderId: response\.orderId/)
   assert.match(page,/openOrder\(sale\.result\.orderId, 'sale'\)/)
-  assert.match(ui,/Cash, card or scan-to-pay QR/)
+  assert.match(ui,/onTakePayment\?\.\('cash'\)/)
+  assert.match(ui,/onTakePayment\?\.\('card'\)/)
+  assert.match(ui,/onTakePayment\?\.\('qr'\)/)
   assert.match(ui,/Leave unpaid · Start new sale/)
 })
 test('QR is issued from the signed-in Café counter and gated to staging',()=>{
