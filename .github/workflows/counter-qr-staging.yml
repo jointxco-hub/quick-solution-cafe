@@ -20,7 +20,9 @@ jobs:
           npm --version
       - name: Install pinned dependencies
         run: npm ci
-      - name: Full Counter tests including QR and existing payment guards
-        run: npm test
+      - name: QR and paid-order state regression tests
+        run: node --test tests/counter-qr-flow.test.mjs tests/counter-sale.test.mjs tests/counter-payment.test.mjs
       - name: Vite production build (feature branch only)
         run: npm run build
+      - name: Full Café regression suite
+        run: npm test
