@@ -119,6 +119,7 @@ export default function CounterPage() {
   const [orderDetail, setOrderDetail] = useState({ status: 'loading' })
   const [payments, setPayments] = useState({})
   const [qrPayments, setQrPayments] = useState({})
+  const [paymentRoute, setPaymentRoute] = useState(null)
   const qrAttempts = useRef({})
   const qrInFlight = useRef(false)
   const [cancelCheck, setCancelCheck] = useState({ status: 'none' })
@@ -134,6 +135,7 @@ export default function CounterPage() {
     setDraft(null)
     setCustomer(EMPTY_COUNTER_CUSTOMER)
     setSale(startNewSale())
+    setPaymentRoute(null)
     setView('sale')
   }
 
@@ -292,8 +294,10 @@ export default function CounterPage() {
   }
 
   // Sale completion carries the canonical order ID directly to payment.
-  const takePayment = () => {
-    if (sale.result?.orderId) openOrder(sale.result.orderId, 'sale')
+  const takePayment = (method) => {
+    if (!sale.result?.orderId || !['cash','card','qr'].includes(method)) return
+    setPaymentRoute({orderId:sale.result.orderId,method})
+    openOrder(sale.result.orderId, 'sale')
   }
   const startQrPayment = async () => {
     const orderId = openOrderId
@@ -332,6 +336,22 @@ export default function CounterPage() {
       }}))
     } finally {qrInFlight.current=false}
   }
+  // Explicit method chosen on the successful-sale screen. Wait for the
+  // freshly loaded server order; never trust the sale's earlier estimate.
+  useEffect(() => {
+    if (!paymentRoute || paymentRoute.orderId !== openOrderId ||
+        orderDetail.status !== 'ready' || orderDetail.order?.orderId !== openOrderId) return
+    const method = paymentRoute.method
+    setPaymentRoute(null)
+    if (method === 'cash' || method === 'card') {
+      setPayments(current=>({...current,[openOrderId]:beginPayment(
+        current[openOrderId] || initialPayment(),orderDetail.order,method
+      )}))
+    } else if (method === 'qr') {
+      startQrPayment()
+    }
+  },[paymentRoute,openOrderId,orderDetail.status,orderDetail.order])
+
   const activeQr = qrPayments[openOrderId] || null
   // Poll the canonical order. A PayFast browser return is never proof.
   useEffect(() => {
