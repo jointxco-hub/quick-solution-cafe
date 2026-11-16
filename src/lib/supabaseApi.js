@@ -339,6 +339,25 @@ export async function recordQuickSolutionCounterPayment({ orderId, method, idemp
   return rpc('record_quick_solution_counter_payment', { p_order_id: orderId, p_method: method, p_idempotency_key: idempotencyKey }, { accessToken })
 }
 
+// OPPS-106: isolated staging QR, called directly from the Café Counter.
+ // Uses the SAME authenticated Café staff session as cash/card. The browser
+ // never provides price, tenant, merchant or any payment status.
+const QR_STAGING_URL = 'https://tijiamrfnxrbitafiflj.supabase.co'
+export function isCounterQrStaging() {
+  return SUPABASE_URL === QR_STAGING_URL
+}
+export async function issueQuickSolutionCounterSandboxQr(orderId, operationKey) {
+  if (!isCounterQrStaging()) throw new Error('QR payments are not enabled in this environment.')
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(orderId))) throw new Error('Invalid order ID.')
+  if (!/^[A-Za-z0-9_-]{8,128}$/.test(String(operationKey))) throw new Error('Invalid payment attempt.')
+  const accessToken = await getAdminAccessToken()
+  const preflight = await rpc('qs_opps106_counter_qr_preflight', { p_order_id: orderId }, { accessToken })
+  if (preflight?.ok !== true) return { ok:false, reason: preflight?.reason || 'NOT_PAYABLE' }
+  return rpc('qs_opps106_issue_counter_qr', {
+    p_order_id: orderId, p_operation_key: operationKey
+  }, { accessToken })
+}
+
 // CAFE-GUEST-01W - the audited cancelled counter orders (who, when, why), newest first, read-only. It sends NO argument: the server
 // resolves the tenant and the counter channel, answers only an admin or owner, and caps the page.
 export async function loadQuickSolutionCancelledCounterOrders() {
