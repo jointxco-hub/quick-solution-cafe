@@ -14,6 +14,8 @@ import {
   loadQuickSolutionCounterOrdersToday,
   loadQuickSolutionUnpaidCounterOrders,
   recordQuickSolutionCounterPayment,
+  issueQuickSolutionCounterSandboxQr,
+  isCounterQrStaging,
   signInAdmin,
   signOutAdmin
 } from '../lib/supabaseApi.js'
@@ -116,6 +118,9 @@ export default function CounterPage() {
   const [openOrderId, setOpenOrderId] = useState(null)
   const [orderDetail, setOrderDetail] = useState({ status: 'loading' })
   const [payments, setPayments] = useState({})
+  const [qrPayments, setQrPayments] = useState({})
+  const qrAttempts = useRef({})
+  const qrInFlight = useRef(false)
   const [cancelCheck, setCancelCheck] = useState({ status: 'none' })
   const [cancels, setCancels] = useState({})
   const alive = useRef(true)
@@ -265,6 +270,7 @@ export default function CounterPage() {
   }
 
   const backToOrders = () => {
+    if (orderOrigin === 'sale') {setView('sale');return}
     if (orderOrigin === 'cashup') {
       setView('cashup')
       loadCashup(cashupDate)
@@ -283,6 +289,68 @@ export default function CounterPage() {
     setView('orders')
     loadOrders()
   }
+
+  // Sale completion carries the canonical order ID directly to payment.
+  const takePayment = () => {
+    if (sale.result?.orderId) openOrder(sale.result.orderId, 'sale')
+  }
+  const startQrPayment = async () => {
+    const orderId = openOrderId
+    if (!isCounterQrStaging() || !orderId || qrInFlight.current) return
+    if (orderDetail?.status !== 'ready' || orderDetail.order?.paymentStatus !== 'unpaid') return
+    if (qrAttempts.current[orderId]) return // One QR operation per order.
+    const attempt = 'qscqr_' + crypto.randomUUID().replaceAll('-','')
+    qrAttempts.current[orderId] = attempt
+    qrInFlight.current = true
+    setQrPayments(current => ({...current,[orderId]:{phase:'issuing'}}))
+    try {
+      const answer = await issueQuickSolutionCounterSandboxQr(orderId,attempt)
+      if (!alive.current) return
+      if (answer?.ok !== true) {
+        const reason = answer?.reason === 'QR_ISSUANCE_DISABLED'
+          ? 'QR sandbox is not enabled for this order.'
+          : answer?.reason === 'QA_ORDER_ALREADY_USED'
+            ? 'This order already used its one sandbox QR. Do not charge again.'
+            : 'QR unavailable: ' + (answer?.reason || 'The server refused the request.')
+        setQrPayments(current=>({...current,[orderId]:{phase:'error',message:reason}}))
+        return
+      }
+      if (answer.currency !== 'ZAR' || !Number.isSafeInteger(Number(answer.amountCents)) || Number(answer.amountCents)<=0) {
+        setQrPayments(current=>({...current,[orderId]:{phase:'error',message:'Invalid payment response from server.'}}))
+        return
+      }
+      setQrPayments(current=>({...current,[orderId]:{
+        phase:'ready',scanUrl:answer.scanUrl,expiresAt:answer.expiresAt,
+        amountCents:Number(answer.amountCents),
+        amountLabel:new Intl.NumberFormat('en-ZA',{style:'currency',currency:'ZAR'}).format(Number(answer.amountCents)/100),
+        orderNumber:orderDetail.order?.orderNumber
+      }}))
+    } catch {
+      if (alive.current) setQrPayments(current=>({...current,[orderId]:{
+        phase:'error',message:'Could not confirm QR issuance. Check the order before trying again.'
+      }}))
+    } finally {qrInFlight.current=false}
+  }
+  const activeQr = qrPayments[openOrderId] || null
+  // Poll the canonical order. A PayFast browser return is never proof.
+  useEffect(() => {
+    if (!openOrderId || activeQr?.phase !== 'ready' || view !== 'order') return
+    let cancelled = false, busy = false
+    const check = async () => {
+      if (busy) return
+      busy = true
+      try {
+        const fresh = await loadQuickSolutionCounterOrder(openOrderId)
+        if (!cancelled && fresh?.paymentStatus === 'paid') {
+          setQrPayments(current=>({...current,[openOrderId]:{phase:'paid'}}))
+          loadDetail(openOrderId)
+        }
+      } catch { /* Keep pending; staff can reload the order. */ }
+      finally {busy=false}
+    }
+    const timer = setInterval(check,5000)
+    return () => {cancelled=true;clearInterval(timer)}
+  },[openOrderId,activeQr?.phase,view,loadDetail])
 
   const payment = payments[openOrderId] || initialPayment()
   const setPayment = (update) => setPayments((current) => ({ ...current, [openOrderId]: update(current[openOrderId] || initialPayment()) }))
@@ -440,6 +508,10 @@ export default function CounterPage() {
       onBackToEdit={() => setSale((current) => backToEdit(current))}
       onSubmit={submit}
       onNewSale={reset}
+      onTakePayment={takePayment}
+      qrPayment={activeQr}
+      qrStaging={isCounterQrStaging()}
+      onStartQr={startQrPayment}
       onRetry={load}
       onSignIn={signIn}
       signInError={signInError}
