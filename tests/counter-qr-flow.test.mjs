@@ -45,3 +45,12 @@ test('QR does not auto-issue or auto-retry expired or uncertain payments',()=>{
   assert.match(qr,/This code is no longer valid/)
   assert.match(page,/Check the order before trying again/)
 })
+
+test('QR component failure cannot replace the entire Counter application',()=>{
+ const boundary=file('src/counter/CounterQrBoundary.jsx')
+ assert.match(boundary,/getDerivedStateFromError/)
+ assert.match(boundary,/QR display unavailable/)
+ assert.match(boundary,/this\.props\.children/)
+ assert.match(ui,/CounterQrBoundary/)
+ assert.match(ui,/<CounterQr request=\{qrPayment\}/)
+})
