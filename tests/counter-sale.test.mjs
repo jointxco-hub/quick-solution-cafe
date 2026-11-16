@@ -430,7 +430,7 @@ test('success state shows paid options immediately without showing internal ID',
   assert.match(panel, /Final total \(from the server\)/)
   assert.match(panel, new RegExp(formatMoney(61).replace(/\s/g, '\\s')))
   assert.match(panel, /No payment has been taken/)
-  assert.deepEqual(buttonsOf(panel), ['Cash, card or scan-to-pay QR →','Leave unpaid · Start new sale'])
+  assert.deepEqual(buttonsOf(panel), ['Cash','Card','Leave unpaid · Start new sale'])
   assert.doesNotMatch(panel, /receipt|handoff|production|print/i)
   assert.doesNotMatch(panel, /key-0000|00000000-0000-4000-8000-000000000001/, 'neither the key nor the internal id is shown')
 })
