@@ -333,7 +333,7 @@ function SalePanel({ sale, onBackToEdit, onSubmit, onNewSale, onTakePayment, onS
         </div>
         <div className="qsc-next-payment">
           <h3>Take payment</h3>
-          <p>Order created. Choose how the customer will pay; no order code is needed.</p>
+          <p>No payment has been taken. Choose how the customer will pay; no order code is needed.</p>
           <button className="button primary-light qsc-action" type="button" onClick={onTakePayment}>Cash, card or scan-to-pay QR →</button>
           <button className="button ghost-light qsc-action" type="button" onClick={onNewSale}>Leave unpaid · Start new sale</button>
         </div>
