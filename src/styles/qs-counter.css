@@ -393,3 +393,7 @@ button.qsc-order:focus-visible{border-color:var(--green);box-shadow:0 0 0 3px rg
 .qsc-qr-timer {font-weight:700;font-variant-numeric:tabular-nums}
 .qsc-next-sale {margin-top:1rem;width:100%;min-height:48px}
 @media(max-width:380px) {.qsc-qr-frame{min-width:0;width:100%}}
+
+.qsc-payment-choice { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem }
+.qsc-payment-choice .qsc-action { min-height:52px;padding:.65rem .3rem }
+@media(max-width:460px){.qsc-payment-choice {grid-template-columns:repeat(2,minmax(0,1fr))}.qsc-payment-choice .qsc-action:last-child:nth-child(3){grid-column:span 2}}
