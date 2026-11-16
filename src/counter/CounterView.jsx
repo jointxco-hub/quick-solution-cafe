@@ -304,7 +304,7 @@ function EstimateBox({ summary }) {
   )
 }
 
-function SalePanel({ sale, onBackToEdit, onSubmit, onNewSale, onTakePayment, onSignIn, signInError, signInBusy }) {
+function SalePanel({ sale, onBackToEdit, onSubmit, onNewSale, onTakePayment, qrStaging, onSignIn, signInError, signInBusy }) {
   const { phase, attempt, result, error } = sale
   const summary = attempt?.summary
   const busy = phase === SALE_PHASES.SUBMITTING
@@ -334,7 +334,11 @@ function SalePanel({ sale, onBackToEdit, onSubmit, onNewSale, onTakePayment, onS
         <div className="qsc-next-payment">
           <h3>Take payment</h3>
           <p>No payment has been taken. Choose how the customer will pay; no order code is needed.</p>
-          <button className="button primary-light qsc-action" type="button" onClick={onTakePayment}>Cash, card or scan-to-pay QR →</button>
+          <div className="qsc-payment-choice">
+            <button className="button primary-light qsc-action" type="button" onClick={()=>onTakePayment?.('cash')}>Cash</button>
+            <button className="button primary-light qsc-action" type="button" onClick={()=>onTakePayment?.('card')}>Card</button>
+            {qrStaging && <button className="button primary-light qsc-action" type="button" onClick={()=>onTakePayment?.('qr')}>Pay by QR</button>}
+          </div>
           <button className="button ghost-light qsc-action" type="button" onClick={onNewSale}>Leave unpaid · Start new sale</button>
         </div>
       </section>
@@ -1090,7 +1094,7 @@ export default function CounterView({
         <section className="qsc-work" aria-label="Configure">
           {!inSale && selected ? <button type="button" className="qsc-change-service" onClick={() => { onChooseService?.(); window.requestAnimationFrame?.(() => document.querySelector('.qsc-layout')?.scrollIntoView({ block: 'start' })); }}>← Change service</button> : null}
           {inSale ? (
-            <SalePanel sale={sale} onBackToEdit={onBackToEdit} onSubmit={onSubmit} onNewSale={onNewSale} onTakePayment={onTakePayment} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
+            <SalePanel sale={sale} onBackToEdit={onBackToEdit} onSubmit={onSubmit} onNewSale={onNewSale} onTakePayment={onTakePayment} qrStaging={qrStaging} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
           ) : selected ? (
             <>
               <div className="qsc-config">
