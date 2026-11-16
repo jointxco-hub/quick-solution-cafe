@@ -286,7 +286,7 @@ test('nothing is written and no server change was needed: no migration, no API c
   assert.doesNotMatch(api, /rpc\(['"](?:print|issue)_quick_solution_counter_receipt/i, 'no counter print-receipt API wrapper')
   const page = stripComments(read('../src/counter/CounterPage.jsx'))
   const imported = read('../src/counter/CounterPage.jsx').match(/import \{([^}]*)\} from '\.\.\/lib\/supabaseApi\.js'/)[1].split(',').map((name) => name.trim()).filter(Boolean)
-  assert.deepEqual(imported, ['cancelQuickSolutionCounterOrder', 'createQuickSolutionCounterOrder', 'getAdminSession', 'loadQuickSolutionCancelledCounterOrders', 'loadQuickSolutionCounterCashup', 'loadQuickSolutionCounterCashupToday', 'loadQuickSolutionCounterCatalog', 'loadQuickSolutionCounterOrder', 'loadQuickSolutionCounterOrderCancelCheck', 'loadQuickSolutionCounterOrdersToday', 'loadQuickSolutionUnpaidCounterOrders', 'recordQuickSolutionCounterPayment', 'signInAdmin', 'signOutAdmin'], 'the same API calls as before 01R')
+  assert.deepEqual(imported, ['cancelQuickSolutionCounterOrder', 'createQuickSolutionCounterOrder', 'getAdminSession', 'loadQuickSolutionCancelledCounterOrders', 'loadQuickSolutionCounterCashup', 'loadQuickSolutionCounterCashupToday', 'loadQuickSolutionCounterCatalog', 'loadQuickSolutionCounterOrder', 'loadQuickSolutionCounterOrderCancelCheck', 'loadQuickSolutionCounterOrdersToday', 'loadQuickSolutionUnpaidCounterOrders', 'recordQuickSolutionCounterPayment', 'issueQuickSolutionCounterSandboxQr', 'isCounterQrStaging', 'signInAdmin', 'signOutAdmin'], 'the same API calls as before 01R')
   assert.equal((page.match(/recordQuickSolutionCounterPayment/g) || []).length, 2, 'the payment call is untouched: imported once, used once')
 })
 
