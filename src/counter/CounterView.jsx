@@ -670,7 +670,7 @@ function OrderDetailPanel({ qrPayment, qrStaging, onStartQr, onNewSale, detail, 
                 {qrPayment?.phase === 'error' && <p role="alert">{qrPayment.message} Do not retry this order's payment until the original attempt is checked.</p>}
                 {qrPayment?.phase === 'ready' && <CounterQr request={qrPayment}/>}
               </div>}
-            {qrPayment?.phase === 'paid' && <p className="qsc-paid-note" role="status">QR payment confirmed by the Café server.</p>
+            {qrPayment?.phase === 'paid' && <p className="qsc-paid-note" role="status">QR payment confirmed by the Café server.</p>}
 
             {payment.phase === PAYMENT_PHASES.IDLE && !cancelling ? (
               ['issuing','ready','error'].includes(qrPayment?.phase) ? (
