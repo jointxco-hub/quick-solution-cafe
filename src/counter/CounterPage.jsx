@@ -134,6 +134,7 @@ export default function CounterPage() {
     setDraft(null)
     setCustomer(EMPTY_COUNTER_CUSTOMER)
     setSale(startNewSale())
+    setView('sale')
   }
 
   const loadCancelled = useCallback(async () => {
@@ -312,7 +313,7 @@ export default function CounterPage() {
           : answer?.reason === 'QA_ORDER_ALREADY_USED'
             ? 'This order already used its one sandbox QR. Do not charge again.'
             : 'QR unavailable: ' + (answer?.reason || 'The server refused the request.')
-        setQrPayments(current=>({...current,[orderId]:{phase:'error',message:reason}}))
+        setQrPayments(current=>({...current,[orderId]:{phase:'blocked',message:reason}}))
         return
       }
       if (answer.currency !== 'ZAR' || !Number.isSafeInteger(Number(answer.amountCents)) || Number(answer.amountCents)<=0) {
