@@ -154,8 +154,10 @@ test('only cash and card can begin a payment; EFT, other spellings and unknown m
 
 test('a paid order, an order the server says cannot take a payment, and an order with nothing outstanding have no payment buttons', () => {
   const paid = detailSection(detailScreen(paidOrder('cash')))
-  assert.deepEqual(buttonsOf(paid), ['← Today’s orders', 'View receipt'], 'a fully paid order can show its receipt and nothing else')
-  assert.match(paid, /This order is paid\./)
+  assert.deepEqual(buttonsOf(paid), ['← Today’s orders', 'View / Print receipt', 'Next sale'], 'a fully paid order offers only non-charging receipt and next-sale actions')
+  assert.match(paid, /Payment confirmed/)
+  assert.match(paid, /No further payment needed/)
+  assert.doesNotMatch(paid, /Record (Cash|Card) Payment/)
   assert.match(paid, /Cash · <!-- -->|Cash · /)
   assert.match(paid, /qsc-state qsc-state-paid">Paid</)
   assert.match(paid, new RegExp(`Outstanding</dt><dd>${money(0)}`))
