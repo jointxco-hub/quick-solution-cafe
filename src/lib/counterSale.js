@@ -163,9 +163,11 @@ export function classifyCounterSubmitError(error) {
 function readCreatedOrder(response) {
   if (!response || typeof response !== 'object' || response.ok !== true) return null
   if (typeof response.orderNumber !== 'string' || !response.orderNumber) return null
+  if (typeof response.orderId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(response.orderId)) return null
   const total = Number(response.totalAmount)
   if (!Number.isFinite(total)) return null
   return {
+    orderId: response.orderId,
     orderNumber: response.orderNumber,
     status: response.status ?? null,
     paymentStatus: response.paymentStatus ?? null,

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Header from './Header.jsx'
 import Icon from './Icon.jsx'
 import { getQuickSolutionTracking } from '../lib/supabaseApi.js'
+import { findQuickSolutionTrackingSessionByOrderNumber } from '../lib/trackingSession.js'
 import { buildWhatsappUrl } from '../lib/businessInfo.js'
 
 function money(value) {
@@ -105,11 +106,26 @@ export default function TrackOrder() {
     }
 
     try {
-      const result = await getQuickSolutionTracking({
+      let result = await getQuickSolutionTracking({
         orderNumber: nextOrder,
         trackingToken: useToken || secureToken ? secureToken : null,
         contact: useToken || secureToken ? null : contact.trim()
       })
+
+      // A matching checkout browser may retain a valid, secure tracking
+      // token even if a manually entered contact lookup fails. The backend
+      // still authenticates the token; no customer data is exposed without
+      // one of the two valid proofs.
+      if (!result?.order?.orderNumber && !secureToken) {
+        const saved = findQuickSolutionTrackingSessionByOrderNumber(nextOrder)
+        if (saved?.trackingToken) {
+          result = await getQuickSolutionTracking({
+            orderNumber: nextOrder,
+            trackingToken: saved.trackingToken,
+            contact: null
+          })
+        }
+      }
 
       if (!result?.order?.orderNumber) {
         setTracking(null)
@@ -236,7 +252,7 @@ export default function TrackOrder() {
               </div>
 
               {!isCancelled && (
-                <div className="qs-track-progress">
+                <div className="qs-track-progress" style={{ '--tracking-step-count': Math.max(timeline.length, 1) }}>
                   <div className="qs-track-progress-line">
                     <span style={{ width: `${timeline.length > 1 ? (currentIndex / (timeline.length - 1)) * 100 : 0}%` }}/>
                   </div>

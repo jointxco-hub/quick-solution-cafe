@@ -185,8 +185,9 @@
 .qs-track-progress-line {
   position: absolute;
   top: 15px;
-  left: 30px;
-  right: 30px;
+  /* Align the progress rail with the centre of the first/last step. */
+  left: calc(100% / var(--tracking-step-count, 4) / 2);
+  right: calc(100% / var(--tracking-step-count, 4) / 2);
   height: 2px;
   background: #e6e6e0;
 }
@@ -201,12 +202,13 @@
 .qs-track-progress-steps {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(var(--tracking-step-count, 4), minmax(0, 1fr));
+  gap: 0;
 }
 
 .qs-track-step {
   display: grid;
+  min-width: 0;
   justify-items: center;
   text-align: center;
   gap: 8px;
@@ -490,8 +492,8 @@
   }
 
   .qs-track-progress-line {
-    left: 16px;
-    right: 16px;
+    left: calc(100% / var(--tracking-step-count, 4) / 2);
+    right: calc(100% / var(--tracking-step-count, 4) / 2);
   }
 
   .qs-track-step strong {

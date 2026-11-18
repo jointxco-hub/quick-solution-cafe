@@ -18,6 +18,8 @@ import { addBusinessDays, describeCounterCashup, formatBusinessDate } from '../l
 import { describeCounterUnpaid } from '../lib/counterUnpaid.js'
 import { describeCounterCancelled, isCancelledListAvailable } from '../lib/counterCancelled.js'
 import { CANCEL_PHASES, COUNTER_CANCEL_REASON_MAX, describeCancelOffer, initialCancel } from '../lib/counterCancel.js'
+import CounterQr from './CounterQr.jsx'
+import CounterQrBoundary from './CounterQrBoundary.jsx'
 import { COUNTER_PAYMENT_METHODS, PAYMENT_PHASES, counterPaymentMethodLabel, describeCounterOrderDetail, initialPayment } from '../lib/counterPayment.js'
 import { COUNTER_UNKNOWN_RESULT_MESSAGE, EMPTY_COUNTER_CUSTOMER, SALE_PHASES, initialSale, isSaleLocked, validateCounterCustomer } from '../lib/counterSale.js'
 
@@ -303,7 +305,7 @@ function EstimateBox({ summary }) {
   )
 }
 
-function SalePanel({ sale, onBackToEdit, onSubmit, onNewSale, onSignIn, signInError, signInBusy }) {
+function SalePanel({ sale, onBackToEdit, onSubmit, onNewSale, onTakePayment, qrStaging, onSignIn, signInError, signInBusy }) {
   const { phase, attempt, result, error } = sale
   const summary = attempt?.summary
   const busy = phase === SALE_PHASES.SUBMITTING
@@ -330,8 +332,16 @@ function SalePanel({ sale, onBackToEdit, onSubmit, onNewSale, onSignIn, signInEr
             <small>{differs ? `The earlier estimate was ${formatMoney(estimate)}. The server’s total is the amount for this order.` : `Matches the earlier estimate of ${formatMoney(estimate)}.`}</small>
           ) : <small>No estimate was shown for this order.</small>}
         </div>
-        <p className="qsc-preview-foot">No payment has been taken. The order is unpaid.</p>
-        <button className="button primary-light qsc-action" type="button" onClick={onNewSale}>Start new sale</button>
+        <div className="qsc-next-payment">
+          <h3>Take payment</h3>
+          <p>No payment has been taken. Choose how the customer will pay; no order code is needed.</p>
+          <div className="qsc-payment-choice">
+            <button className="button primary-light qsc-action" type="button" onClick={()=>onTakePayment?.('cash')}>Cash</button>
+            <button className="button primary-light qsc-action" type="button" onClick={()=>onTakePayment?.('card')}>Card</button>
+            {qrStaging && <button className="button primary-light qsc-action" type="button" onClick={()=>onTakePayment?.('qr')}>Pay by QR</button>}
+          </div>
+          <button className="button ghost-light qsc-action" type="button" onClick={onNewSale}>Leave unpaid · Start new sale</button>
+        </div>
       </section>
     )
   }
@@ -614,10 +624,13 @@ function CancelArea({ check, order, rawOrder, cancel, onStart, onReason, onAbort
   return offer.note ? <p className="qsc-not-ready qsc-cancel-note" role="status">{offer.note}</p> : null
 }
 
-function OrderDetailPanel({ detail, entries, payment, cancelCheck, cancel = initialCancel(), onStartCancel, onCancelReason, onAbortCancel, onConfirmCancel, onResetCancel, backLabel = '← Today’s orders', onBack, onChoose, onCancel, onConfirm, onReset, onReload, onOpenReceipt, onSignIn, signInError, signInBusy }) {
+function OrderDetailPanel({ qrPayment, qrStaging, onStartQr, onNewSale, detail, entries, payment, cancelCheck, cancel = initialCancel(), onStartCancel, onCancelReason, onAbortCancel, onConfirmCancel, onResetCancel, backLabel = '← Today’s orders', onBack, onChoose, onCancel, onConfirm, onReset, onReload, onOpenReceipt, onSignIn, signInError, signInBusy }) {
   const status = detail?.status || 'loading'
   const order = status === 'ready' ? describeCounterOrderDetail(detail.order, entries) : null
   const paid = order?.paymentStatus === 'paid'
+  // Keep manual payment controls closed while a gateway attempt might
+  // still settle. The canonical server payment state remains authoritative.
+  const qrNeedsReview = !paid && ['issuing','ready','error'].includes(qrPayment?.phase)
   const cancelling = cancel.phase !== CANCEL_PHASES.IDLE
   return (
     <section className="qsc-detail" aria-label="Order">
@@ -637,6 +650,17 @@ function OrderDetailPanel({ detail, entries, payment, cancelCheck, cancel = init
             <div><span className="eyebrow">Counter order · {order.time}</span><h2>{order.orderNumber}</h2></div>
             <span className={`qsc-state qsc-state-${order.paymentStatus || 'unknown'}`}>{order.paymentLabel}</span>
           </div>
+          {paid && <div className="qsc-payment-confirmed" role="status" aria-live="polite">
+            <div className="qsc-payment-confirmed-mark" aria-hidden="true">✓</div>
+            <div>
+              <strong>Payment confirmed</strong>
+              <p>{order.amountPaid} received and verified by the Café server. No further payment needed.</p>
+            </div>
+            <div className="qsc-payment-confirmed-actions">
+              {order.receiptReady && <button className="button dark qsc-action" type="button" onClick={onOpenReceipt}>View / Print receipt</button>}
+              <button className="button qsc-action" type="button" onClick={onNewSale}>Next sale</button>
+            </div>
+          </div>}
           <div className="qsc-detail-card">
             <dl className="qsc-detail-rows">
               <div><dt>Customer</dt><dd>{order.customer}{order.contact ? <small>{order.contact}</small> : null}</dd></div>
@@ -651,12 +675,25 @@ function OrderDetailPanel({ detail, entries, payment, cancelCheck, cancel = init
                 <div key={`p${index}`}><dt>Payment</dt><dd>{entry.method} · {entry.amount}<small>{entry.time}</small></dd></div>
               ))}
             </dl>
-            {order.receiptReady ? (
-              <button className="button dark qsc-action qsc-view-receipt" type="button" onClick={onOpenReceipt}>View receipt</button>
-            ) : null}
-            <PaymentArea payment={payment} onChoose={onChoose} onCancel={onCancel} onConfirm={onConfirm} onReset={onReset} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
+
+            {!qrNeedsReview && <PaymentArea payment={payment} onChoose={onChoose} onCancel={onCancel} onConfirm={onConfirm} onReset={onReset} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>}
+            {qrNeedsReview && <p className="qsc-not-ready" role="status">A QR payment is pending or its result is uncertain. Cash/Card confirmation is locked until staff verifies the original order.</p>}
+            {qrStaging && order.canPay && payment.phase === PAYMENT_PHASES.IDLE && !cancelling &&
+              <div className="qsc-qr-payment">
+                <h3>Pay by QR</h3>
+                <p>Show the customer a PayFast sandbox QR directly on this counter screen.</p>
+                {!qrPayment && <button className="button dark qsc-action" type="button" onClick={onStartQr}>Display sandbox QR</button>}
+                {qrPayment?.phase === 'issuing' && <p role="status">Preparing the QR from the server…</p>}
+                {qrPayment?.phase === 'blocked' && <p role="status">{qrPayment.message} Cash or card remains available.</p>}
+                {qrPayment?.phase === 'error' && <p role="alert">{qrPayment.message} Do not retry this order's payment until the original attempt is checked.</p>}
+                {qrPayment?.phase === 'ready' && <CounterQrBoundary key={order.orderId} orderId={order.orderId}><CounterQr request={qrPayment}/></CounterQrBoundary>}
+              </div>}
+
+
             {payment.phase === PAYMENT_PHASES.IDLE && !cancelling ? (
-              order.canPay ? (
+              paid ? null : ['issuing','ready','error'].includes(qrPayment?.phase) ? (
+                <p className="qsc-not-ready" role="status">A QR payment attempt is open or its result is uncertain. Check the server payment status before taking cash or card to prevent a double payment.</p>
+              ) : order.canPay ? (
                 <div className="qsc-pay-actions">
                   {COUNTER_PAYMENT_METHODS.map((method) => (
                     <button key={method.id} className="button dark qsc-action" type="button" data-method={method.id} onClick={() => onChoose?.(method.id)}>Record {method.label} Payment</button>
@@ -674,6 +711,7 @@ function OrderDetailPanel({ detail, entries, payment, cancelCheck, cancel = init
               <CancelArea check={cancelCheck} order={order} rawOrder={detail.order} cancel={cancel} onStart={onStartCancel} onReason={onCancelReason} onAbort={onAbortCancel} onConfirm={onConfirmCancel} onReset={onResetCancel} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
             ) : null}
           </div>
+          {!paid && onNewSale && <button className="button dark qsc-action qsc-next-sale" type="button" onClick={onNewSale}>Start next sale</button>}
         </>
       ) : null}
     </section>
@@ -994,6 +1032,10 @@ export default function CounterView({
   onBackToEdit,
   onSubmit,
   onNewSale,
+  onTakePayment,
+  qrPayment,
+  qrStaging = false,
+  onStartQr,
   onRetry,
   onSignIn,
   signInError = '',
@@ -1066,7 +1108,7 @@ export default function CounterView({
         <section className="qsc-work" aria-label="Configure">
           {!inSale && selected ? <button type="button" className="qsc-change-service" onClick={() => { onChooseService?.(); window.requestAnimationFrame?.(() => document.querySelector('.qsc-layout')?.scrollIntoView({ block: 'start' })); }}>← Change service</button> : null}
           {inSale ? (
-            <SalePanel sale={sale} onBackToEdit={onBackToEdit} onSubmit={onSubmit} onNewSale={onNewSale} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
+            <SalePanel sale={sale} onBackToEdit={onBackToEdit} onSubmit={onSubmit} onNewSale={onNewSale} onTakePayment={onTakePayment} qrStaging={qrStaging} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
           ) : selected ? (
             <>
               <div className="qsc-config">
@@ -1096,7 +1138,7 @@ export default function CounterView({
         {view === 'receipt' ? (
           <ReceiptScreen detail={orderDetail} entries={entries} onBack={onCloseReceipt} onPrint={onPrintReceipt}/>
         ) : view === 'order' ? (
-          <OrderDetailPanel detail={orderDetail} entries={entries} payment={payment} cancelCheck={cancelCheck} cancel={cancel} onStartCancel={onStartCancel} onCancelReason={onCancelReason} onAbortCancel={onAbortCancel} onConfirmCancel={onConfirmCancel} onResetCancel={onResetCancel} backLabel={orderOrigin === 'cashup' ? '← Cash-up' : orderOrigin === 'unpaid' ? '← Unpaid' : orderOrigin === 'cancelled' ? '← Cancelled' : undefined} onBack={onBackToOrders} onChoose={onChoosePayment} onCancel={onCancelPayment} onConfirm={onConfirmPayment} onReset={onResetPayment} onReload={onReloadOrder} onOpenReceipt={onOpenReceipt} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
+          <OrderDetailPanel qrPayment={qrPayment} qrStaging={qrStaging} onStartQr={onStartQr} onNewSale={onNewSale} detail={orderDetail} entries={entries} payment={payment} cancelCheck={cancelCheck} cancel={cancel} onStartCancel={onStartCancel} onCancelReason={onCancelReason} onAbortCancel={onAbortCancel} onConfirmCancel={onConfirmCancel} onResetCancel={onResetCancel} backLabel={orderOrigin === 'cashup' ? '← Cash-up' : orderOrigin === 'unpaid' ? '← Unpaid' : orderOrigin === 'cancelled' ? '← Cancelled' : undefined} onBack={onBackToOrders} onChoose={onChoosePayment} onCancel={onCancelPayment} onConfirm={onConfirmPayment} onReset={onResetPayment} onReload={onReloadOrder} onOpenReceipt={onOpenReceipt} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
         ) : view === 'cancelled' ? (
           <CancelledPanel cancelled={cancelled} entries={entries} onRefresh={onRefreshCancelled} onOpenOrder={onOpenOrder} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
         ) : view === 'unpaid' ? (

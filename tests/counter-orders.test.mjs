@@ -208,7 +208,11 @@ test('rows only OPEN an order (01Q): no payment, edit, void, duplicate, receipt,
 
 test('there is no write and no polling: the list is read on open and on Refresh only', () => {
   const page = stripComments(read('../src/counter/CounterPage.jsx'))
-  assert.doesNotMatch(page + stripComments(read('../src/counter/CounterView.jsx')) + stripComments(read('../src/lib/counterOrders.js')), /setInterval|setTimeout|requestPolling|EventSource|WebSocket|visibilitychange|addEventListener/)
+  // Today's orders remain manual refresh. The new QR monitor polls only an
+  // explicitly opened payment, not the read-only Today's Orders list.
+  const ordersSection = page.slice(page.indexOf('const loadOrders ='),page.indexOf('const loadCashup ='))
+  assert.doesNotMatch(ordersSection + stripComments(read('../src/lib/counterOrders.js')), /setInterval|setTimeout|requestPolling|EventSource|WebSocket|visibilitychange|addEventListener/)
+  assert.match(page,/setInterval\(check,5000\)/)
   assert.match(page, /const showView = \(next\) => \{\s*\n\s*setView\(next\)\s*\n\s*if \(next === 'orders'\) loadOrders\(\)/)
   assert.match(page, /onRefreshOrders=\{loadOrders\}/)
   assert.equal((page.match(/createQuickSolutionCounterOrder/g) || []).length, 2, 'the one create call is unchanged')
@@ -239,7 +243,7 @@ test('an order created through the 01O flow appears only by asking the server ag
     const order = serverOrder({ orderId: `id-${server.length + 1}`, orderNumber: `QS-260926-N${server.length + 1}`, customerName: payload.customerName || 'Walk-in', totalAmount: 35,
       items: [{ productKey: payload.productKey, productName: byId.get(payload.productKey).name, quantity: 1, configuration: payload.configuration, lineTotal: 35 }] })
     server.unshift(order)
-    return { ok: true, replayed: false, orderNumber: order.orderNumber, status: 'submitted', paymentStatus: 'unpaid', customerName: order.customerName, productName: order.items[0].productName, totalAmount: 35 }
+    return { ok: true, replayed: false, orderId: '00000000-0000-4000-8000-000000000001', orderNumber: order.orderNumber, status: 'submitted', paymentStatus: 'unpaid', customerName: order.customerName, productName: order.items[0].productName, totalAmount: 35 }
   }
   const list = async () => listResponse(server)
   const before = await loadCounterOrdersState(list)

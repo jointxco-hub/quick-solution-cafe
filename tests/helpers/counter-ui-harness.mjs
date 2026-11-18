@@ -22,6 +22,8 @@ export const loadQuickSolutionCounterCashupToday = (...args) => m().cashup(...ar
 export const loadQuickSolutionCounterCashup = (...args) => m().cashupOn(...args)
 export const loadQuickSolutionUnpaidCounterOrders = (...args) => m().unpaid(...args)
 export const recordQuickSolutionCounterPayment = (...args) => m().pay(...args)
+export const isCounterQrStaging = () => false
+export const issueQuickSolutionCounterSandboxQr = () => Promise.reject(new Error('QR staging disabled in tests'))
 export const loadQuickSolutionCancelledCounterOrders = (...args) => (m().cancelled ? m().cancelled(...args) : Promise.reject(Object.assign(new Error('Only a Quick Solution admin or owner can view cancelled counter orders.'), { status: 403, payload: { code: '42501' } })))
 export const loadQuickSolutionCounterOrderCancelCheck = (...args) => (m().cancelCheck ? m().cancelCheck(...args) : Promise.resolve({ orderId: args[0], permitted: false, cancellable: true, block: null }))
 export const cancelQuickSolutionCounterOrder = (...args) => m().cancel(...args)
