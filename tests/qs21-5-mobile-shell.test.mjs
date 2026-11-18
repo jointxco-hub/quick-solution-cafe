@@ -95,16 +95,23 @@ test('business identity constants match the brief exactly', () => {
   assert.deepEqual(BUSINESS_ADDRESS_LINES, ['13 Kite Cres', 'Riverside View', 'Midrand', 'South Africa'])
 })
 
-test('DELIVERY_INFO: local collection/delivery facts match the REAL checkout fulfilmentOptions (never contradicts the actual selectable options)', () => {
-  const localIds = DELIVERY_INFO.filter((item) => item.id !== 'courier').map((item) => item.title)
-  assert.deepEqual(localIds, ['Collect locally', 'Local delivery'])
+test('DELIVERY_INFO: local collection and delivery are the self-service checkout choices; national options are separate', () => {
+  const localOptions = DELIVERY_INFO.filter((item) => ['local-collect', 'local-delivery'].includes(item.id))
+  assert.deepEqual(localOptions.map((item) => item.title), ['Collect locally', 'Local delivery'])
+  assert.deepEqual(
+    DELIVERY_INFO.filter((item) => !['local-collect', 'local-delivery'].includes(item.id)).map((item) => item.id),
+    ['paxi', 'courier-guy']
+  )
 })
 
-test('DELIVERY_INFO: PAXI/courier is presented as "available on request", never as an instant/automatic checkout option - honest about the real gap (no PAXI logic exists in the order RPC)', () => {
-  const courier = DELIVERY_INFO.find((item) => item.id === 'courier')
-  assert.ok(courier)
-  assert.match(courier.helper, /message us|arrange|request/i)
-  assert.doesNotMatch(courier.helper, /instant|automatic|calculated at checkout/i)
+test('DELIVERY_INFO: PAXI and Courier Guy are arranged on request, never sold as automatic checkout delivery', () => {
+  for (const id of ['paxi', 'courier-guy']) {
+    const option = DELIVERY_INFO.find((item) => item.id === id)
+    assert.ok(option, `Missing ${id} delivery guidance`)
+    assert.match(option.helper, /message us|arrange|request/i)
+    assert.match(option.helper, /confirm/i)
+    assert.doesNotMatch(option.helper, /instant|automatic|calculated at checkout/i)
+  }
 })
 
 test('RETURNS_POLICY_TEXT matches the brief\'s own conservative fallback wording exactly (no source policy exists in the repo to draw from - confirmed by audit)', () => {
