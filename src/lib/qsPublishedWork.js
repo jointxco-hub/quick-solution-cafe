@@ -1,6 +1,7 @@
 // QS public portfolio feed: shared X LAB library, published-only Postgres view.
 // No write credentials, tenant admin tokens or temporary static project catalogue.
-const env = import.meta.env || {}\nconst url = String(env.VITE_QS_WORK_SUPABASE_URL || env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
+const env = import.meta.env || {}
+const url = String(env.VITE_QS_WORK_SUPABASE_URL || env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
 const key = String(env.VITE_QS_WORK_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || '')
 
 export function mapQsWorkRow(row) {
