@@ -81,7 +81,7 @@ test('an unpaid order has no receipt action; a paid Cash or Card order has View 
   assert.deepEqual(buttonsOf(before).filter((label) => /receipt/i.test(label)), [])
   for (const method of ['cash', 'card']) {
     const after = detailScreen(paid(method))
-    assert.deepEqual(buttonsOf(after).filter((label) => /receipt/i.test(label)), ['View receipt'], method)
+    assert.deepEqual(buttonsOf(after).filter((label) => /receipt/i.test(label)), ['View / Print receipt'], method)
     assert.equal(describeCounterOrderDetail(paid(method)).receiptReady, true)
   }
 })
