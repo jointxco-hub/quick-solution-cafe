@@ -221,7 +221,7 @@ test('Confirm clicked twice sends one request; the second click while submitting
   assert.match(markup, /<button[^>]*disabled=""[^>]*>Recording…<\/button>/)
   assert.match(markup, /<button[^>]*disabled=""[^>]*>Back<\/button>/)
   const page = stripComments(read('../src/counter/CounterPage.jsx'))
-  assert.match(page, /if \(paymentInFlight\.current\) return/)
+  assert.match(page, /if \(paymentInFlight\.current \|\| \['issuing','ready','error'\]\.includes\(qrPayments\[openOrderId\]\?\.phase\)\) return/)
   assert.match(page, /const started = beginPaymentSubmit\(payment\)\s*\n\s*if \(started === payment\) return/)
 })
 
