@@ -628,6 +628,9 @@ function OrderDetailPanel({ qrPayment, qrStaging, onStartQr, onNewSale, detail, 
   const status = detail?.status || 'loading'
   const order = status === 'ready' ? describeCounterOrderDetail(detail.order, entries) : null
   const paid = order?.paymentStatus === 'paid'
+  // Keep manual payment controls closed while a gateway attempt might
+  // still settle. The canonical server payment state remains authoritative.
+  const qrNeedsReview = !paid && ['issuing','ready','error'].includes(qrPayment?.phase)
   const cancelling = cancel.phase !== CANCEL_PHASES.IDLE
   return (
     <section className="qsc-detail" aria-label="Order">
@@ -673,7 +676,8 @@ function OrderDetailPanel({ qrPayment, qrStaging, onStartQr, onNewSale, detail, 
               ))}
             </dl>
 
-            <PaymentArea payment={payment} onChoose={onChoose} onCancel={onCancel} onConfirm={onConfirm} onReset={onReset} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
+            {!qrNeedsReview && <PaymentArea payment={payment} onChoose={onChoose} onCancel={onCancel} onConfirm={onConfirm} onReset={onReset} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>}
+            {qrNeedsReview && <p className="qsc-not-ready" role="status">A QR payment is pending or its result is uncertain. Cash/Card confirmation is locked until staff verifies the original order.</p>}
             {qrStaging && order.canPay && payment.phase === PAYMENT_PHASES.IDLE && !cancelling &&
               <div className="qsc-qr-payment">
                 <h3>Pay by QR</h3>
