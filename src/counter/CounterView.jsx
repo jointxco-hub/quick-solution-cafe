@@ -647,6 +647,17 @@ function OrderDetailPanel({ qrPayment, qrStaging, onStartQr, onNewSale, detail, 
             <div><span className="eyebrow">Counter order · {order.time}</span><h2>{order.orderNumber}</h2></div>
             <span className={`qsc-state qsc-state-${order.paymentStatus || 'unknown'}`}>{order.paymentLabel}</span>
           </div>
+          {paid && <div className="qsc-payment-confirmed" role="status" aria-live="polite">
+            <div className="qsc-payment-confirmed-mark" aria-hidden="true">✓</div>
+            <div>
+              <strong>Payment confirmed</strong>
+              <p>{order.amountPaid} received and verified by the Café server. No further payment needed.</p>
+            </div>
+            <div className="qsc-payment-confirmed-actions">
+              {order.receiptReady && <button className="button dark qsc-action" type="button" onClick={onOpenReceipt}>View / Print receipt</button>}
+              <button className="button qsc-action" type="button" onClick={onNewSale}>Next sale</button>
+            </div>
+          </div>}
           <div className="qsc-detail-card">
             <dl className="qsc-detail-rows">
               <div><dt>Customer</dt><dd>{order.customer}{order.contact ? <small>{order.contact}</small> : null}</dd></div>
@@ -661,9 +672,7 @@ function OrderDetailPanel({ qrPayment, qrStaging, onStartQr, onNewSale, detail, 
                 <div key={`p${index}`}><dt>Payment</dt><dd>{entry.method} · {entry.amount}<small>{entry.time}</small></dd></div>
               ))}
             </dl>
-            {order.receiptReady ? (
-              <button className="button dark qsc-action qsc-view-receipt" type="button" onClick={onOpenReceipt}>View receipt</button>
-            ) : null}
+
             <PaymentArea payment={payment} onChoose={onChoose} onCancel={onCancel} onConfirm={onConfirm} onReset={onReset} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
             {qrStaging && order.canPay && payment.phase === PAYMENT_PHASES.IDLE && !cancelling &&
               <div className="qsc-qr-payment">
@@ -675,10 +684,10 @@ function OrderDetailPanel({ qrPayment, qrStaging, onStartQr, onNewSale, detail, 
                 {qrPayment?.phase === 'error' && <p role="alert">{qrPayment.message} Do not retry this order's payment until the original attempt is checked.</p>}
                 {qrPayment?.phase === 'ready' && <CounterQrBoundary key={order.orderId} orderId={order.orderId}><CounterQr request={qrPayment}/></CounterQrBoundary>}
               </div>}
-            {qrPayment?.phase === 'paid' && <p className="qsc-paid-note" role="status">QR payment confirmed by the Café server.</p>}
+
 
             {payment.phase === PAYMENT_PHASES.IDLE && !cancelling ? (
-              ['issuing','ready','error'].includes(qrPayment?.phase) ? (
+              paid ? null : ['issuing','ready','error'].includes(qrPayment?.phase) ? (
                 <p className="qsc-not-ready" role="status">A QR payment attempt is open or its result is uncertain. Check the server payment status before taking cash or card to prevent a double payment.</p>
               ) : order.canPay ? (
                 <div className="qsc-pay-actions">
@@ -698,7 +707,7 @@ function OrderDetailPanel({ qrPayment, qrStaging, onStartQr, onNewSale, detail, 
               <CancelArea check={cancelCheck} order={order} rawOrder={detail.order} cancel={cancel} onStart={onStartCancel} onReason={onCancelReason} onAbort={onAbortCancel} onConfirm={onConfirmCancel} onReset={onResetCancel} onSignIn={onSignIn} signInError={signInError} signInBusy={signInBusy}/>
             ) : null}
           </div>
-          {onNewSale && <button className="button dark qsc-action qsc-next-sale" type="button" onClick={onNewSale}>Start next sale</button>}
+          {!paid && onNewSale && <button className="button dark qsc-action qsc-next-sale" type="button" onClick={onNewSale}>Start next sale</button>}
         </>
       ) : null}
     </section>
