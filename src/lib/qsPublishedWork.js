@@ -1,7 +1,7 @@
 // QS public portfolio feed: shared X LAB library, published-only Postgres view.
 // No write credentials, tenant admin tokens or temporary static project catalogue.
-const url = String(import.meta.env.VITE_QS_WORK_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
-const key = String(import.meta.env.VITE_QS_WORK_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY || '')
+const env = import.meta.env || {}\nconst url = String(env.VITE_QS_WORK_SUPABASE_URL || env.VITE_SUPABASE_URL || '').replace(/\/$/, '')
+const key = String(env.VITE_QS_WORK_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || '')
 
 export function mapQsWorkRow(row) {
   if (!row || !row.id || !row.title) return null
@@ -10,7 +10,7 @@ export function mapQsWorkRow(row) {
   const safeUrl = (s) => {
     try {
       const parsed = new URL(s)
-      return ['https:', 'http:'].includes(parsed.protocol) ? parsed.href : ''
+      return parsed.protocol === 'https:' ? parsed.href : ''
     } catch { return '' }
   }
   const videoUrl = safeUrl(video)
@@ -21,7 +21,7 @@ export function mapQsWorkRow(row) {
     ? { kind: 'video', src: videoUrl, poster: posterUrl, alt: row.title }
     : coverUrl
       ? { kind: 'image', src: coverUrl, alt: row.title, externalVideo: videoUrl }
-      : null
+      : videoUrl ? { kind: 'link', externalVideo: videoUrl } : null
   return {
     id: row.id,
     title: row.title,
