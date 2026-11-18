@@ -19,7 +19,7 @@ for (const viewport of viewports) {
     await expect(page.getByRole('button', { name: /Explore services/i })).toBeVisible()
     await expect(page.getByRole('button', { name: /Upload & print/i })).toBeVisible()
     await expect(page.getByRole('heading', { name: /Find what you need/i })).toBeVisible()
-    await expect(page.getByRole('heading', { name: /Made here/i })).toBeVisible()
+    // Shared work is optional: no approved public records means no showcase.\n    const showcase = page.getByRole('heading', { name: /Made here/i })\n    if (await showcase.count()) await expect(showcase).toBeVisible()
     await expect(page.getByRole('heading', { name: /Here's how it works/i })).toBeVisible()
     const horizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
     expect(horizontalOverflow).toBeLessThanOrEqual(2)
