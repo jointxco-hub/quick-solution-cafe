@@ -397,3 +397,22 @@ button.qsc-order:focus-visible{border-color:var(--green);box-shadow:0 0 0 3px rg
 .qsc-payment-choice { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem }
 .qsc-payment-choice .qsc-action { min-height:52px;padding:.65rem .3rem }
 @media(max-width:460px){.qsc-payment-choice {grid-template-columns:repeat(2,minmax(0,1fr))}.qsc-payment-choice .qsc-action:last-child:nth-child(3){grid-column:span 2}}
+
+/* OPPS-106 verified QR settlement: unmistakable finish and next action. */
+.qsc-payment-confirmed{
+ display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:.9rem;
+ margin:1.15rem 0;padding:1.25rem;border:1px solid #b9dcca;border-radius:1.4rem;
+ background:#edf7f0;color:#163d31
+}
+.qsc-payment-confirmed-mark{
+ display:grid;place-items:center;width:2.5rem;height:2.5rem;border-radius:50%;
+ background:#176c55;color:#fff;font-size:1.5rem;font-weight:750
+}
+.qsc-payment-confirmed strong{font-size:clamp(1.3rem,4vw,1.65rem);letter-spacing:-.025em;line-height:1.15}
+.qsc-payment-confirmed p{margin:.5rem 0 0;line-height:1.5}
+.qsc-payment-confirmed-actions{
+ grid-column:1 / -1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem
+}
+.qsc-payment-confirmed-actions .button{width:100%;min-height:52px;padding:.65rem 1rem}
+.qsc-payment-confirmed-actions .button:not(.dark){background:#fff;color:#144534;border:1px solid #9ac1ad}
+@media(max-width:480px){.qsc-payment-confirmed-actions{grid-template-columns:1fr}}
