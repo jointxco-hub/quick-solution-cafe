@@ -41,7 +41,7 @@ async function submit(amount, rules={allowPayfast:true,allowPayAtCounter:true}) 
   globalThis.__checkoutApi={create:async()=>({orderId:'order-1',orderNumber:'QS-TEST',totalAmount:amount,paymentToken:'payment-token',deliveryFeeStatus:'not_required',items:[{clientItemKey:'line-1'}]}),pay:async(...args)=>{payCalls.push(args);return {paid:true}}}
   const render=()=>{globalThis.__checkoutHooks.index=0;return OrderBasket({items,open:true,onOrderCreated:()=>{items=[]}})}
   let tree=render()
-  nodes(tree).find(n=>n.type==='button' && textOf(n)==='Checkout').props.onClick()
+  nodes(tree).find(n=>n.type==='button' && textOf(n).includes('Continue to checkout')).props.onClick()
   tree=render()
   nodes(tree).find(n=>n.type==='input' && n.props.autoComplete==='name').props.onChange({target:{value:'Test Customer'}})
   nodes(tree).find(n=>n.type==='input' && n.props.autoComplete==='tel').props.onChange({target:{value:'0751234567'}})
