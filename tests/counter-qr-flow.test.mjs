@@ -36,7 +36,10 @@ test('only the canonical server status confirms paid and pending QR blocks alter
   assert.match(page,/fresh\?\.paymentStatus === 'paid'/)
   assert.match(page,/loadQuickSolutionCounterOrder\(openOrderId\)/)
   assert.match(ui,/\['issuing','ready','error'\]\.includes\(qrPayment\?\.phase\)/)
-  assert.match(ui,/QR payment confirmed by the Café server/)
+  assert.match(ui,/Payment confirmed/)
+  assert.match(ui,/verified by the Café server/)
+  assert.match(ui,/View \/ Print receipt/)
+  assert.match(ui,/Next sale/)
   assert.match(ui,/Cash or card remains available/)
 })
 test('QR does not auto-issue or auto-retry expired or uncertain payments',()=>{
@@ -60,3 +63,11 @@ test('QR JSX renderer imports React for the classic JSX transform',()=>{
  assert.match(qrSource,/^import React, \{ useEffect, useRef, useState \} from 'react'/)
  assert.match(qrSource,/return <div className="qsc-qr-card"/)
 })
+
+test('paid order replaces extra payment prompts with receipt and next sale',()=>{
+  assert.match(ui,/\{paid && <div className="qsc-payment-confirmed"/);
+  assert.match(ui,/\{order\.receiptReady && <button/);
+  assert.match(ui,/paid \? null : \['issuing','ready','error'\]/);
+  assert.match(ui,/!paid && onNewSale/);
+  assert.match(page,/loadDetail\(openOrderId\)/);
+});
