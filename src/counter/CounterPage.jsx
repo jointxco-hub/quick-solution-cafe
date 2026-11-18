@@ -377,13 +377,18 @@ export default function CounterPage() {
   const setPayment = (update) => setPayments((current) => ({ ...current, [openOrderId]: update(current[openOrderId] || initialPayment()) }))
 
   const choosePayment = (methodId) => {
-    if (orderDetail.status === 'ready') setPayment((current) => beginPayment(current, orderDetail.order, methodId))
+    const qrPhase = qrPayments[openOrderId]?.phase
+    if (['issuing','ready','error'].includes(qrPhase)) return
+    if (orderDetail.status === 'ready' && orderDetail.order?.paymentStatus === 'unpaid') {
+      setPayment((current) => beginPayment(current, orderDetail.order, methodId))
+    }
   }
 
   // The one payment call per confirmation. The button is disabled while it runs, but correctness does not depend on
   // that: beginPaymentSubmit refuses an attempt that is already submitting, and the server pays an order once.
   const confirmPayment = async () => {
-    if (paymentInFlight.current) return
+    if (paymentInFlight.current || ['issuing','ready','error'].includes(qrPayments[openOrderId]?.phase)) return
+    if (orderDetail.status !== 'ready' || orderDetail.order?.paymentStatus !== 'unpaid') return
     const orderId = openOrderId
     const started = beginPaymentSubmit(payment)
     if (started === payment) return
