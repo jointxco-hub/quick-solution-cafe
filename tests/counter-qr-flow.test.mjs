@@ -54,3 +54,9 @@ test('QR component failure cannot replace the entire Counter application',()=>{
  assert.match(ui,/CounterQrBoundary/)
  assert.match(ui,/<CounterQr request=\{qrPayment\}/)
 })
+
+test('QR JSX renderer imports React for the classic JSX transform',()=>{
+ const qrSource=file('src/counter/CounterQr.jsx')
+ assert.match(qrSource,/^import React, \{ useEffect, useRef, useState \} from 'react'/)
+ assert.match(qrSource,/return <div className="qsc-qr-card"/)
+})
