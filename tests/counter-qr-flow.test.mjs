@@ -71,3 +71,12 @@ test('paid order replaces extra payment prompts with receipt and next sale',()=>
   assert.match(ui,/!paid && onNewSale/);
   assert.match(page,/loadDetail\(openOrderId\)/);
 });
+
+test('QR uncertainty disables manual payment form and its event handlers',()=>{
+  assert.match(ui,/const qrNeedsReview = !paid && \['issuing','ready','error'\]\.includes\(qrPayment\?\.phase\)/)
+  assert.match(ui,/\{!qrNeedsReview && <PaymentArea/)
+  assert.match(ui,/Cash\/Card confirmation is locked/)
+  assert.match(page,/const qrPhase = qrPayments\[openOrderId\]\?\.phase/)
+  assert.match(page,/if \(\['issuing','ready','error'\]\.includes\(qrPhase\)\) return/)
+  assert.match(page,/paymentInFlight\.current \|\| \['issuing','ready','error'\]\.includes\(qrPayments\[openOrderId\]\?\.phase\)/)
+})
