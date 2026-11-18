@@ -1,0 +1,39 @@
+name: QS homepage UX checks
+
+on:
+  pull_request:
+    paths:
+      - 'src/App.jsx'
+      - 'src/components/HomeServiceCategories.jsx'
+      - 'src/components/FeaturedWork.jsx'
+      - 'src/components/HomeHowItWorks.jsx'
+      - 'src/data/workProjects.js'
+      - 'src/lib/qsPublishedWork.js'
+      - 'src/styles/qs22-featured-work.css'
+      - 'src/styles/qs23-home-ux.css'
+      - 'src/styles/qs23-home-process.css'
+      - 'tests/**'
+      - 'package*.json'
+      - '.github/workflows/qs-homepage-ux.yml'
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Existing storefront tests
+        run: npm test
+      - name: Shared work project tests
+        if: success() || failure()
+        run: node --test tests/shared-work-projects.test.mjs tests/qs23-home-ux.test.mjs tests/qs-shared-work.test.mjs
+      - name: Production build
+        if: success() || failure()
+        run: npm run build

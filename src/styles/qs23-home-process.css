@@ -1,0 +1,10 @@
+/* QS-23: compact four-step ordering guidance; no new ordering logic. */
+.qs23-process { padding-top: clamp(28px, 5vw, 62px); padding-bottom: clamp(38px, 6vw, 80px); }
+.qs23-process-heading { margin-bottom: 24px; }
+.qs23-process-heading h2 { margin: 9px 0 0; font-size: clamp(30px, 4.2vw, 48px); line-height: 1.08; letter-spacing: -.05em; }
+.qs23-process-list { padding: 0; margin: 0; list-style: none; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.qs23-process-step { min-width: 0; border-top: 1px solid #dcded7; padding: 15px 10px 5px 0; }
+.qs23-process-number { display: block; color: #008b72; font-weight: 800; font-size: 11px; margin-bottom: 20px; }
+.qs23-process-step strong { font-size: 18px; letter-spacing: -.025em; }
+.qs23-process-step p { margin: 8px 0 0; font-size: 13px; color: #696b65; line-height: 1.5; max-width: 210px; }
+@media (max-width: 620px) { .qs23-process-list { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px 12px; } .qs23-process-number { margin-bottom: 12px; } .qs23-process-step strong { font-size: 15px; } .qs23-process-step p { font-size: 12px; } }
