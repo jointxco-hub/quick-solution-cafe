@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 // Bundled locally with MIT attribution: /vendor/QRCODE-LICENSE.txt.
 // Never send the customer's payment URL to a third-party QR image service.
