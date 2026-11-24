@@ -256,6 +256,26 @@ begin
     and p.pf_payment_id=trim(p_pf_payment_id)
   limit 1;
 
+  -- A reference previously quarantined as an exception must not later
+  -- become an accepted receipt for another order. The global exception
+  -- uniqueness constraint also serializes competing cross-order claims.
+  if exists (
+    select 1 from commerce.payment_reference_conflicts c
+    where c.provider='payfast'
+      and c.conflicting_payment_id=trim(p_pf_payment_id)
+  ) then
+    perform commerce.qs_record_payment_reference_exception(
+      v_order.id,p_amount,trim(p_pf_payment_id),'reference_already_used'
+    );
+    return jsonb_build_object(
+      'ok',true,'ignored',true,'duplicate',false,
+      'conflictRecorded',true,'requiresReview',true,
+      'reason','reference_already_used',
+      'paymentStatus',v_order.payment_status,
+      'orderId',v_order.id,'orderNumber',v_order.order_number
+    );
+  end if;
+
   if v_existing_payment.id is not null
      and v_existing_payment.service_order_id <> v_order.id then
     perform commerce.qs_record_payment_reference_exception(
