@@ -3,6 +3,8 @@
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
 CREATE ROLE service_role NOLOGIN;
+-- Reproduce the v7 recorder-owner pattern with a different migration owner.
+CREATE ROLE supabase_admin NOLOGIN SUPERUSER;
 CREATE SCHEMA auth;
 CREATE SCHEMA commerce;
 
@@ -79,7 +81,9 @@ CREATE FUNCTION commerce.qs_apply_payfast_payment(
     uuid,numeric,text,jsonb DEFAULT '{}'::jsonb
 )
 RETURNS jsonb LANGUAGE sql
-AS $$ SELECT '{}'::jsonb $$;
+AS $ SELECT '{}'::jsonb $;
+ALTER FUNCTION commerce.qs_apply_payfast_payment(uuid,numeric,text,jsonb)
+    OWNER TO supabase_admin;
 
 CREATE FUNCTION public.has_tenant_capability(uuid,text)
 RETURNS boolean LANGUAGE sql STABLE
