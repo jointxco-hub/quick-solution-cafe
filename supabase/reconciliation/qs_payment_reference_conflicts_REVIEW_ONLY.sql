@@ -213,6 +213,40 @@ REVOKE ALL ON FUNCTION commerce.qs_record_payment_reference_exception(
     uuid,numeric,text,text
 ) FROM PUBLIC,anon,authenticated,service_role;
 
+-- This function may already be owned by supabase_admin even when a
+-- migration session creates objects as postgres. The private helper must
+-- inherit the trusted recorder's rights without granting table access to
+-- service_role, authenticated, or anon. PostgreSQL table owners bypass RLS
+-- by default (FORCE RLS is deliberately not enabled).
+DO $owner_parity$
+DECLARE
+    v_recorder_owner text;
+BEGIN
+    SELECT pg_get_userbyid(p.proowner) INTO v_recorder_owner
+    FROM pg_proc p
+    WHERE p.oid=
+      'commerce.qs_apply_payfast_payment(uuid,numeric,text,jsonb)'::regprocedure;
+
+    IF v_recorder_owner IS NULL THEN
+      RAISE EXCEPTION 'QS_PAYMENT_CONFLICT_RECORDER_OWNER_MISSING';
+    END IF;
+
+    EXECUTE format(
+      'ALTER TABLE commerce.payment_reference_conflicts OWNER TO %I',
+      v_recorder_owner
+    );
+    EXECUTE format(
+      'ALTER TABLE commerce.payment_reference_conflict_claims OWNER TO %I',
+      v_recorder_owner
+    );
+    EXECUTE format(
+      'ALTER FUNCTION commerce.qs_record_payment_reference_exception(uuid,numeric,text,text) OWNER TO %I',
+      v_recorder_owner
+    );
+END
+$owner_parity$;
+
+
 -- This is the current gateway recorder, with only the already-paid,
 -- mismatched-amount, and cross-order-reference branches changed.
 
