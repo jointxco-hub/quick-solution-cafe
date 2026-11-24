@@ -7,6 +7,12 @@
 -- WARNING: This adds tables and replaces a payment-capture function.
 -- This review draft is not compatible with v7's experimental conflict table.
 
+-- Make ownership, security grants, function replacement and all tables
+-- atomic: an error must not leave a partially exposed review API.
+BEGIN;
+SET LOCAL statement_timeout='60s';
+SET LOCAL lock_timeout='5s';
+
 DO $prerequisites$
 BEGIN
   IF to_regclass('commerce.service_orders') IS NULL
@@ -631,3 +637,5 @@ BEGIN
     END IF;
 END
 $verify$;
+
+COMMIT;
