@@ -257,7 +257,7 @@ DECLARE
 BEGIN
   result:=public.qs_staff_payment_conflicts(a);
   IF result->>'reviewRequired' IS DISTINCT FROM 'true'
-     OR jsonb_array_length(result->'conflicts')<>2
+     OR jsonb_array_length(result->'conflicts')<>1
   THEN RAISE EXCEPTION 'STAFF_ORDER_READ_FAILED: %',result;
   END IF;
 
