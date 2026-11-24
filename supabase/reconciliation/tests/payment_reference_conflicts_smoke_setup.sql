@@ -81,7 +81,7 @@ CREATE FUNCTION commerce.qs_apply_payfast_payment(
     uuid,numeric,text,jsonb DEFAULT '{}'::jsonb
 )
 RETURNS jsonb LANGUAGE sql
-AS $ SELECT '{}'::jsonb $;
+AS $$ SELECT '{}'::jsonb $$;
 ALTER FUNCTION commerce.qs_apply_payfast_payment(uuid,numeric,text,jsonb)
     OWNER TO supabase_admin;
 
