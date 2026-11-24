@@ -1,0 +1,46 @@
+name: QS payment conflict draft smoke
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/reconciliation/**'
+      - '.github/workflows/qs-payment-conflict-draft-smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  postgresql17:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-only-local-postgres
+          POSTGRES_DB: qs_conflict_smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d qs_conflict_smoke"
+          --health-interval 3s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      PGHOST: localhost
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: ci-only-local-postgres
+      PGDATABASE: qs_conflict_smoke
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check psql availability
+        run: psql --version
+      - name: Create synthetic PostgreSQL objects
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/reconciliation/tests/payment_reference_conflicts_smoke_setup.sql
+      - name: Validate reviewed SQL draft on synthetic database
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/reconciliation/qs_payment_reference_conflicts_REVIEW_ONLY.sql
+      - name: Execute rollback-only conflict and permission tests
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/reconciliation/tests/payment_reference_conflicts_smoke_test.sql
