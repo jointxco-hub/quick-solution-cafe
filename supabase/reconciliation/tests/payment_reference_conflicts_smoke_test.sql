@@ -262,7 +262,9 @@ BEGIN
   END IF;
 
   result:=public.qs_staff_payment_conflict_queue(tenant,50);
-  IF jsonb_array_length(result->'items')<>5
+  -- The corrected-amount replay creates a second claim for that same
+  -- order and reference: claims are distinguished by reported amount.
+  IF jsonb_array_length(result->'items')<>6
   THEN RAISE EXCEPTION 'TENANT_QUEUE_SCOPE_FAILED: %',result;
   END IF;
   RAISE NOTICE 'PASS: Authorized staff order read and tenant queue';
