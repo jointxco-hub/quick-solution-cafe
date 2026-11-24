@@ -56,7 +56,23 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'SECURITY_CONFIGURATION_FAILED';
   END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    WHERE c.oid IN (
+      'commerce.payment_reference_conflicts'::regclass,
+      'commerce.payment_reference_conflict_claims'::regclass
+    ) AND pg_get_userbyid(c.relowner)<>'supabase_admin'
+  )
+  OR NOT EXISTS (
+    SELECT 1 FROM pg_proc p
+    WHERE p.oid='commerce.qs_record_payment_reference_exception(uuid,numeric,text,text)'::regprocedure
+      AND pg_get_userbyid(p.proowner)='supabase_admin'
+      AND NOT p.prosecdef
+  ) THEN
+    RAISE EXCEPTION 'OWNER_PARITY_NOT_MAINTAINED';
+  END IF;
   RAISE NOTICE 'PASS: Tables are RLS-protected and helper is restricted';
+  RAISE NOTICE 'PASS: Trusted recorder, private helper and tables share owner';
 
   -- Accepted PayFast payment is still canonical and projected only once.
   r:=commerce.qs_apply_payfast_payment(
